@@ -96,7 +96,7 @@ jobs:
         if: ${{ always() && steps.compile.outcome == 'success' }}
         with:
           SOURCE_FILE: 'src/cc.apk'
-          DEST_NAME: 'TRPClient.apk'
+          DEST_NAME: 'HarmonyClient.apk'
 
       - uses: ./.github/actions/notify_success
         if: ${{ always() && steps.compile.outcome == 'success' }}
