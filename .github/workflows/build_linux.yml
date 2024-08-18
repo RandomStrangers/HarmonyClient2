@@ -44,7 +44,7 @@ jobs:
       - uses: ./.github/actions/notify_failure
         if: ${{ always() && steps.compile.outcome == 'failure' }}
         with:
-          NOTIFY_MESSAGE: 'Failed to compile 32 bit Linux build'
+          NOTIFY_MESSAGE: 'Failed to compile 32 bit HarmonyClient Linux builds! <@999409543001931788>'
           WEBHOOK_URL: '${{ secrets.WEBHOOK_URL }}'
       
       
@@ -61,11 +61,12 @@ jobs:
           DEST_NAME: 'ClassiCube-Linux32-ModernGL'
           
           
+      
       - uses: ./.github/actions/notify_success
         if: ${{ always() && steps.compile.outcome == 'success' }}
         with:
-          DESTINATION_URL: '${{ secrets.NOTIFY_URL }}'
-          WORKFLOW_NAME: 'linux32'
+          NOTIFY_MESSAGE: 'Successfully compiled 32 bit HarmonyClient Linux builds.'
+          WEBHOOK_URL: '${{ secrets.WEBHOOK_URL }}'
 
 #============================================
 # =============== 64 BIT LINUX ==============
@@ -93,7 +94,7 @@ jobs:
       - uses: ./.github/actions/notify_failure
         if: ${{ always() && steps.compile.outcome == 'failure' }}
         with:
-          NOTIFY_MESSAGE: 'Failed to compile 64 bit Linux build'
+          NOTIFY_MESSAGE: 'Failed to compile 64 bit HarmonyClient Linux builds! <@999409543001931788>'
           WEBHOOK_URL: '${{ secrets.WEBHOOK_URL }}'
           
           
@@ -119,5 +120,5 @@ jobs:
       - uses: ./.github/actions/notify_success
         if: ${{ always() && steps.compile.outcome == 'success' }}
         with:
-          DESTINATION_URL: '${{ secrets.NOTIFY_URL }}'
-          WORKFLOW_NAME: 'linux64'
+          NOTIFY_MESSAGE: 'Successfully compiled 64 bit HarmonyClient Linux builds.'
+          WEBHOOK_URL: '${{ secrets.WEBHOOK_URL }}'
