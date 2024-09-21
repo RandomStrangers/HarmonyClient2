@@ -3,7 +3,10 @@ name: Build latest (Linux)
 on:
   push:
     branches:
+      - main
       - master
+      - ModernLighting
+      - AngledLighting
   workflow_dispatch:
 
 concurrency:
@@ -41,7 +44,7 @@ jobs:
       - uses: ./.github/actions/notify_failure
         if: ${{ always() && steps.compile.outcome == 'failure' }}
         with:
-          NOTIFY_MESSAGE: 'Failed to compile 32 bit HarmonyClient Linux build! <@999409543001931788>'
+          NOTIFY_MESSAGE: 'Failed to compile 32 bit HarmonyClient Linux builds! <@999409543001931788>'
           WEBHOOK_URL: '${{ secrets.WEBHOOK_URL }}'
       
       
@@ -49,15 +52,16 @@ jobs:
         if: ${{ always() && steps.compile.outcome == 'success' }}
         with:
           SOURCE_FILE: 'src/cc-nix32-gl1'
-          DEST_NAME: 'TRPClient-Linux32-OpenGL'
+          DEST_NAME: 'ClassiCube-Linux32-OpenGL'
           
       - uses: ./.github/actions/upload_build
         if: ${{ always() && steps.compile.outcome == 'success' }}
         with:
           SOURCE_FILE: 'src/cc-nix32-gl2'
-          DEST_NAME: 'TRPClient-Linux32-ModernGL'
+          DEST_NAME: 'ClassiCube-Linux32-ModernGL'
           
           
+      
       - uses: ./.github/actions/notify_success
         if: ${{ always() && steps.compile.outcome == 'success' }}
         with:
@@ -84,13 +88,13 @@ jobs:
           cd src
           gcc *.c ${{ env.COMMON_FLAGS }} ${{ env.NIX64_FLAGS }} $LATEST_FLAG -o cc-nix64-gl1 -lX11 -lXi -lpthread -lGL -lm -ldl
           gcc *.c ${{ env.COMMON_FLAGS }} ${{ env.NIX64_FLAGS }} $LATEST_FLAG -DCC_GFX_BACKEND=CC_GFX_BACKEND_GL2 -o cc-nix64-gl2 -lX11 -lXi -lpthread -lGL -lm -ldl
-          gcc *.c ${{ env.COMMON_FLAGS }} ${{ env.NIX64_FLAGS }} $LATEST_FLAG -DCC_GFX_BACKEND=CC_GFX_BACKEND_GL2 -DCC_BUILD_SDL -o cc-sdl64-gl2 -lSDL2 -lpthread -lGL -lm -ldl
+          gcc *.c ${{ env.COMMON_FLAGS }} ${{ env.NIX64_FLAGS }} $LATEST_FLAG -DCC_GFX_BACKEND=CC_GFX_BACKEND_GL2 -DCC_WIN_BACKEND=CC_WIN_BACKEND_SDL2 -o cc-sdl64-gl2 -lSDL2 -lpthread -lGL -lm -ldl
 
 
       - uses: ./.github/actions/notify_failure
         if: ${{ always() && steps.compile.outcome == 'failure' }}
         with:
-          NOTIFY_MESSAGE: 'Failed to compile 64 bit HarmonyClient Linux build! <@999409543001931788>'
+          NOTIFY_MESSAGE: 'Failed to compile 64 bit HarmonyClient Linux builds! <@999409543001931788>'
           WEBHOOK_URL: '${{ secrets.WEBHOOK_URL }}'
           
           
@@ -98,19 +102,19 @@ jobs:
         if: ${{ always() && steps.compile.outcome == 'success' }}
         with:
           SOURCE_FILE: 'src/cc-nix64-gl1'
-          DEST_NAME: 'TRPClient-Linux64-OpenGL'
+          DEST_NAME: 'ClassiCube-Linux64-OpenGL'
           
       - uses: ./.github/actions/upload_build
         if: ${{ always() && steps.compile.outcome == 'success' }}
         with:
           SOURCE_FILE: 'src/cc-nix64-gl2'
-          DEST_NAME: 'TRPClient-Linux64-ModernGL'
+          DEST_NAME: 'ClassiCube-Linux64-ModernGL'
           
       - uses: ./.github/actions/upload_build
         if: ${{ always() && steps.compile.outcome == 'success' }}
         with:
           SOURCE_FILE: 'src/cc-sdl64-gl2'
-          DEST_NAME: 'TRPClient-Linux64-SDL2'
+          DEST_NAME: 'ClassiCube-Linux64-SDL2'
           
           
       - uses: ./.github/actions/notify_success
