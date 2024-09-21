@@ -169,8 +169,9 @@ static void SwitchToDirectConnect(void* w) { DirectConnectScreen_SetActive(); }
 static void SwitchToMain(void* w)          { MainScreen_SetActive(); }
 static void SwitchToSettings(void* w)      { SettingsScreen_SetActive(); }
 static void SwitchToThemes(void* w)        { ThemesScreen_SetActive(); }
+#ifdef CC_UPDATE
 static void SwitchToUpdates(void* w)       { UpdatesScreen_SetActive(); }
-
+#endif
 
 /*########################################################################################################################*
 *-------------------------------------------------------ChooseModeScreen--------------------------------------------------*
@@ -918,10 +919,12 @@ static void MainScreen_Activated(struct LScreen* s_) {
 		LButton_Add(s, &s->btnClientUpdate,  100, 35, "Updates", 
 			MainScreen_Client_Update, main_btnClientUpdate);
 	}
+#ifdef CC_UPDATE
 	if (Updater_Supported) {
 		LButton_Add(s, &s->btnCCUpdate, 111, 35, "CC Client", 
 			SwitchToUpdates, main_btnCCUpdate);
 	}
+#endif
 #endif
 
 	s->btnResume.OnHover   = MainScreen_ResumeHover;
