@@ -789,6 +789,7 @@ static void LocalPlayer_OnNewMap(struct LocalPlayer* p) {
 	p->_warnedFly     = false;
 	p->_warnedNoclip  = false;
 	p->_warnedZoom    = false;
+	p->_warnedCamera  = false;
 }
 
 static void LocalPlayers_OnNewMap(void) {

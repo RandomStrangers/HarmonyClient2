@@ -291,14 +291,20 @@ static void OnHacksChanged(void* obj) {
 	/* Leave third person if not allowed anymore */
 	if (!h->CanUseThirdPerson || !h->Enabled) Camera_CycleActive();
 }
-
+#include "Chat.h"
+static cc_bool hackPermMsgs;
 void Camera_CycleActive(void) {
+	hackPermMsgs = Options_GetBool(OPT_HACK_PERM_MSGS, true);
 	struct LocalPlayer* p = &LocalPlayer_Instances[0];
 	if (Game_ClassicMode) return;
 	Camera.Active = Camera.Active->next;
 
 	if (!p->Hacks.CanUseThirdPerson || !p->Hacks.Enabled) {
 		Camera.Active = &cam_FirstPerson;
+		if (!p->_warnedCamera) {
+			p->_warnedCamera = true;
+			if (hackPermMsgs) Chat_AddRaw("&cThirdPerson is currently disabled");
+		}
 	}
 	cam_isForwardThird = Camera.Active == &cam_ForwardThird;
 

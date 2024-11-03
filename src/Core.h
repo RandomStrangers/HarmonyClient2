@@ -4,7 +4,7 @@
 Core fixed-size integer types, automatic platform detection, and common small structs
 Copyright 2014-2023 ClassiCube | Licensed under BSD-3
 */
-
+#define CC_UPDATE
 #if _MSC_VER
 	typedef signed __int8  cc_int8;
 	typedef signed __int16 cc_int16;
@@ -175,6 +175,9 @@ typedef cc_uint8  cc_bool;
 	#define CC_BUILD_SPLITSCREEN
 	#define DEFAULT_NET_BACKEND CC_NET_BACKEND_BUILTIN
 	#define DEFAULT_SSL_BACKEND CC_SSL_BACKEND_BEARSSL
+	#ifndef CC_UPDATE
+	#define CC_UPDATE
+	#endif
 #elif defined XENON
 	/* libxenon also defines __linux__ (yes, really) */
 	#define CC_BUILD_XBOX360
@@ -191,6 +194,7 @@ typedef cc_uint8  cc_bool;
 	#define DEFAULT_AUD_BACKEND CC_AUD_BACKEND_WINMM
 	#define DEFAULT_GFX_BACKEND CC_GFX_BACKEND_D3D9
 	#define DEFAULT_WIN_BACKEND CC_WIN_BACKEND_WIN32
+	#undef  CC_UPDATE
 #elif defined __ANDROID__
 	#define CC_BUILD_ANDROID
 	#define CC_BUILD_MOBILE
@@ -199,6 +203,7 @@ typedef cc_uint8  cc_bool;
 	#define CC_BUILD_EGL
 	#define CC_BUILD_TOUCH
 	#define CC_BUILD_OPENSLES
+	#undef  CC_UPDATE
 	#define DEFAULT_AUD_BACKEND CC_AUD_BACKEND_OPENSLES
 	#define DEFAULT_GFX_BACKEND CC_GFX_BACKEND_GL2
 	#define DEFAULT_WIN_BACKEND CC_WIN_BACKEND_ANDROID
@@ -216,6 +221,7 @@ typedef cc_uint8  cc_bool;
 	#define DEFAULT_NET_BACKEND CC_NET_BACKEND_LIBCURL
 	#define DEFAULT_AUD_BACKEND CC_AUD_BACKEND_OPENAL
 	#define DEFAULT_WIN_BACKEND CC_WIN_BACKEND_X11
+	#undef  CC_UPDATE
 	#if defined CC_BUILD_RPI
 		#define CC_BUILD_GLES
 		#define CC_BUILD_EGL
@@ -226,6 +232,9 @@ typedef cc_uint8  cc_bool;
 #elif defined __APPLE__
 	#define CC_BUILD_DARWIN
 	#define CC_BUILD_POSIX
+	#if __x86_64__
+		#undef  CC_UPDATE
+	#endif
 	#if defined __ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__
 		#define CC_BUILD_MOBILE
 		#define CC_BUILD_GLES
@@ -250,6 +259,7 @@ typedef cc_uint8  cc_bool;
 	#undef  CC_BUILD_RESOURCES
 	#undef  CC_BUILD_FREETYPE
 	#undef  CC_BUILD_NETWORKING
+	#undef  CC_UPDATE
 #elif defined __sun__
 	#define CC_BUILD_SOLARIS
 	#define CC_BUILD_POSIX
@@ -263,6 +273,7 @@ typedef cc_uint8  cc_bool;
 	#define CC_BUILD_POSIX
 	#define CC_BUILD_BSD
 	#define CC_BUILD_XINPUT2
+	#undef  CC_UPDATE
 	#define DEFAULT_NET_BACKEND CC_NET_BACKEND_LIBCURL
 	#define DEFAULT_AUD_BACKEND CC_AUD_BACKEND_OPENAL
 	#define DEFAULT_GFX_BACKEND CC_GFX_BACKEND_GL1
@@ -281,6 +292,7 @@ typedef cc_uint8  cc_bool;
 	#define CC_BUILD_POSIX
 	#define CC_BUILD_BSD
 	#define CC_BUILD_XINPUT2
+	#undef  CC_UPDATE
 	#define DEFAULT_NET_BACKEND CC_NET_BACKEND_LIBCURL
 	#define DEFAULT_AUD_BACKEND CC_AUD_BACKEND_OPENAL
 	#define DEFAULT_GFX_BACKEND CC_GFX_BACKEND_GL1
@@ -288,6 +300,7 @@ typedef cc_uint8  cc_bool;
 #elif defined __HAIKU__
 	#define CC_BUILD_HAIKU
 	#define CC_BUILD_POSIX
+	#undef  CC_UPDATE
 	#define CC_BACKTRACE_BUILTIN
 	#define DEFAULT_NET_BACKEND CC_NET_BACKEND_LIBCURL
 	#define DEFAULT_AUD_BACKEND CC_AUD_BACKEND_OPENAL
@@ -482,6 +495,9 @@ typedef cc_uint8  cc_bool;
 #ifdef CC_BUILD_CONSOLE
 #undef CC_BUILD_FREETYPE
 #undef CC_BUILD_PLUGINS
+#ifndef CC_UPDATE
+#define CC_UPDATE
+#endif
 #endif
 
 #ifdef CC_BUILD_NETWORKING

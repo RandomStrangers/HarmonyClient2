@@ -244,7 +244,7 @@ struct LocalPlayer {
 	struct InterpComp Interp;
 	struct CollisionsComp Collisions;
 	struct PhysicsComp Physics;
-	cc_bool _warnedRespawn, _warnedFly, _warnedNoclip, _warnedZoom;
+	cc_bool _warnedRespawn, _warnedFly, _warnedNoclip, _warnedZoom, _warnedCamera;
 	cc_uint8 index;
 };
 

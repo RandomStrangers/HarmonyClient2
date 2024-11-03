@@ -122,7 +122,10 @@ cc_bool Commands_Execute(const cc_string* input) {
 		Chat_Add1("&e/client: \"&f%s&e\" can only be used in singleplayer.", &name);
 		return true;
 	}
-
+	if ((cmd->flags & COMMAND_FLAG_MULTIPLAYER_ONLY) && Server.IsSinglePlayer) {
+		Chat_Add1("&e/client: \"&f%s&e\" can only be used in multiplayer.", &name);
+		return true;
+	}
 	if (cmd->flags & COMMAND_FLAG_UNSPLIT_ARGS) {
 		/* argsCount = 0 if value.length is 0, 1 otherwise */
 		cmd->Execute(&value, value.length != 0);
@@ -287,17 +290,13 @@ static struct ChatCommand ClearDeniedCommand = {
 };
 
 static void MotdCommand_Execute(const cc_string* args, int argsCount) {
-	if (Server.IsSinglePlayer) {
-		Chat_AddRaw("&eThis command can only be used in multiplayer.");
-		return;
-	}
 	Chat_Add1("&eName: &f%s", &Server.Name);
 	Chat_Add1("&eMOTD: &f%s", &Server.MOTD);
 }
 
 static struct ChatCommand MotdCommand = {
 	"Motd", MotdCommand_Execute,
-	COMMAND_FLAG_UNSPLIT_ARGS,
+	COMMAND_FLAG_UNSPLIT_ARGS | COMMAND_FLAG_MULTIPLAYER_ONLY,
 	{
 		"&a/client motd",
 		"&eDisplays the server's name and MOTD."
