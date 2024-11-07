@@ -1,5 +1,9 @@
 name: Build latest (Android)
-on: [push]
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.ref }}-android
@@ -12,9 +16,9 @@ jobs:
     container:
       image: ghcr.io/saschpe/android-ndk:34-jdk17.0.8_7-ndk25.2.9519653-cmake3.22.1
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Compile android builds
+      - name: Compile android build
         shell: bash
         id: compile
         env: 

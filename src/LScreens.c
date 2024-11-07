@@ -1044,7 +1044,7 @@ void MainScreen_SetActive(void) {
 	s->Activated     = MainScreen_Activated;
 	s->LoadState     = MainScreen_Load;
 	s->Tick          = MainScreen_Tick;
-	s->title         = "&4H&6a&5r&0m&7o&2n&dy &a(Beta)";
+	s->title         = "&4H&6a&5r&0m&7o&2n&dy";
 
 #ifdef CC_BUILD_NETWORKING
 	s->onEnterWidget = (struct LWidget*)&s->btnLogin;
@@ -1477,7 +1477,7 @@ static void SettingsScreen_DPIScaling(struct LCheckbox* w) {
 #if defined CC_BUILD_WIN
 	DisplayInfo.DPIScaling = w->value;
 	Options_SetBool(OPT_DPI_SCALING, w->value);
-	Window_ShowDialog("Restart required", "You must restart ClassiCube before display scaling takes effect");
+	Window_ShowDialog("Restart required", "You must restart the client before display scaling takes effect");
 #else
 	Window_ShowDialog("Restart required", "Display scaling is currently only supported on Windows");
 #endif

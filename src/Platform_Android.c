@@ -20,7 +20,7 @@ void Platform_Log(const char* msg, int len) {
 
 	Mem_Copy(tmp, msg, len); tmp[len] = '\0';
 	/* log using logchat */
-	__android_log_write(ANDROID_LOG_DEBUG, "TRPClient", tmp);
+	__android_log_write(ANDROID_LOG_DEBUG, "HarmonyClient", tmp);
 }
 
 
@@ -37,7 +37,7 @@ cc_result Process_StartOpen(const cc_string* args) {
 *--------------------------------------------------------Updater----------------------------------------------------------*
 *#########################################################################################################################*/
 const struct UpdaterInfo Updater_Info = {
-	"&eRedownload and reinstall to update", 0
+	"&eRedownload from github and reinstall to update", 0
 };
 cc_bool Updater_Clean(void) { return true; }
 
