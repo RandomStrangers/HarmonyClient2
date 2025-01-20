@@ -323,7 +323,7 @@ static void MakeContentView(void) {
 	view = [winHandle contentView];
 	rect = [view frame];
 
-	viewHandle = [CCView alloc];
+	viewHandle = [HCView alloc];
 	[viewHandle initWithFrame:rect];
 	[winHandle setContentView:viewHandle];
 }

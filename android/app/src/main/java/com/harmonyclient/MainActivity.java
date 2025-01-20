@@ -499,7 +499,7 @@ public class MainActivity extends Activity
 	void attachSurface() {
 		// setContentView, requestFocus, getHolder, addCallback, RGBX_8888 - API level 1
 		createSurfaceCallback();
-		HCView view = new CCView(this);
+		HCView view = new HCView(this);
 		view.getHolder().addCallback(callback);
 		view.getHolder().setFormat(PixelFormat.RGBX_8888);
 
@@ -751,7 +751,7 @@ public class MainActivity extends Activity
 		try {
 			Uri uri;
 			if (android.os.Build.VERSION.SDK_INT >= 23){ // android 6.0
-				uri = CCFileProvider.getUriForFile("screenshots/" + path);
+				uri = HCFileProvider.getUriForFile("screenshots/" + path);
 			} else {
 				// when trying to use content:// URIs on my android 4.0.3 test device
 				//   - 1 app crashed
