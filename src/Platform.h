@@ -324,7 +324,7 @@ jlong JavaCallLong(JNIEnv* env, const char* name, const char* sig, jvalue* args)
 /* Calls a method in the activity class that returns a jobject. */
 jobject JavaCallObject(JNIEnv* env, const char* name, const char* sig, jvalue* args);
 /* Calls a method in the activity class that takes a string and returns nothing. */
-void JavaCall_String_Void(const char* name, const ch_string* value);
+void JavaCall_String_Void(const char* name, const hc_string* value);
 /* Calls a method in the activity class that takes no arguments and returns a string. */
 void JavaCall_Void_String(const char* name, hc_string* dst);
 /* Calls a method in the activity class that takes a string and returns a string. */

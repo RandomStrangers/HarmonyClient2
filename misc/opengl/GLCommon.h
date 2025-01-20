@@ -26,7 +26,7 @@ typedef void GLvoid;
 #ifdef CC_BUILD_GL11
 typedef const void* GLpointer;
 #else
-typedef cc_uintptr GLpointer;
+typedef hc_uintptr GLpointer;
 #endif
 
 #define GL_LEQUAL                0x0203

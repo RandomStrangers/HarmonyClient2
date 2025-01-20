@@ -298,7 +298,7 @@ GfxResourceID Gfx_CreateIb2(int count, Gfx_FillIBFunc fillFunc, void* obj) {
 	
 	D3D11_BUFFER_DESC desc = { 0 };
 	desc.Usage     = D3D11_USAGE_DEFAULT;
-	desc.ByteWidth = count * sizeof(cc_uint16);
+	desc.ByteWidth = count * sizeof(hc_uint16);
 	desc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 
 	D3D11_SUBRESOURCE_DATA data;

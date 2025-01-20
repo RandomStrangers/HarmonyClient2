@@ -10,24 +10,16 @@ Copyright 2014-2023 ClassiCube | Licensed under BSD-3
 	typedef signed __int16 hc_int16;
 	typedef signed __int32 hc_int32;
 	typedef signed __int64 hc_int64;
-	typedef hc_int8 cc_int8;
-	typedef hc_int16 cc_int16;
-	typedef hc_int32 cc_int32;
-	typedef hc_int64 cc_int64;
 	typedef unsigned __int8  hc_uint8;
 	typedef unsigned __int16 hc_uint16;
 	typedef unsigned __int32 hc_uint32;
 	typedef unsigned __int64 hc_uint64;
-	typedef hc_uint8 cc_uint8;
-	typedef hc_uint16 cc_uint16;
-	typedef hc_uint32 cc_uint32;
-	typedef hc_uint64 cc_uint64;
+
 	#ifdef _WIN64
 	typedef unsigned __int64 hc_uintptr;
 	#else
 	typedef unsigned __int32 hc_uintptr;
 	#endif
-	typedef hc_uintptr cc_uintptr;
 
 #if _MSC_VER <= 1500
 	#define HC_INLINE
@@ -36,19 +28,15 @@ Copyright 2014-2023 ClassiCube | Licensed under BSD-3
 	#define HC_INLINE   inline
 	#define HC_NOINLINE __declspec(noinline)
 #endif
-	#define CC_INLINE HC_INLINE
-	#define CC_NOINLINE HC_NOINLINE
+
 	#ifndef HC_API
 	#define HC_API __declspec(dllexport, noinline)
-	#define CC_API HC_API
 	#define HC_VAR __declspec(dllexport)
-	#define CC_VAR HC_VAR
 	#endif
 	
 	#define HC_HAS_TYPES
 	#define HC_HAS_MISC
-	#define CC_HAS_TYPES HC_HAS_TYPES
-	#define CC_HAS_MISC HC_HAS_MISC
+
 #elif __GNUC__
 	/* really old GCC/clang might not have these defined */
 	#ifdef __INT8_TYPE__
@@ -121,9 +109,7 @@ typedef unsigned long  hc_uintptr;
 typedef hc_uint32 hc_codepoint;
 typedef hc_uint16 hc_unichar;
 typedef hc_uint8  hc_bool;
-typedef hc_codepoint cc_codepoint;
-typedef hc_unichar cc_unichar;
-typedef hc_bool cc_bool;
+
 #ifdef __APPLE__
 /* TODO: REMOVE THIS AWFUL AWFUL HACK */
 #include <stdbool.h>
@@ -540,11 +526,9 @@ typedef hc_uint8 BlockRaw;
 typedef hc_uint8 EntityID;
 typedef hc_uint8 Face;
 typedef hc_uint32 hc_result;
-typedef hc_result cc_result;
 
 typedef hc_uint64 TimeMS;
 typedef union hc_pointer_ { hc_uintptr val; void* ptr; } hc_pointer;
-typedef hc_pointer cc_pointer;
 
 typedef struct Rect2D_  { int x, y, width, height; } Rect2D;
 typedef struct TextureRec_ { float u1, v1, u2, v2; } TextureRec;
@@ -554,7 +538,6 @@ typedef struct hc_string_ {
 	hc_uint16 length;   /* Number of characters used */
 	hc_uint16 capacity; /* Max number of characters  */
 } hc_string;
-typedef hc_string cc_string;
 /* Indicates that a reference to the buffer in a string argument is persisted after the function has completed.
 Thus it is **NOT SAFE** to allocate a string on the stack. */
 #define STRING_REF
@@ -575,6 +558,26 @@ struct Texture {
 	#define HC_BEGIN_HEADER
 	#define HC_END_HEADER
 #endif
-
+typedef hc_int8 cc_int8;
+typedef hc_int16 cc_int16;
+typedef hc_int32 cc_int32;
+typedef hc_int64 cc_int64;
+typedef hc_uint8 cc_uint8;
+typedef hc_uint16 cc_uint16;
+typedef hc_uint32 cc_uint32;
+typedef hc_uint64 cc_uint64;
+typedef hc_uintptr cc_uintptr;
+typedef hc_string cc_string;
+typedef hc_pointer cc_pointer;
+typedef hc_result cc_result;
+typedef hc_codepoint cc_codepoint;
+typedef hc_unichar cc_unichar;
+typedef hc_bool cc_bool;
+#define CC_INLINE HC_INLINE
+#define CC_NOINLINE HC_NOINLINE
+#define CC_API HC_API
+#define CC_VAR HC_VAR
+#define CC_HAS_TYPES HC_HAS_TYPES
+#define CC_HAS_MISC HC_HAS_MISC
 #endif
 

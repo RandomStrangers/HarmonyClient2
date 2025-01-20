@@ -1141,7 +1141,7 @@ hc_result Updater_GetBuildTime(hc_uint64* timestamp) {
 	path[len] = '\0';
 
 	if (stat(path, &sb) == -1) return errno;
-	*timestamp = (cc_uint64)sb.st_mtime;
+	*timestamp = (hc_uint64)sb.st_mtime;
 	return 0;
 }
 

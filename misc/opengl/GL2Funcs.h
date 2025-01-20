@@ -2,8 +2,8 @@
 GL_FUNC(void,   glBindBuffer)(GLenum target, GLuint buffer);
 GL_FUNC(void,   glDeleteBuffers)(GLsizei n, const GLuint* buffers);
 GL_FUNC(void,   glGenBuffers)(GLsizei n, GLuint *buffers);
-GL_FUNC(void,   glBufferData)(GLenum target, cc_uintptr size, const GLvoid* data, GLenum usage);
-GL_FUNC(void,   glBufferSubData)(GLenum target, cc_uintptr offset, cc_uintptr size, const GLvoid* data);
+GL_FUNC(void,   glBufferData)(GLenum target, hc_uintptr size, const GLvoid* data, GLenum usage);
+GL_FUNC(void,   glBufferSubData)(GLenum target, hc_uintptr offset, hc_uintptr size, const GLvoid* data);
 
 /* Shader functions */
 GL_FUNC(GLuint, glCreateShader)(GLenum type);
