@@ -544,7 +544,7 @@ typedef hc_result cc_result;
 
 typedef hc_uint64 TimeMS;
 typedef union hc_pointer_ { hc_uintptr val; void* ptr; } hc_pointer;
-typedef union cc_pointer_ { cc_uintptr val; void* ptr; } cc_pointer;
+typedef hc_pointer cc_pointer;
 
 typedef struct Rect2D_  { int x, y, width, height; } Rect2D;
 typedef struct TextureRec_ { float u1, v1, u2, v2; } TextureRec;
