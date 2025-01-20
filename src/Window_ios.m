@@ -299,7 +299,7 @@ static CGRect DoCreateWindow(void) {
     UpdateStatusBar();
     
     CGRect bounds = GetViewFrame();
-    win_handle    = [[CCWindow alloc] initWithFrame:bounds];
+    win_handle    = [[HCWindow alloc] initWithFrame:bounds];
     
     win_handle.rootViewController = hc_controller;
     win_handle.backgroundColor = CalcBackgroundColor();
@@ -496,7 +496,7 @@ hc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
     
     open_dlg_callback = args->Callback;
     dlg.delegate = hc_controller;
-    [cc_controller presentViewController:dlg animated:YES completion: Nil];
+    [hc_controller presentViewController:dlg animated:YES completion: Nil];
     return 0; // TODO still unfinished
 }
 
@@ -519,7 +519,7 @@ hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
     dlg = [dlg initWithURL:url inMode:UIDocumentPickerModeExportToService];
     
     dlg.delegate = hc_controller;
-    [cc_controller presentViewController:dlg animated:YES completion: Nil];
+    [hc_controller presentViewController:dlg animated:YES completion: Nil];
     return 0;
 }
 
