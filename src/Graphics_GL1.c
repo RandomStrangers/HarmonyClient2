@@ -280,7 +280,7 @@ void Gfx_SetDynamicVbData(GfxResourceID vb, void* vertices, int vCount) {
 /*########################################################################################################################*
 *----------------------------------------------------------Drawing--------------------------------------------------------*
 *#########################################################################################################################*/
-#ifdef CH_BUILD_GL11
+#ifdef HC_BUILD_GL11
 	/* point to client side dynamic array */
 	#define VB_PTR ((hc_uint8*)dynamicListData)
 	#define IB_PTR gl_indices
@@ -700,7 +700,7 @@ static void FallbackOpenGL(void) {
 /* No point in even trying for other systems */
 static void FallbackOpenGL(void) {
 	Logger_FailToStart("Only OpenGL 1.1 supported.\n\n" \
-		"Compile the game with CC_BUILD_GL11, or ask on the ClassiCube forums for it");
+		"Compile the game with HC_BUILD_GL11, or ask on the ClassiCube forums for it");
 }
 #endif
 
