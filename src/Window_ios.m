@@ -46,10 +46,10 @@ void LogUnhandledNSErrors(NSException* ex);
 @interface HCWindow : UIWindow
 @end
 
-@interface hCViewController : UIViewController<UIDocumentPickerDelegate, UIAlertViewDelegate>
+@interface HCViewController : UIViewController<UIDocumentPickerDelegate, UIAlertViewDelegate>
 @end
 static UIWindow* win_handle;
-static Hc_bool launcherMode;
+static hc_bool launcherMode;
 
 static void AddTouch(UITouch* t) {
     CGPoint loc = [t locationInView:view_handle];
@@ -81,9 +81,9 @@ UIInterfaceOrientationMask SupportedOrientations(void) {
 
 static hc_bool fullscreen = true;
 static void UpdateStatusBar(void) {
-    if ([cc_controller respondsToSelector:@selector(setNeedsStatusBarAppearanceUpdate)]) {
+    if ([hc_controller respondsToSelector:@selector(setNeedsStatusBarAppearanceUpdate)]) {
         // setNeedsStatusBarAppearanceUpdate - iOS 7.0
-        [cc_controller setNeedsStatusBarAppearanceUpdate];
+        [hc_controller setNeedsStatusBarAppearanceUpdate];
     } else {
         [[UIApplication sharedApplication] setStatusBarHidden:fullscreen withAnimation:UIStatusBarAnimationNone];
     }
@@ -518,7 +518,7 @@ hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
     dlg = [UIDocumentPickerViewController alloc];
     dlg = [dlg initWithURL:url inMode:UIDocumentPickerModeExportToService];
     
-    dlg.delegate = cc_controller;
+    dlg.delegate = hc_controller;
     [cc_controller presentViewController:dlg animated:YES completion: Nil];
     return 0;
 }
