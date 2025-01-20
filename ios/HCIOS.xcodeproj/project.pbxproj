@@ -644,7 +644,7 @@
 				9A89D36F27F802B400FF3F80 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;z
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
