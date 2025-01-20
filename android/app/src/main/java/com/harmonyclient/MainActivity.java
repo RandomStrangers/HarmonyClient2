@@ -1,4 +1,4 @@
-package com.classicube;
+package com.harmonyclient;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -172,7 +172,7 @@ public class MainActivity extends Activity
 	void startGameAsync() {
 		Log.i("CC_WIN", "handing off to native..");
 		try {
-			System.loadLibrary("classicube");
+			System.loadLibrary("harmonyclient");
 		} catch (UnsatisfiedLinkError ex) {
 			ex.printStackTrace();
 			showAlertAsync("Failed to start", ex.getMessage());
@@ -430,7 +430,7 @@ public class MainActivity extends Activity
 	
 	void hookMotionListener(View view) {
 		try {
-			CCMotionListener listener = new CCMotionListener(this);
+			HCMotionListener listener = new HCMotionListener(this);
 			view.setOnGenericMotionListener(listener);
 		} catch (Exception ex) {
 			// Unsupported on android 12
@@ -438,7 +438,7 @@ public class MainActivity extends Activity
 	}
 	
 	// SurfaceHolder.Callback - API level 1
-	class CCSurfaceCallback implements SurfaceHolder.Callback {
+	class HCSurfaceCallback implements SurfaceHolder.Callback {
 		public void surfaceCreated(SurfaceHolder holder) {
 			// getSurface - API level 1
 			Log.i("CC_WIN", "win created " + holder.getSurface());
@@ -457,8 +457,8 @@ public class MainActivity extends Activity
 			Log.i("CC_WIN", "cur view " + curView);
 			holder.removeCallback(this);
 			
-			//08-02 21:03:02.967: E/BufferQueueProducer(1350): [SurfaceView - com.classicube.ClassiCube/com.classicube.MainActivity#0] disconnect: not connected (req=2)
-			//08-02 21:03:02.968: E/SurfaceFlinger(1350): Failed to find layer (SurfaceView - com.classicube.ClassiCube/com.classicube.MainActivity#0) in layer parent (no-parent).
+			//08-02 21:03:02.967: E/BufferQueueProducer(1350): [SurfaceView - com.harmonyclient.HarmonyClient/com.harmonyclient.MainActivity#0] disconnect: not connected (req=2)
+			//08-02 21:03:02.968: E/SurfaceFlinger(1350): Failed to find layer (SurfaceView - com.harmonyclient.HarmonyClient/com.harmonyclient.MainActivity#0) in layer parent (no-parent).
 	
 			MainActivity.this.pushCmd(CMD_WIN_DESTROYED);
 			// In case game thread is blocked showing a dialog on main thread
@@ -474,7 +474,7 @@ public class MainActivity extends Activity
 	}
 	
 	// SurfaceHolder.Callback2 - API level 9
-	class CCSurfaceCallback2 extends CCSurfaceCallback implements SurfaceHolder.Callback2 {
+	class HCSurfaceCallback2 extends HCSurfaceCallback implements SurfaceHolder.Callback2 {
 		public void surfaceRedrawNeeded(SurfaceHolder holder) {
 			// getSurface - API level 1
 			Log.i("CC_WIN", "win dirty " + holder.getSurface());
@@ -489,17 +489,17 @@ public class MainActivity extends Activity
 	void createSurfaceCallback() {
 		if (callback != null) return;
 		try {
-			callback = new CCSurfaceCallback2(); 
+			callback = new HCSurfaceCallback2(); 
 		} catch (NoClassDefFoundError ex) {
 			ex.printStackTrace();
-			callback = new CCSurfaceCallback();
+			callback = new HCSurfaceCallback();
 		}
 	}
 	 
 	void attachSurface() {
 		// setContentView, requestFocus, getHolder, addCallback, RGBX_8888 - API level 1
 		createSurfaceCallback();
-		CCView view = new CCView(this);
+		HCView view = new CCView(this);
 		view.getHolder().addCallback(callback);
 		view.getHolder().setFormat(PixelFormat.RGBX_8888);
 
@@ -609,7 +609,7 @@ public class MainActivity extends Activity
 		if (curView == null) return;
 
 		// Try to avoid restarting input if possible
-		CCView view = (CCView)curView;
+		HCView view = (HCView)curView;
 		if (view.kbText != null) {
 			String curText = view.kbText.toString();
 			if (text.equals(curText)) return;
