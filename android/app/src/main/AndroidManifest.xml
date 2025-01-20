@@ -10,7 +10,7 @@
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="18" />
   <uses-sdk android:minSdkVersion="8" android:targetSdkVersion="26"/>
   
-  <application android:icon="@mipmap/ccicon" android:label="Harmony Client">
+  <application android:icon="@mipmap/ccicon" android:label="Harmony Dev Client">
     <provider
         android:name="com.harmonyclient.HCFileProvider"
         android:authorities="com.harmonyclient.android.client.provider"
@@ -18,7 +18,7 @@
         android:grantUriPermissions="true" >
     </provider>
 
-    <activity android:name="com.harmonyclient.MainActivity" android:label="Harmony Client"
+    <activity android:name="com.harmonyclient.MainActivity" android:label="Harmony Dev Client"
               android:configChanges="orientation|screenSize|keyboard|keyboardHidden">
 
       <intent-filter>
