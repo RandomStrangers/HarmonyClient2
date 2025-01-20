@@ -1,10 +1,10 @@
-#ifndef CC_BLOCKID_H
-#define CC_BLOCKID_H
+#ifndef HC_BLOCKID_H
+#define HC_BLOCKID_H
 #include "Core.h" /* TODO: Remove this include when we move to external defines */
 /* List of all core/standard block IDs
    Copyright 2014-2023 ClassiCube | Licensed under BSD-3
 */
-CC_BEGIN_HEADER
+HC_BEGIN_HEADER
 
 enum BLOCKID {
 	/* Classic blocks */
@@ -90,5 +90,5 @@ enum BLOCKID {
 	BLOCK_COUNT = (BLOCK_MAX_DEFINED + 1)
 };
 
-CC_END_HEADER
+HC_END_HEADER
 #endif

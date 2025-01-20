@@ -1,5 +1,5 @@
 #include "Core.h"
-#ifdef CC_BUILD_XBOX360
+#ifdef HC_BUILD_XBOX360
 #include "_GraphicsBase.h"
 #include "Errors.h"
 #include "Window.h"
@@ -67,7 +67,7 @@ void Gfx_Create(void) {
 	Gfx.MaxTexSize   = 512 * 512;
 }
 
-cc_bool Gfx_TryRestoreContext(void) {
+hc_bool Gfx_TryRestoreContext(void) {
 	return true;
 }
 
@@ -102,13 +102,13 @@ static void SetTextureData(struct XenosSurface* xtex, int x, int y, const struct
 	Xe_Surface_Unlock(xe, xtex);
 }
 
-static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8 flags, cc_bool mipmaps) {
+static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, hc_uint8 flags, hc_bool mipmaps) {
 	struct XenosSurface* xtex = Xe_CreateTexture(xe, bmp->width, bmp->height, 1, XE_FMT_8888, 0);
 	SetTextureData(xtex, 0, 0, bmp, rowWidth, 0);
 	return xtex;
 }
 
-void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, cc_bool mipmaps) {
+void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, hc_bool mipmaps) {
 	struct XenosSurface* xtex = (struct XenosSurface*)texId;
 	SetTextureData(xtex, x, y, part, rowWidth, 0);
 }
@@ -132,11 +132,11 @@ void Gfx_DisableMipmaps(void) { } // TODO
 /*########################################################################################################################*
 *-----------------------------------------------------State management----------------------------------------------------*
 *#########################################################################################################################*/
-void Gfx_SetFaceCulling(cc_bool enabled) {
+void Gfx_SetFaceCulling(hc_bool enabled) {
 	Xe_SetCullMode(xe, enabled ? XE_CULL_CW : XE_CULL_NONE);
 }
 
-void Gfx_SetFog(cc_bool enabled) {
+void Gfx_SetFog(hc_bool enabled) {
 	// TODO
 }
 
@@ -156,11 +156,11 @@ void Gfx_SetFogMode(FogFunc func) {
 	// TODO
 }
 
-static void SetAlphaTest(cc_bool enabled) {
+static void SetAlphaTest(hc_bool enabled) {
 	Xe_SetAlphaTestEnable(xe, enabled);
 }
 
-static void SetAlphaBlend(cc_bool enabled) {
+static void SetAlphaBlend(hc_bool enabled) {
 	if (enabled) {
 		Xe_SetBlendControl(xe,
 			XE_BLEND_SRCALPHA, XE_BLENDOP_ADD, XE_BLEND_INVSRCALPHA,
@@ -172,7 +172,7 @@ static void SetAlphaBlend(cc_bool enabled) {
 	}
 }
 
-void Gfx_SetAlphaArgBlend(cc_bool enabled) {
+void Gfx_SetAlphaArgBlend(hc_bool enabled) {
 	// TODO
 }
 
@@ -180,20 +180,20 @@ void Gfx_ClearColor(PackedCol color) {
 	Xe_SetClearColor(xe, color);
 }
 
-void Gfx_SetDepthTest(cc_bool enabled) {
+void Gfx_SetDepthTest(hc_bool enabled) {
 	Xe_SetZEnable(xe, enabled);
 }
 
-void Gfx_SetDepthWrite(cc_bool enabled) {
+void Gfx_SetDepthWrite(hc_bool enabled) {
 	Xe_SetZWrite(xe, enabled);
 }
 
-static void SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a) {
+static void SetColorWrite(hc_bool r, hc_bool g, hc_bool b, hc_bool a) {
 	// TODO
 }
 
-void Gfx_DepthOnlyRendering(cc_bool depthOnly) {
-	cc_bool enabled = !depthOnly;
+void Gfx_DepthOnlyRendering(hc_bool depthOnly) {
+	hc_bool enabled = !depthOnly;
 	SetColorWrite(enabled & gfx_colorMask[0], enabled & gfx_colorMask[1], 
 				  enabled & gfx_colorMask[2], enabled & gfx_colorMask[3]);
 }
@@ -371,11 +371,11 @@ void Gfx_CalcPerspectiveMatrix(struct Matrix* matrix, float fov, float aspect, f
 /*########################################################################################################################*
 *-----------------------------------------------------------Misc----------------------------------------------------------*
 *#########################################################################################################################*/
-cc_result Gfx_TakeScreenshot(struct Stream* output) {
+hc_result Gfx_TakeScreenshot(struct Stream* output) {
 	return ERR_NOT_SUPPORTED;
 }
 
-void Gfx_SetVSync(cc_bool vsync) {
+void Gfx_SetVSync(hc_bool vsync) {
 	gfx_vsync = vsync;
 }
 
@@ -392,10 +392,10 @@ void Gfx_EndFrame(void) {
 	Xe_Sync(xe);
 }
 
-cc_bool Gfx_WarnIfNecessary(void) { return false; }
-cc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
+hc_bool Gfx_WarnIfNecessary(void) { return false; }
+hc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
 
-void Gfx_GetApiInfo(cc_string* info) {
+void Gfx_GetApiInfo(hc_string* info) {
 	String_AppendConst(info, "-- Using XBox 360 --\n");
 	PrintMaxTextureInfo(info);
 }

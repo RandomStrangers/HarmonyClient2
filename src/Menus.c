@@ -116,7 +116,7 @@ int Menu_PointerMove(void* screen, int id, int x, int y) {
 	Menu_DoPointerMove(screen, id, x, y); return true;
 }
 
-static cc_bool Menu_IsSelectable(struct Widget* w) {
+static hc_bool Menu_IsSelectable(struct Widget* w) {
 	if (!w || (w->flags & WIDGET_FLAG_DISABLED)) return false;
 	if (!(w->flags & WIDGET_FLAG_SELECTABLE))    return false;
 
@@ -237,7 +237,7 @@ static struct ListScreen {
 	Widget_LeftClick EntryClick, DoneClick, ActionClick;
 	const char* actionText;
 	void (*LoadEntries)(struct ListScreen* s);
-	void (*UpdateEntry)(struct ListScreen* s, struct ButtonWidget* btn, const cc_string* text);
+	void (*UpdateEntry)(struct ListScreen* s, struct ButtonWidget* btn, const hc_string* text);
 	const char* titleText;
 	struct TextWidget title;
 	struct StringsBuffer entries;
@@ -268,8 +268,8 @@ static void ListScreen_Layout(void* screen) {
 	Widget_SetLocation(&s->title, ANCHOR_CENTRE, ANCHOR_CENTRE,    0, -155);
 }
 
-static STRING_REF cc_string ListScreen_UNSAFE_Get(struct ListScreen* s, int index) {
-	static const cc_string str = String_FromConst(LISTSCREEN_EMPTY);
+static STRING_REF hc_string ListScreen_UNSAFE_Get(struct ListScreen* s, int index) {
+	static const hc_string str = String_FromConst(LISTSCREEN_EMPTY);
 
 	if (index >= 0 && index < s->entries.count) {
 		return StringsBuffer_UNSAFE_Get(&s->entries, index);
@@ -278,7 +278,7 @@ static STRING_REF cc_string ListScreen_UNSAFE_Get(struct ListScreen* s, int inde
 }
 
 static void ListScreen_UpdateTitle(struct ListScreen* s) {
-	cc_string str; char strBuffer[STRING_SIZE];
+	hc_string str; char strBuffer[STRING_SIZE];
 	int num, pages;
 	String_InitArray(str, strBuffer);
 	String_AppendConst(&str, s->titleText);
@@ -300,12 +300,12 @@ static void ListScreen_UpdatePage(struct ListScreen* s) {
 	ListScreen_UpdateTitle(s);
 }
 
-static void ListScreen_UpdateEntry(struct ListScreen* s, struct ButtonWidget* button, const cc_string* text) {
+static void ListScreen_UpdateEntry(struct ListScreen* s, struct ButtonWidget* button, const hc_string* text) {
 	ButtonWidget_Set(button, text, &s->font);
 }
 
 static void ListScreen_RedrawEntries(struct ListScreen* s) {
-	cc_string str;
+	hc_string str;
 	int i;
 	for (i = 0; i < LIST_SCREEN_ITEMS; i++) {
 		str = ListScreen_UNSAFE_Get(s, s->currentIndex + i);
@@ -324,7 +324,7 @@ static void ListScreen_SetCurrentIndex(struct ListScreen* s, int index) {
 	ListScreen_UpdatePage(s);
 }
 
-static void ListScreen_PageClick(struct ListScreen* s, cc_bool forward) {
+static void ListScreen_PageClick(struct ListScreen* s, hc_bool forward) {
 	int delta = forward ? LIST_SCREEN_ITEMS : -LIST_SCREEN_ITEMS;
 	ListScreen_SetCurrentIndex(s, s->currentIndex + delta);
 }
@@ -339,14 +339,14 @@ static void ListScreen_MoveForwards(void* screen, void* b) {
 	ListScreen_PageClick(s, true);
 }
 
-static cc_string ListScreen_UNSAFE_GetCur(struct ListScreen* s, void* widget) {
+static hc_string ListScreen_UNSAFE_GetCur(struct ListScreen* s, void* widget) {
 	struct ButtonWidget* btn = (struct ButtonWidget*)widget;
 	int i = btn->meta.val;
 	return ListScreen_UNSAFE_Get(s, s->currentIndex + i);
 }
 
-static void ListScreen_Select(struct ListScreen* s, const cc_string* str) {
-	cc_string entry;
+static void ListScreen_Select(struct ListScreen* s, const hc_string* str) {
+	hc_string entry;
 	int i;
 
 	for (i = 0; i < s->entries.count; i++) {
@@ -674,7 +674,7 @@ static void OptionsGroupScreen_CheckHacksAllowed(void* screen) {
 	s->dirty = true;
 }
 
-CC_NOINLINE static void OptionsGroupScreen_UpdateDesc(struct OptionsGroupScreen* s) {
+HC_NOINLINE static void OptionsGroupScreen_UpdateDesc(struct OptionsGroupScreen* s) {
 	TextWidget_SetConst(&s->desc, optsGroup_descs[s->selectedI], &s->textFont);
 }
 
@@ -761,7 +761,7 @@ void OptionsGroupScreen_Show(void) {
 static struct EditHotkeyScreen {
 	Screen_Body
 	struct HotkeyData curHotkey, origHotkey;
-	cc_bool supressNextPress;
+	hc_bool supressNextPress;
 	int barX, barY[2], barWidth, barHeight;
 	struct FontDesc titleFont, textFont;
 	struct TextInputWidget input;
@@ -770,14 +770,14 @@ static struct EditHotkeyScreen {
 
 static struct Widget* edithotkey_widgets[1 + 5 + 1];
 
-static void HotkeyListScreen_MakeFlags(int flags, cc_string* str);
-static void EditHotkeyScreen_MakeFlags(int flags, cc_string* str) {
+static void HotkeyListScreen_MakeFlags(int flags, hc_string* str);
+static void EditHotkeyScreen_MakeFlags(int flags, hc_string* str) {
 	if (flags == 0) String_AppendConst(str, " None");
 	HotkeyListScreen_MakeFlags(flags, str);
 }
 
 static void EditHotkeyScreen_UpdateBaseKey(struct EditHotkeyScreen* s) {
-	cc_string text; char textBuffer[STRING_SIZE];
+	hc_string text; char textBuffer[STRING_SIZE];
 	String_InitArray(text, textBuffer);
 
 	if (s->selectedI == 0) {
@@ -790,7 +790,7 @@ static void EditHotkeyScreen_UpdateBaseKey(struct EditHotkeyScreen* s) {
 }
 
 static void EditHotkeyScreen_UpdateModifiers(struct EditHotkeyScreen* s) {
-	cc_string text; char textBuffer[STRING_SIZE];
+	hc_string text; char textBuffer[STRING_SIZE];
 	String_InitArray(text, textBuffer);
 
 	if (s->selectedI == 1) {
@@ -803,7 +803,7 @@ static void EditHotkeyScreen_UpdateModifiers(struct EditHotkeyScreen* s) {
 }
 
 static void EditHotkeyScreen_UpdateLeaveOpen(struct EditHotkeyScreen* s) {
-	cc_string text; char textBuffer[STRING_SIZE];
+	hc_string text; char textBuffer[STRING_SIZE];
 	String_InitArray(text, textBuffer);
 
 	String_AppendConst(&text, "Input stays open: ");
@@ -852,8 +852,8 @@ static void EditHotkeyScreen_SaveChanges(void* screen, void* b) {
 	hk = s->curHotkey;
 
 	if (hk.trigger) {
-		cc_string text    = s->input.base.text;
-		cc_bool staysOpen = hk.flags & HOTKEY_FLAG_STAYS_OPEN;
+		hc_string text    = s->input.base.text;
+		hc_bool staysOpen = hk.flags & HOTKEY_FLAG_STAYS_OPEN;
 
 		Hotkeys_Add(hk.trigger, hk.mods, &text, hk.flags);
 		StoredHotkeys_Add(hk.trigger, hk.mods, staysOpen, &text);
@@ -891,7 +891,7 @@ static int EditHotkeyScreen_KeyPress(void* screen, char keyChar) {
 	return true;
 }
 
-static int EditHotkeyScreen_TextChanged(void* screen, const cc_string* str) {
+static int EditHotkeyScreen_TextChanged(void* screen, const hc_string* str) {
 	struct EditHotkeyScreen* s = (struct EditHotkeyScreen*)screen;
 	InputWidget_SetText(&s->input.base, str);
 	return true;
@@ -928,7 +928,7 @@ static void EditHotkeyScreen_ContextLost(void* screen) {
 
 static void EditHotkeyScreen_ContextRecreated(void* screen) {
 	struct EditHotkeyScreen* s = (struct EditHotkeyScreen*)screen;
-	cc_bool existed = s->origHotkey.trigger != INPUT_NONE;
+	hc_bool existed = s->origHotkey.trigger != INPUT_NONE;
 
 	Gui_MakeTitleFont(&s->titleFont);
 	Gui_MakeBodyFont(&s->textFont);
@@ -972,7 +972,7 @@ static void EditHotkeyScreen_Layout(void* screen) {
 static void EditHotkeyScreen_Init(void* screen) {
 	struct EditHotkeyScreen* s = (struct EditHotkeyScreen*)screen;
 	struct MenuInputDesc desc;
-	cc_string text;
+	hc_string text;
 
 	s->widgets     = edithotkey_widgets;
 	s->numWidgets  = 0;
@@ -1030,10 +1030,10 @@ static struct GenLevelScreen {
 
 static struct Widget* gen_widgets[2 * GENLEVEL_NUM_INPUTS + 4];
 
-CC_NOINLINE static int GenLevelScreen_GetInt(struct GenLevelScreen* s, int index) {
+HC_NOINLINE static int GenLevelScreen_GetInt(struct GenLevelScreen* s, int index) {
 	struct TextInputWidget* input = &s->inputs[index];
 	struct MenuInputDesc* desc;
-	cc_string text = input->base.text;
+	hc_string text = input->base.text;
 	int value;
 
 	desc = &input->desc;
@@ -1041,7 +1041,7 @@ CC_NOINLINE static int GenLevelScreen_GetInt(struct GenLevelScreen* s, int index
 	Convert_ParseInt(&text, &value); return value;
 }
 
-CC_NOINLINE static int GenLevelScreen_GetSeedInt(struct GenLevelScreen* s, int index) {
+HC_NOINLINE static int GenLevelScreen_GetSeedInt(struct GenLevelScreen* s, int index) {
 	struct TextInputWidget* input = &s->inputs[index];
 	RNGState rnd;
 
@@ -1059,7 +1059,7 @@ static void GenLevelScreen_Gen(void* screen, const struct MapGenerator* gen) {
 	int length = GenLevelScreen_GetInt(s, 2);
 	int seed   = GenLevelScreen_GetSeedInt(s, 3);
 
-	cc_uint64 volume = (cc_uint64)width * height * length;
+	hc_uint64 volume = (hc_uint64)width * height * length;
 	if (volume > Int32_MaxValue) {
 		Chat_AddRaw("&cThe generated map's volume is too big.");
 	} else if (!width || !height || !length) {
@@ -1076,7 +1076,7 @@ static void GenLevelScreen_Flatgrass(void* a, void* b) { GenLevelScreen_Gen(a, &
 static void GenLevelScreen_Notchy(void* a, void* b)    { GenLevelScreen_Gen(a, &NotchyGen);    }
 
 static void GenLevelScreen_Make(struct GenLevelScreen* s, int i, int def) {
-	cc_string tmp; char tmpBuffer[STRING_SIZE];
+	hc_string tmp; char tmpBuffer[STRING_SIZE];
 	struct MenuInputDesc desc;
 
 	if (i == 3) {
@@ -1114,7 +1114,7 @@ static int GenLevelScreen_KeyPress(void* screen, char keyChar) {
 	return true;
 }
 
-static int GenLevelScreen_TextChanged(void* screen, const cc_string* str) {
+static int GenLevelScreen_TextChanged(void* screen, const hc_string* str) {
 	struct GenLevelScreen* s = (struct GenLevelScreen*)screen;
 	struct TextInputWidget* selected = GenLevelScreen_SelectedInput(s);
 
@@ -1329,11 +1329,11 @@ static void SaveLevelScreen_RemoveOverwrites(struct SaveLevelScreen* s) {
 	}
 }
 
-static cc_result DoSaveMap(const cc_string* path, struct GZipState* state) {
-	static const cc_string schematic = String_FromConst(".schematic");
-	static const cc_string mine      = String_FromConst(".mine");
+static hc_result DoSaveMap(const hc_string* path, struct GZipState* state) {
+	static const hc_string schematic = String_FromConst(".schematic");
+	static const hc_string mine      = String_FromConst(".mine");
 	struct Stream stream, compStream;
-	cc_result res;
+	hc_result res;
 
 	res = Stream_CreateFile(&stream, path);
 	if (res) { Logger_SysWarn2(res, "creating", path); return res; }
@@ -1362,9 +1362,9 @@ static cc_result DoSaveMap(const cc_string* path, struct GZipState* state) {
 	return 0;
 }
 
-static cc_result SaveLevelScreen_SaveMap(const cc_string* path) {
+static hc_result SaveLevelScreen_SaveMap(const hc_string* path) {
 	struct GZipState* state;
-	cc_result res;
+	hc_result res;
 
 	state = Mem_TryAlloc(1, sizeof(struct GZipState));
 	res   = ERR_OUT_OF_MEMORY;
@@ -1382,10 +1382,10 @@ static cc_result SaveLevelScreen_SaveMap(const cc_string* path) {
 static void SaveLevelScreen_Save(void* screen, void* widget) { 
 	struct SaveLevelScreen* s = (struct SaveLevelScreen*)screen;
 	struct ButtonWidget* btn  = (struct ButtonWidget*)widget;
-	cc_string path; char pathBuffer[FILENAME_SIZE];
-	cc_string file = s->input.base.text;
-	cc_filepath str;
-	cc_result res;
+	hc_string path; char pathBuffer[FILENAME_SIZE];
+	hc_string file = s->input.base.text;
+	hc_filepath str;
+	hc_result res;
 
 	if (!file.length) {
 		TextWidget_SetConst(&s->desc, "&ePlease enter a filename", &s->textFont);
@@ -1408,8 +1408,8 @@ static void SaveLevelScreen_Save(void* screen, void* widget) {
 	Chat_Add1("&eSaved map to: %s", &path);
 }
 
-static void SaveLevelScreen_UploadCallback(const cc_string* path) {
-	cc_result res = SaveLevelScreen_SaveMap(path);
+static void SaveLevelScreen_UploadCallback(const hc_string* path) {
+	hc_result res = SaveLevelScreen_SaveMap(path);
 	if (!res) Chat_Add1("&eSaved map to: %s", path);
 }
 
@@ -1422,7 +1422,7 @@ static void SaveLevelScreen_File(void* screen, void* b) {
 	};
 	struct SaveLevelScreen* s = (struct SaveLevelScreen*)screen;
 	struct SaveFileDialogArgs args;
-	cc_result res;
+	hc_result res;
 
 	args.filters     = filters;
 	args.titles      = titles;
@@ -1444,7 +1444,7 @@ static int SaveLevelScreen_KeyPress(void* screen, char keyChar) {
 	return true;
 }
 
-static int SaveLevelScreen_TextChanged(void* screen, const cc_string* str) {
+static int SaveLevelScreen_TextChanged(void* screen, const hc_string* str) {
 	struct SaveLevelScreen* s = (struct SaveLevelScreen*)screen;
 	SaveLevelScreen_RemoveOverwrites(s);
 	InputWidget_SetText(&s->input.base, str);
@@ -1481,7 +1481,7 @@ static void SaveLevelScreen_ContextRecreated(void* screen) {
 
 	TextInputWidget_SetFont(&s->input,                &s->textFont);
 	ButtonWidget_SetConst(&s->cancel, "Cancel",       &s->titleFont);
-#ifdef CC_BUILD_WEB
+#ifdef HC_BUILD_WEB
 	ButtonWidget_SetConst(&s->file,   "Download",     &s->titleFont);
 #else
 	ButtonWidget_SetConst(&s->file,   "Save file...", &s->titleFont);
@@ -1548,8 +1548,8 @@ void SaveLevelScreen_Show(void) {
 *#########################################################################################################################*/
 static void TexturePackScreen_EntryClick(void* screen, void* widget) {
 	struct ListScreen* s = (struct ListScreen*)screen;
-	cc_string file = ListScreen_UNSAFE_GetCur(s, widget);
-	cc_result res;
+	hc_string file = ListScreen_UNSAFE_GetCur(s, widget);
+	hc_result res;
 
 	TexturePack_SetDefault(&file);
 	TexturePack_Url.length = 0;
@@ -1561,9 +1561,9 @@ static void TexturePackScreen_EntryClick(void* screen, void* widget) {
 	ListScreen_Reload(s);
 }
 
-static void TexturePackScreen_FilterFiles(const cc_string* path, void* obj, int isDirectory) {
-	static const cc_string zip = String_FromConst(".zip");
-	cc_string relPath = *path;
+static void TexturePackScreen_FilterFiles(const hc_string* path, void* obj, int isDirectory) {
+	static const hc_string zip = String_FromConst(".zip");
+	hc_string relPath = *path;
 
 	if (isDirectory) {
 		Directory_Enum(path, obj, TexturePackScreen_FilterFiles);
@@ -1574,14 +1574,14 @@ static void TexturePackScreen_FilterFiles(const cc_string* path, void* obj, int 
 }
 
 static void TexturePackScreen_LoadEntries(struct ListScreen* s) {
-	static const cc_string path = String_FromConst("texpacks");
+	static const hc_string path = String_FromConst("texpacks");
 	Directory_Enum(&path, &s->entries, TexturePackScreen_FilterFiles);
 	StringsBuffer_Sort(&s->entries);
 }
 
-static void TexturePackScreen_UploadCallback(const cc_string* path) {
-#ifdef CC_BUILD_WEB
-	cc_string relPath = *path;
+static void TexturePackScreen_UploadCallback(const hc_string* path) {
+#ifdef HC_BUILD_WEB
+	hc_string relPath = *path;
 	Utils_UNSAFE_GetFilename(&relPath);
 
 	ListScreen_Reload(&ListScreen);
@@ -1602,14 +1602,14 @@ static void TexturePackScreen_ActionFunc(void* s, void* w) {
 		OFD_UPLOAD_PERSIST, "texpacks"
 	};
 
-	cc_result res = Window_OpenFileDialog(&args);
+	hc_result res = Window_OpenFileDialog(&args);
 	if (res) Logger_SimpleWarn(res, "showing open file dialog");
 }
 
 void TexturePackScreen_Show(void) {
 	struct ListScreen* s = &ListScreen;
 	s->titleText   = "Select a texture pack";
-#ifdef CC_BUILD_WEB
+#ifdef HC_BUILD_WEB
 	s->actionText = "Upload";
 #else
 	s->actionText = "Load file...";
@@ -1629,15 +1629,15 @@ void TexturePackScreen_Show(void) {
 *#########################################################################################################################*/
 static void FontListScreen_EntryClick(void* screen, void* widget) {
 	struct ListScreen* s = (struct ListScreen*)screen;
-	cc_string fontName   = ListScreen_UNSAFE_GetCur(s, widget);
+	hc_string fontName   = ListScreen_UNSAFE_GetCur(s, widget);
 
 	Options_Set(OPT_FONT_NAME, &fontName);
 	SysFont_SetDefault(&fontName);
 }
 
-static void FontListScreen_UpdateEntry(struct ListScreen* s, struct ButtonWidget* button, const cc_string* text) {
+static void FontListScreen_UpdateEntry(struct ListScreen* s, struct ButtonWidget* button, const hc_string* text) {
 	struct FontDesc font;
-	cc_result res;
+	hc_result res;
 
 	if (String_CaselessEqualsConst(text, LISTSCREEN_EMPTY)) {
 		ButtonWidget_Set(button, text, &s->font); return;
@@ -1658,12 +1658,12 @@ static void FontListScreen_LoadEntries(struct ListScreen* s) {
 	ListScreen_Select(s, SysFonts_UNSAFE_GetDefault());
 }
 
-static void FontListScreen_RegisterCallback(const cc_string* path) {
+static void FontListScreen_RegisterCallback(const hc_string* path) {
 	Chat_Add1("Loaded font from %s", path);
 }
 
-static void FontListScreen_UploadCallback(const cc_string* path) { 
-	cc_result res = SysFonts_Register(path, FontListScreen_RegisterCallback);
+static void FontListScreen_UploadCallback(const hc_string* path) { 
+	hc_result res = SysFonts_Register(path, FontListScreen_RegisterCallback);
 
 	if (res) {
 		Logger_SimpleWarn2(res, "loading font from", path);
@@ -1682,7 +1682,7 @@ static void FontListScreen_ActionFunc(void* s, void* w) {
 		OFD_UPLOAD_DELETE, "tmp"
 	};
 
-	cc_result res = Window_OpenFileDialog(&args);
+	hc_result res = Window_OpenFileDialog(&args);
 	if (res) Logger_SimpleWarn(res, "showing open file dialog");
 }
 
@@ -1707,7 +1707,7 @@ void FontListScreen_Show(void) {
 static void HotkeyListScreen_EntryClick(void* screen, void* widget) {
 	struct ListScreen* s = (struct ListScreen*)screen;
 	struct HotkeyData h, original = { 0 };
-	cc_string text, key, value;
+	hc_string text, key, value;
 	int trigger;
 	int i, mods = 0;
 
@@ -1727,14 +1727,14 @@ static void HotkeyListScreen_EntryClick(void* screen, void* widget) {
 	EditHotkeyScreen_Show(original);
 }
 
-static void HotkeyListScreen_MakeFlags(int flags, cc_string* str) {
+static void HotkeyListScreen_MakeFlags(int flags, hc_string* str) {
 	if (flags & HOTKEY_MOD_CTRL)  String_AppendConst(str, " Ctrl");
 	if (flags & HOTKEY_MOD_SHIFT) String_AppendConst(str, " Shift");
 	if (flags & HOTKEY_MOD_ALT)   String_AppendConst(str, " Alt");
 }
 
 static void HotkeyListScreen_LoadEntries(struct ListScreen* s) {
-	cc_string text; char textBuffer[STRING_SIZE];
+	hc_string text; char textBuffer[STRING_SIZE];
 	struct HotkeyData hKey;
 	int i;
 	String_InitArray(text, textBuffer);
@@ -1753,7 +1753,7 @@ static void HotkeyListScreen_LoadEntries(struct ListScreen* s) {
 	StringsBuffer_Sort(&s->entries);
 }
 
-static void HotkeyListScreen_UpdateEntry(struct ListScreen* s, struct ButtonWidget* button, const cc_string* text) {
+static void HotkeyListScreen_UpdateEntry(struct ListScreen* s, struct ButtonWidget* button, const hc_string* text) {
 	if (text->length) ButtonWidget_Set(button, text, &s->font);
 }
 
@@ -1780,11 +1780,11 @@ void HotkeyListScreen_Show(void) {
 *----------------------------------------------------LoadLevelScreen------------------------------------------------------*
 *#########################################################################################################################*/
 static void LoadLevelScreen_EntryClick(void* screen, void* widget) {
-	cc_string path; char pathBuffer[FILENAME_SIZE];
+	hc_string path; char pathBuffer[FILENAME_SIZE];
 	struct ListScreen* s = (struct ListScreen*)screen;
-	cc_result res;
+	hc_result res;
 
-	cc_string relPath = ListScreen_UNSAFE_GetCur(s, widget);
+	hc_string relPath = ListScreen_UNSAFE_GetCur(s, widget);
 	String_InitArray(path, pathBuffer);
 	String_Format1(&path, "maps/%s", &relPath);
 	res = Map_LoadFrom(&path);
@@ -1795,9 +1795,9 @@ static void LoadLevelScreen_EntryClick(void* screen, void* widget) {
 	ListScreen_Reload(s);
 }
 
-static void LoadLevelScreen_FilterFiles(const cc_string* path, void* obj, int isDirectory) {
+static void LoadLevelScreen_FilterFiles(const hc_string* path, void* obj, int isDirectory) {
 	struct MapImporter* imp = MapImporter_Find(path);
-	cc_string relPath = *path;
+	hc_string relPath = *path;
 
 	if (isDirectory) {
 		Directory_Enum(path, obj, LoadLevelScreen_FilterFiles);
@@ -1808,12 +1808,12 @@ static void LoadLevelScreen_FilterFiles(const cc_string* path, void* obj, int is
 }
 
 static void LoadLevelScreen_LoadEntries(struct ListScreen* s) {
-	static const cc_string path = String_FromConst("maps");
+	static const hc_string path = String_FromConst("maps");
 	Directory_Enum(&path, &s->entries, LoadLevelScreen_FilterFiles);
 	StringsBuffer_Sort(&s->entries);
 }
 
-static void LoadLevelScreen_UploadCallback(const cc_string* path) { Map_LoadFrom(path); }
+static void LoadLevelScreen_UploadCallback(const hc_string* path) { Map_LoadFrom(path); }
 static void LoadLevelScreen_ActionFunc(void* s, void* w) {
 	static const char* const filters[] = { 
 		".cw", ".dat", ".lvl", ".mine", ".fcm", ".mclevel", NULL 
@@ -1824,14 +1824,14 @@ static void LoadLevelScreen_ActionFunc(void* s, void* w) {
 		OFD_UPLOAD_DELETE, "tmp"
 	};
 
-	cc_result res = Window_OpenFileDialog(&args);
+	hc_result res = Window_OpenFileDialog(&args);
 	if (res) Logger_SimpleWarn(res, "showing open file dialog");
 }
 
 void LoadLevelScreen_Show(void) {
 	struct ListScreen* s = &ListScreen;
 	s->titleText   = "Load level";
-#ifdef CC_BUILD_WEB
+#ifdef HC_BUILD_WEB
 	s->actionText = "Upload";
 #else
 	s->actionText = "Load file...";
@@ -1941,7 +1941,7 @@ static struct KeyBindsScreen {
 	Screen_Body	
 	int curI, bindsCount;
 	const char* const* descs;
-	const cc_uint8* binds;
+	const hc_uint8* binds;
 	Widget_LeftClick leftPage, rightPage;
 	int btnWidth, topY, arrowsY, leftLen;
 	const char* titleText;
@@ -1955,7 +1955,7 @@ static struct KeyBindsScreen {
 static struct Widget* key_widgets[KEYBINDS_MAX_BTNS + 5];
 
 static void KeyBindsScreen_Update(struct KeyBindsScreen* s, int i) {
-	cc_string text; char textBuffer[STRING_SIZE];
+	hc_string text; char textBuffer[STRING_SIZE];
 	BindMapping curBind; 
 
 	String_InitArray(text, textBuffer);
@@ -2112,7 +2112,7 @@ static void KeyBindsScreen_SetLayout(int topY, int arrowsY, int leftLen) {
 	s->arrowsY = arrowsY;
 	s->leftLen = leftLen;
 }
-static void KeyBindsScreen_Show(int bindsCount, const cc_uint8* binds, const char* const* descs, const char* title) {
+static void KeyBindsScreen_Show(int bindsCount, const hc_uint8* binds, const char* const* descs, const char* title) {
 	struct KeyBindsScreen* s = &KeyBindsScreen;
 	s->grabsInput = true;
 	s->closable   = true;
@@ -2130,7 +2130,7 @@ static void KeyBindsScreen_Show(int bindsCount, const cc_uint8* binds, const cha
 *------------------------------------------------ClassicBindingsScreen----------------------------------------------------*
 *#########################################################################################################################*/
 void ClassicBindingsScreen_Show(void) {
-	static const cc_uint8 binds[]    = { BIND_FORWARD, BIND_BACK, BIND_JUMP, BIND_CHAT, BIND_SET_SPAWN, BIND_LEFT, BIND_RIGHT, BIND_INVENTORY, BIND_FOG, BIND_RESPAWN };
+	static const hc_uint8 binds[]    = { BIND_FORWARD, BIND_BACK, BIND_JUMP, BIND_CHAT, BIND_SET_SPAWN, BIND_LEFT, BIND_RIGHT, BIND_INVENTORY, BIND_FOG, BIND_RESPAWN };
 	static const char* const descs[] = { "Forward", "Back", "Jump", "Chat", "Save location", "Left", "Right", "Build", "Toggle fog", "Load location" };
 	bind_device = Input.Sources == INPUT_SOURCE_GAMEPAD ? &Gamepad_Devices[0].base : &NormDevice;
 
@@ -2149,7 +2149,7 @@ void ClassicBindingsScreen_Show(void) {
 *----------------------------------------------ClassicHacksBindingsScreen-------------------------------------------------*
 *#########################################################################################################################*/
 void ClassicHacksBindingsScreen_Show(void) {
-	static const cc_uint8 binds[6]    = { BIND_SPEED, BIND_NOCLIP, BIND_HALF_SPEED, BIND_FLY, BIND_FLY_UP, BIND_FLY_DOWN };
+	static const hc_uint8 binds[6]    = { BIND_SPEED, BIND_NOCLIP, BIND_HALF_SPEED, BIND_FLY, BIND_FLY_UP, BIND_FLY_DOWN };
 	static const char* const descs[6] = { "Speed", "Noclip", "Half speed", "Fly", "Fly up", "Fly down" };
 	bind_device = Input.Sources == INPUT_SOURCE_GAMEPAD ? &Gamepad_Devices[0].base : &NormDevice;
 
@@ -2163,7 +2163,7 @@ void ClassicHacksBindingsScreen_Show(void) {
 *-------------------------------------------------NormalBindingsScreen----------------------------------------------------*
 *#########################################################################################################################*/
 void NormalBindingsScreen_Show(void) {
-	static const cc_uint8 binds[]    = { BIND_FORWARD, BIND_BACK, BIND_JUMP, BIND_CHAT, BIND_SET_SPAWN, BIND_TABLIST, BIND_LEFT, BIND_RIGHT, BIND_INVENTORY, BIND_FOG, BIND_RESPAWN, BIND_SEND_CHAT };
+	static const hc_uint8 binds[]    = { BIND_FORWARD, BIND_BACK, BIND_JUMP, BIND_CHAT, BIND_SET_SPAWN, BIND_TABLIST, BIND_LEFT, BIND_RIGHT, BIND_INVENTORY, BIND_FOG, BIND_RESPAWN, BIND_SEND_CHAT };
 	static const char* const descs[] = { "Forward", "Back", "Jump", "Chat", "Set spawn", "Player list", "Left", "Right", "Inventory", "Toggle fog", "Respawn", "Send chat" };
 	
 	KeyBindsScreen_Reset(NULL, Menu_SwitchBindsHacks, 250);
@@ -2176,7 +2176,7 @@ void NormalBindingsScreen_Show(void) {
 *--------------------------------------------------HacksBindingsScreen----------------------------------------------------*
 *#########################################################################################################################*/
 void HacksBindingsScreen_Show(void) {
-	static const cc_uint8 binds[]    = { BIND_SPEED, BIND_NOCLIP, BIND_HALF_SPEED, BIND_ZOOM_SCROLL, BIND_FLY, BIND_FLY_UP, BIND_FLY_DOWN, BIND_THIRD_PERSON };
+	static const hc_uint8 binds[]    = { BIND_SPEED, BIND_NOCLIP, BIND_HALF_SPEED, BIND_ZOOM_SCROLL, BIND_FLY, BIND_FLY_UP, BIND_FLY_DOWN, BIND_THIRD_PERSON };
 	static const char* const descs[] = { "Speed", "Noclip", "Half speed", "Scroll zoom", "Fly", "Fly up", "Fly down", "Third person" };
 	
 	KeyBindsScreen_Reset(Menu_SwitchBindsNormal, Menu_SwitchBindsOther, 260);
@@ -2189,7 +2189,7 @@ void HacksBindingsScreen_Show(void) {
 *--------------------------------------------------OtherBindingsScreen----------------------------------------------------*
 *#########################################################################################################################*/
 void OtherBindingsScreen_Show(void) {
-	static const cc_uint8 binds[]     = { BIND_EXT_INPUT, BIND_HIDE_FPS, BIND_HIDE_GUI, BIND_HOTBAR_SWITCH, BIND_DROP_BLOCK,BIND_SCREENSHOT, BIND_FULLSCREEN, BIND_AXIS_LINES, BIND_AUTOROTATE, BIND_SMOOTH_CAMERA, BIND_IDOVERLAY, BIND_BREAK_LIQUIDS };
+	static const hc_uint8 binds[]     = { BIND_EXT_INPUT, BIND_HIDE_FPS, BIND_HIDE_GUI, BIND_HOTBAR_SWITCH, BIND_DROP_BLOCK,BIND_SCREENSHOT, BIND_FULLSCREEN, BIND_AXIS_LINES, BIND_AUTOROTATE, BIND_SMOOTH_CAMERA, BIND_IDOVERLAY, BIND_BREAK_LIQUIDS };
 	static const char* const descs[]  = { "Show ext input", "Hide FPS", "Hide gui", "Hotbar switching", "Drop block", "Screenshot", "Fullscreen", "Show axis lines", "Auto-rotate", "Smooth camera", "ID overlay", "Breakable liquids" };
 	
 	KeyBindsScreen_Reset(Menu_SwitchBindsHacks, Menu_SwitchBindsMouse, 260);
@@ -2202,7 +2202,7 @@ void OtherBindingsScreen_Show(void) {
 *--------------------------------------------------MouseBindingsScreen----------------------------------------------------*
 *#########################################################################################################################*/
 void MouseBindingsScreen_Show(void) {
-	static const cc_uint8 binds[]    = { BIND_DELETE_BLOCK, BIND_PICK_BLOCK, BIND_PLACE_BLOCK, BIND_LOOK_UP, BIND_LOOK_DOWN, BIND_LOOK_LEFT, BIND_LOOK_RIGHT };
+	static const hc_uint8 binds[]    = { BIND_DELETE_BLOCK, BIND_PICK_BLOCK, BIND_PLACE_BLOCK, BIND_LOOK_UP, BIND_LOOK_DOWN, BIND_LOOK_LEFT, BIND_LOOK_RIGHT };
 	static const char* const descs[] = { "Delete block", "Pick block", "Place block", "Look Up", "Look Down", "Look Left", "Look Right" };
 
 	KeyBindsScreen_Reset(Menu_SwitchBindsOther, Menu_SwitchBindsHotbar, 260);
@@ -2216,7 +2216,7 @@ void MouseBindingsScreen_Show(void) {
 *-------------------------------------------------HotbarBindingsScreen----------------------------------------------------*
 *#########################################################################################################################*/
 void HotbarBindingsScreen_Show(void) {
-	static const cc_uint8 binds[] = { BIND_HOTBAR_1,BIND_HOTBAR_2,BIND_HOTBAR_3, BIND_HOTBAR_4,BIND_HOTBAR_5,BIND_HOTBAR_6, BIND_HOTBAR_7,BIND_HOTBAR_8,BIND_HOTBAR_9,
+	static const hc_uint8 binds[] = { BIND_HOTBAR_1,BIND_HOTBAR_2,BIND_HOTBAR_3, BIND_HOTBAR_4,BIND_HOTBAR_5,BIND_HOTBAR_6, BIND_HOTBAR_7,BIND_HOTBAR_8,BIND_HOTBAR_9,
 										BIND_HOTBAR_LEFT, BIND_HOTBAR_RIGHT };
 	static const char* const descs[] = { "Slot #1","Slot #2","Slot #3", "Slot #4","Slot #5","Slot #6", "Slot #7","Slot #8","Slot #9", "Slot left","Slot right" };
 
@@ -2232,25 +2232,25 @@ void HotbarBindingsScreen_Show(void) {
 *#########################################################################################################################*/
 static struct MenuInputOverlay {
 	Screen_Body
-	cc_bool screenMode;
+	hc_bool screenMode;
 	struct FontDesc textFont;
 	struct ButtonWidget ok, Default;
 	struct TextInputWidget input;
 	struct MenuInputDesc* desc;
 	MenuInputDone onDone;
-	cc_string value; char valueBuffer[STRING_SIZE];
+	hc_string value; char valueBuffer[STRING_SIZE];
 } MenuInputOverlay;
 
 static struct Widget* menuInput_widgets[2 + 1];
 
-void MenuInputOverlay_Close(cc_bool valid) {
+void MenuInputOverlay_Close(hc_bool valid) {
 	struct MenuInputOverlay* s = (struct MenuInputOverlay*)&MenuInputOverlay;
 	Gui_Remove((struct Screen*)s);
 	s->onDone(&s->input.base.text, valid);
 }
 
 static void MenuInputOverlay_EnterInput(struct MenuInputOverlay* s) {
-	cc_bool valid = s->desc->VTABLE->IsValidValue(s->desc, &s->input.base.text);
+	hc_bool valid = s->desc->VTABLE->IsValidValue(s->desc, &s->input.base.text);
 	MenuInputOverlay_Close(valid);
 }
 
@@ -2260,7 +2260,7 @@ static int MenuInputOverlay_KeyPress(void* screen, char keyChar) {
 	return true;
 }
 
-static int MenuInputOverlay_TextChanged(void* screen, const cc_string* str) {
+static int MenuInputOverlay_TextChanged(void* screen, const hc_string* str) {
 	struct MenuInputOverlay* s = (struct MenuInputOverlay*)screen;
 	InputWidget_SetText(&s->input.base, str);
 	return true;
@@ -2293,7 +2293,7 @@ static void MenuInputOverlay_OK(void* screen, void* widget) {
 }
 
 static void MenuInputOverlay_Default(void* screen, void* widget) {
-	cc_string value; char valueBuffer[STRING_SIZE];
+	hc_string value; char valueBuffer[STRING_SIZE];
 	struct MenuInputOverlay* s = (struct MenuInputOverlay*)screen;
 
 	String_InitArray(value, valueBuffer);
@@ -2380,7 +2380,7 @@ static const struct ScreenVTABLE MenuInputOverlay_VTABLE = {
 	MenuInputOverlay_PointerDown, Screen_PointerUp, MenuInputOverlay_PointerMove, Screen_TMouseScroll,
 	MenuInputOverlay_Layout,      MenuInputOverlay_ContextLost, MenuInputOverlay_ContextRecreated
 };
-void MenuInputOverlay_Show(struct MenuInputDesc* desc, const cc_string* value, MenuInputDone onDone, cc_bool screenMode) {
+void MenuInputOverlay_Show(struct MenuInputDesc* desc, const hc_string* value, MenuInputDone onDone, hc_bool screenMode) {
 	struct MenuInputOverlay* s = &MenuInputOverlay;
 	s->grabsInput = true;
 	s->closable   = true;
@@ -2463,8 +2463,8 @@ static void TexIdsOverlay_ContextLost(void* screen) {
 }
 
 static void TexIdsOverlay_ContextRecreated(void* screen) {
-	static const cc_string chars  = String_FromConst("0123456789");
-	static const cc_string prefix = String_FromConst("f");
+	static const hc_string chars  = String_FromConst("0123456789");
+	static const hc_string prefix = String_FromConst("f");
 	struct TexIdsOverlay* s = (struct TexIdsOverlay*)screen;
 	struct FontDesc textFont, titleFont;
 
@@ -2624,7 +2624,7 @@ void TexIdsOverlay_Show(void) {
 *#########################################################################################################################*/
 static struct UrlWarningOverlay {
 	Screen_Body
-	cc_string url;
+	hc_string url;
 	struct ButtonWidget btns[2];
 	struct TextWidget   lbls[4];
 	char _urlBuffer[STRING_SIZE * 4];
@@ -2634,7 +2634,7 @@ static struct Widget* urlwarning_widgets[4 + 2];
 
 static void UrlWarningOverlay_OpenUrl(void* screen, void* b) {
 	struct UrlWarningOverlay* s = (struct UrlWarningOverlay*)screen;
-	cc_result res = Process_StartOpen(&s->url);
+	hc_result res = Process_StartOpen(&s->url);
 	if (res) Logger_SimpleWarn2(res, "opening url in browser", &s->url);
 	Gui_Remove((struct Screen*)s);
 }
@@ -2690,7 +2690,7 @@ static const struct ScreenVTABLE UrlWarningOverlay_VTABLE = {
 	Menu_PointerDown,         Screen_PointerUp,   Menu_PointerMove, Screen_TMouseScroll,
 	UrlWarningOverlay_Layout, Screen_ContextLost, UrlWarningOverlay_ContextRecreated
 };
-void UrlWarningOverlay_Show(const cc_string* url) {
+void UrlWarningOverlay_Show(const hc_string* url) {
 	struct UrlWarningOverlay* s = &UrlWarningOverlay;
 	s->grabsInput = true;
 	s->closable   = true;
@@ -2707,9 +2707,9 @@ void UrlWarningOverlay_Show(const cc_string* url) {
 *#########################################################################################################################*/
 static struct TexPackOverlay {
 	Screen_Body
-	cc_bool deny, alwaysDeny, gotContent;
-	cc_uint32 contentLength;
-	cc_string url;
+	hc_bool deny, alwaysDeny, gotContent;
+	hc_uint32 contentLength;
+	hc_string url;
 	int reqID;
 	struct FontDesc textFont;
 	struct ButtonWidget btns[4];
@@ -2719,7 +2719,7 @@ static struct TexPackOverlay {
 
 static struct Widget* texpack_widgets[4 + 4];
 
-static cc_bool TexPackOverlay_IsAlways(void* screen, void* w) { 
+static hc_bool TexPackOverlay_IsAlways(void* screen, void* w) { 
 	struct ButtonWidget* btn = (struct ButtonWidget*)w;
 	return btn->meta.val != 0;
 }
@@ -2751,9 +2751,9 @@ static void TexPackOverlay_GoBackClick(void* screen, void* b) {
 }
 
 static void TexPackOverlay_UpdateLine2(struct TexPackOverlay* s) {
-	static const cc_string https = String_FromConst("https://");
-	static const cc_string http  = String_FromConst("http://");
-	cc_string url = String_Empty;
+	static const hc_string https = String_FromConst("https://");
+	static const hc_string http  = String_FromConst("http://");
+	hc_string url = String_Empty;
 
 	if (!s->deny) {
 		url = s->url;
@@ -2768,7 +2768,7 @@ static void TexPackOverlay_UpdateLine2(struct TexPackOverlay* s) {
 }
 
 static void TexPackOverlay_UpdateLine3(struct TexPackOverlay* s) {
-	cc_string contents; char contentsBuffer[STRING_SIZE];
+	hc_string contents; char contentsBuffer[STRING_SIZE];
 	float contentLengthMB;
 
 	if (s->deny) {
@@ -2871,7 +2871,7 @@ static const struct ScreenVTABLE TexPackOverlay_VTABLE = {
 	Menu_PointerDown,      Screen_PointerUp,      Menu_PointerMove, Screen_TMouseScroll,
 	TexPackOverlay_Layout, TexPackOverlay_ContextLost, TexPackOverlay_ContextRecreated
 };
-void TexPackOverlay_Show(const cc_string* url) {
+void TexPackOverlay_Show(const hc_string* url) {
 	struct TexPackOverlay* s = &TexPackOverlay;
 	s->grabsInput = true;
 	/* Too easy to accidentally ESC this important dialog */

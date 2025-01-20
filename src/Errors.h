@@ -1,12 +1,12 @@
-#ifndef CC_ERRORS_H
-#define CC_ERRORS_H
+#ifndef HC_ERRORS_H
+#define HC_ERRORS_H
 /*
 Provides a list list of internal ClassiCube errors
 Copyright 2014-2023 ClassiCube | Licensed under BSD-3
 */
 
 /* NOTE: When adding errors, remember to keep Logger.c up to date! */
-enum CC_ERRORS {
+enum HC_ERRORS {
 	ERROR_BASE           = 0xCCDED000UL,
 	ERR_END_OF_STREAM    = 0xCCDED001UL, /* Attempted to read more data than the stream provided */
 	ERR_NOT_SUPPORTED    = 0xCCDED002UL, /* Operation is not supported in current state or at all */

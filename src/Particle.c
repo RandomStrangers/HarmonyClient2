@@ -10,7 +10,7 @@
 #include "Game.h"
 #include "Event.h"
 
-#ifdef CC_BUILD_TINYMEM
+#ifdef HC_BUILD_TINYMEM
 	#define PARTICLES_MAX 10
 #else
 	#define PARTICLES_MAX 600
@@ -22,8 +22,8 @@
 *#########################################################################################################################*/
 static GfxResourceID particles_TexId, particles_VB;
 static RNGState rnd;
-static cc_bool hitTerrain;
-typedef cc_bool (*CanPassThroughFunc)(BlockID b);
+static hc_bool hitTerrain;
+typedef hc_bool (*CanPassThroughFunc)(BlockID b);
 
 void Particle_DoRender(const Vec2* size, const Vec3* pos, const TextureRec* rec, PackedCol col, struct VertexTextured* v) {
 	struct Matrix* view;
@@ -44,7 +44,7 @@ void Particle_DoRender(const Vec2* size, const Vec3* pos, const TextureRec* rec,
 	v->x = centre.x + aX - bX; v->y = centre.y + aY - bY; v->z = centre.z + aZ - bZ; v->Col = col; v->U = rec->u2; v->V = rec->v2; v++;
 }
 
-static cc_bool CollidesHor(Vec3* nextPos, BlockID block) {
+static hc_bool CollidesHor(Vec3* nextPos, BlockID block) {
 	Vec3 horPos = Vec3_Create3((float)Math_Floor(nextPos->x), 0.0f, (float)Math_Floor(nextPos->z));
 	Vec3 min, max;
 	Vec3_Add(&min, &Blocks.MinBB[block], &horPos);
@@ -60,11 +60,11 @@ static BlockID GetBlock(int x, int y, int z) {
 	return Env.SidesBlock;
 }
 
-static cc_bool ClipY(struct Particle* p, int y, cc_bool topFace, CanPassThroughFunc canPassThrough) {
+static hc_bool ClipY(struct Particle* p, int y, hc_bool topFace, CanPassThroughFunc canPassThrough) {
 	BlockID block;
 	Vec3 minBB, maxBB;
 	float collideY;
-	cc_bool collideVer;
+	hc_bool collideVer;
 
 	if (y < 0) {
 		p->nextPos.y = ENTITY_ADJUSTMENT; 
@@ -94,7 +94,7 @@ static cc_bool ClipY(struct Particle* p, int y, cc_bool topFace, CanPassThroughF
 	return true;
 }
 
-static cc_bool IntersectsBlock(struct Particle* p, CanPassThroughFunc canPassThrough) {
+static hc_bool IntersectsBlock(struct Particle* p, CanPassThroughFunc canPassThrough) {
 	BlockID cur = GetBlock((int)p->nextPos.x, (int)p->nextPos.y, (int)p->nextPos.z);
 	float minY  = Math_Floor(p->nextPos.y) + Blocks.MinBB[cur].y;
 	float maxY  = Math_Floor(p->nextPos.y) + Blocks.MaxBB[cur].y;
@@ -102,7 +102,7 @@ static cc_bool IntersectsBlock(struct Particle* p, CanPassThroughFunc canPassThr
 	return !canPassThrough(cur) && p->nextPos.y >= minY && p->nextPos.y < maxY && CollidesHor(&p->nextPos, cur);
 }
 
-static cc_bool PhysicsTick(struct Particle* p, float gravity, CanPassThroughFunc canPassThrough, float delta) {
+static hc_bool PhysicsTick(struct Particle* p, float gravity, CanPassThroughFunc canPassThrough, float delta) {
 	Vec3 velocity;
 	int y, begY, endY;
 
@@ -135,12 +135,12 @@ static struct Particle rain_Particles[PARTICLES_MAX];
 static int rain_count;
 static TextureRec rain_rec = { 2.0f/128.0f, 14.0f/128.0f, 5.0f/128.0f, 16.0f/128.0f };
 
-static cc_bool RainParticle_CanPass(BlockID block) {
-	cc_uint8 draw = Blocks.Draw[block];
+static hc_bool RainParticle_CanPass(BlockID block) {
+	hc_uint8 draw = Blocks.Draw[block];
 	return draw == DRAW_GAS || draw == DRAW_SPRITE;
 }
 
-static cc_bool RainParticle_Tick(struct Particle* p, float delta) {
+static hc_bool RainParticle_Tick(struct Particle* p, float delta) {
 	hitTerrain = false;
 	return PhysicsTick(p, 3.5f, RainParticle_CanPass, delta) || hitTerrain;
 }
@@ -229,15 +229,15 @@ struct TerrainParticle {
 
 static struct TerrainParticle terrain_particles[PARTICLES_MAX];
 static int terrain_count;
-static cc_uint16 terrain_1DCount[ATLAS1D_MAX_ATLASES];
-static cc_uint16 terrain_1DIndices[ATLAS1D_MAX_ATLASES];
+static hc_uint16 terrain_1DCount[ATLAS1D_MAX_ATLASES];
+static hc_uint16 terrain_1DIndices[ATLAS1D_MAX_ATLASES];
 
-static cc_bool TerrainParticle_CanPass(BlockID block) {
-	cc_uint8 draw = Blocks.Draw[block];
+static hc_bool TerrainParticle_CanPass(BlockID block) {
+	hc_uint8 draw = Blocks.Draw[block];
 	return draw == DRAW_GAS || draw == DRAW_SPRITE || Blocks.IsLiquid[block];
 }
 
-static cc_bool TerrainParticle_Tick(struct TerrainParticle* p, float delta) {
+static hc_bool TerrainParticle_Tick(struct TerrainParticle* p, float delta) {
 	return PhysicsTick(&p->base, Blocks.ParticleGravity[p->block], TerrainParticle_CanPass, delta);
 }
 
@@ -409,7 +409,7 @@ void Particles_BreakBlockEffect(IVec3 coords, BlockID old, BlockID now) {
 /*########################################################################################################################*
 *-------------------------------------------------------Custom particle---------------------------------------------------*
 *#########################################################################################################################*/
-#ifdef CC_BUILD_NETWORKING
+#ifdef HC_BUILD_NETWORKING
 struct CustomParticle {
 	struct Particle base;
 	int effectId;
@@ -419,14 +419,14 @@ struct CustomParticle {
 struct CustomParticleEffect Particles_CustomEffects[256];
 static struct CustomParticle custom_particles[PARTICLES_MAX];
 static int custom_count;
-static cc_uint8 collideFlags;
+static hc_uint8 collideFlags;
 #define EXPIRES_UPON_TOUCHING_GROUND (1 << 0)
 #define SOLID_COLLIDES  (1 << 1)
 #define LIQUID_COLLIDES (1 << 2)
 #define LEAF_COLLIDES   (1 << 3)
 
-static cc_bool CustomParticle_CanPass(BlockID block) {
-	cc_uint8 draw, collide;
+static hc_bool CustomParticle_CanPass(BlockID block) {
+	hc_uint8 draw, collide;
 	
 	draw = Blocks.Draw[block];
 	if (draw == DRAW_TRANSPARENT_THICK && !(collideFlags & LEAF_COLLIDES)) return true;
@@ -437,7 +437,7 @@ static cc_bool CustomParticle_CanPass(BlockID block) {
 	return true;
 }
 
-static cc_bool CustomParticle_Tick(struct CustomParticle* p, float delta) {
+static hc_bool CustomParticle_Tick(struct CustomParticle* p, float delta) {
 	struct CustomParticleEffect* e = &Particles_CustomEffects[p->effectId];
 	hitTerrain   = false;
 	collideFlags = e->collideFlags;
@@ -592,7 +592,7 @@ static void Particles_Tick(struct ScheduledTask* task) {
 /*########################################################################################################################*
 *---------------------------------------------------Particles component---------------------------------------------------*
 *#########################################################################################################################*/
-static void ParticlesPngProcess(struct Stream* stream, const cc_string* name) {
+static void ParticlesPngProcess(struct Stream* stream, const hc_string* name) {
 	Game_UpdateTexture(&particles_TexId, stream, name, NULL, NULL);
 }
 static struct TextureEntry particles_entry = { "particles.png", ParticlesPngProcess };

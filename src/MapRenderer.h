@@ -1,8 +1,8 @@
-#ifndef CC_MAPRENDERER_H
-#define CC_MAPRENDERER_H
+#ifndef HC_MAPRENDERER_H
+#define HC_MAPRENDERER_H
 #include "Core.h"
 #include "Constants.h"
-CC_BEGIN_HEADER
+HC_BEGIN_HEADER
 
 /* Renders the blocks of the world by subdividing it into chunks.
    Also manages the process of building/deleting chunk meshes.
@@ -22,39 +22,39 @@ extern struct ChunkPartInfo* MapRenderer_PartsTranslucent;
 
 /* Describes a portion of the data needed for rendering a chunk. */
 struct ChunkPartInfo {
-#ifdef CC_BUILD_GL11
+#ifdef HC_BUILD_GL11
 	/* 1 VB per face, another VB for sprites */
 	#define CHUNKPART_MAX_VBS (FACE_COUNT + 1)
 	GfxResourceID vbs[CHUNKPART_MAX_VBS];
 #endif
 	int offset;      /* -1 if no vertices at all */
 	int spriteCount; /* Sprite vertices count */
-	cc_uint16 counts[FACE_COUNT]; /* Counts per face */
+	hc_uint16 counts[FACE_COUNT]; /* Counts per face */
 };
 
 /* Describes data necessary for rendering a chunk. */
 struct ChunkInfo {	
-	cc_uint16 centreX, centreY, centreZ; /* Centre coordinates of the chunk */
+	hc_uint16 centreX, centreY, centreZ; /* Centre coordinates of the chunk */
 
-	cc_uint8 visible : 1; /* Whether chunk is visible to the player */
-	cc_uint8 empty : 1;   /* Whether the chunk is empty of data and is known to have no data */
-	cc_uint8 dirty : 1;   /* Whether chunk is pending being rebuilt */
-	cc_uint8 allAir : 1;  /* Whether chunk is completely air */
-	cc_uint8 noData : 1;  /* Whether the chunk is currently empty of data, but may have data if built */
-	cc_uint8 : 0;         /* pad to next byte*/
+	hc_uint8 visible : 1; /* Whether chunk is visible to the player */
+	hc_uint8 empty : 1;   /* Whether the chunk is empty of data and is known to have no data */
+	hc_uint8 dirty : 1;   /* Whether chunk is pending being rebuilt */
+	hc_uint8 allAir : 1;  /* Whether chunk is completely air */
+	hc_uint8 noData : 1;  /* Whether the chunk is currently empty of data, but may have data if built */
+	hc_uint8 : 0;         /* pad to next byte*/
 
-	cc_uint8 drawXMin : 1;
-	cc_uint8 drawXMax : 1;
-	cc_uint8 drawZMin : 1;
-	cc_uint8 drawZMax : 1;
-	cc_uint8 drawYMin : 1;
-	cc_uint8 drawYMax : 1;
-	cc_uint8 : 0;          /* pad to next byte */
+	hc_uint8 drawXMin : 1;
+	hc_uint8 drawXMax : 1;
+	hc_uint8 drawZMin : 1;
+	hc_uint8 drawZMax : 1;
+	hc_uint8 drawYMin : 1;
+	hc_uint8 drawYMax : 1;
+	hc_uint8 : 0;          /* pad to next byte */
 #ifdef OCCLUSION
-	public cc_bool Visited = false, Occluded = false;
+	public hc_bool Visited = false, Occluded = false;
 	public byte OcclusionFlags, OccludedFlags, DistanceFlags;
 #endif
-#ifndef CC_BUILD_GL11
+#ifndef HC_BUILD_GL11
 	GfxResourceID vb;
 #endif
 	struct ChunkPartInfo* normalParts;
@@ -78,5 +78,5 @@ void MapRenderer_OnBlockChanged(int x, int y, int z, BlockID block);
 /* Deletes all chunks and resets internal state. */
 void MapRenderer_Refresh(void);
 
-CC_END_HEADER
+HC_END_HEADER
 #endif

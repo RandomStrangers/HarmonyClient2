@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_XBOX
+#if defined HC_BUILD_XBOX
 #include "_PlatformBase.h"
 #include "Stream.h"
 #include "Funcs.h"
@@ -17,15 +17,15 @@
 #include <nxdk/mount.h>
 #include "_PlatformConsole.h"
 
-const cc_result ReturnCode_FileShareViolation = ERROR_SHARING_VIOLATION;
-const cc_result ReturnCode_FileNotFound     = ERROR_FILE_NOT_FOUND;
-const cc_result ReturnCode_DirectoryExists  = ERROR_ALREADY_EXISTS;
-const cc_result ReturnCode_SocketInProgess  = EINPROGRESS;
-const cc_result ReturnCode_SocketWouldBlock = EWOULDBLOCK;
-const cc_result ReturnCode_SocketDropped    = EPIPE;
+const hc_result ReturnCode_FileShareViolation = ERROR_SHARING_VIOLATION;
+const hc_result ReturnCode_FileNotFound     = ERROR_FILE_NOT_FOUND;
+const hc_result ReturnCode_DirectoryExists  = ERROR_ALREADY_EXISTS;
+const hc_result ReturnCode_SocketInProgess  = EINPROGRESS;
+const hc_result ReturnCode_SocketWouldBlock = EWOULDBLOCK;
+const hc_result ReturnCode_SocketDropped    = EPIPE;
 
-const char* Platform_AppNameSuffix = " XBox";
-cc_bool Platform_ReadonlyFilesystem;
+const char* Platform_AppNameSuffix = " (XBox)";
+hc_bool Platform_ReadonlyFilesystem;
 
 
 /*########################################################################################################################*
@@ -67,13 +67,13 @@ void DateTime_CurrentLocal(struct DateTime* t) {
 }
 
 /* TODO: check this is actually accurate */
-static cc_uint64 sw_freqDiv = 1;
-cc_uint64 Stopwatch_ElapsedMicroseconds(cc_uint64 beg, cc_uint64 end) {
+static hc_uint64 sw_freqDiv = 1;
+hc_uint64 Stopwatch_ElapsedMicroseconds(hc_uint64 beg, hc_uint64 end) {
 	if (end < beg) return 0;
 	return ((end - beg) * 1000000ULL) / sw_freqDiv;
 }
 
-cc_uint64 Stopwatch_Measure(void) {
+hc_uint64 Stopwatch_Measure(void) {
 	return KeQueryPerformanceCounter();
 }
 
@@ -86,10 +86,10 @@ static void Stopwatch_Init(void) {
 /*########################################################################################################################*
 *-----------------------------------------------------Directory/File------------------------------------------------------*
 *#########################################################################################################################*/
-static cc_string root_path = String_FromConst("E:\\ClassiCube\\");
+static hc_string root_path = String_FromConst("E:\\HarmonyClient\\");
 static BOOL hdd_mounted;
 
-void Platform_EncodePath(cc_filepath* dst, const cc_string* path) {
+void Platform_EncodePath(hc_filepath* dst, const hc_string* path) {
 	char* str = dst->buffer;
 	Mem_Copy(str, root_path.buffer, root_path.length);
 	str += root_path.length;
@@ -104,22 +104,22 @@ void Platform_EncodePath(cc_filepath* dst, const cc_string* path) {
 	*str = '\0';
 }
 
-cc_result Directory_Create(const cc_filepath* path) {
+hc_result Directory_Create(const hc_filepath* path) {
 	if (!hdd_mounted) return ERR_NOT_SUPPORTED;
 	
 	return CreateDirectoryA(path->buffer, NULL) ? 0 : GetLastError();
 }
 
-int File_Exists(const cc_filepath* path) {
+int File_Exists(const hc_filepath* path) {
 	if (!hdd_mounted) return 0;
 	
 	DWORD attribs = GetFileAttributesA(path->buffer);
 	return attribs != INVALID_FILE_ATTRIBUTES && !(attribs & FILE_ATTRIBUTE_DIRECTORY);
 }
 
-static void Directory_EnumCore(const cc_string* dirPath, const cc_string* file, DWORD attribs,
+static void Directory_EnumCore(const hc_string* dirPath, const hc_string* file, DWORD attribs,
 									void* obj, Directory_EnumCallback callback) {
-	cc_string path; char pathBuffer[MAX_PATH + 10];
+	hc_string path; char pathBuffer[MAX_PATH + 10];
 	/* ignore . and .. entry */
 	if (file->length == 1 && file->buffer[0] == '.') return;
 	if (file->length == 2 && file->buffer[0] == '.' && file->buffer[1] == '.') return;
@@ -131,14 +131,14 @@ static void Directory_EnumCore(const cc_string* dirPath, const cc_string* file, 
 	callback(&path, obj, is_dir);
 }
 
-cc_result Directory_Enum(const cc_string* dirPath, void* obj, Directory_EnumCallback callback) {
+hc_result Directory_Enum(const hc_string* dirPath, void* obj, Directory_EnumCallback callback) {
 	if (!hdd_mounted) return ERR_NOT_SUPPORTED;
 	
-	cc_string path; char pathBuffer[MAX_PATH + 10];
+	hc_string path; char pathBuffer[MAX_PATH + 10];
 	WIN32_FIND_DATAA eA;
-	cc_filepath str;
+	hc_filepath str;
 	HANDLE find;
-	cc_result res;	
+	hc_result res;	
 
 	/* Need to append \* to search for files in directory */
 	String_InitArray(path, pathBuffer);
@@ -162,53 +162,53 @@ cc_result Directory_Enum(const cc_string* dirPath, void* obj, Directory_EnumCall
 	return res == ERROR_NO_MORE_FILES ? 0 : res;
 }
 
-static cc_result DoFile(cc_file* file, const char* path, DWORD access, DWORD createMode) {
+static hc_result DoFile(hc_file* file, const char* path, DWORD access, DWORD createMode) {
 	*file = CreateFileA(path, access, FILE_SHARE_READ, NULL, createMode, 0, NULL);
 	return *file != INVALID_HANDLE_VALUE ? 0 : GetLastError();
 }
 
-cc_result File_Open(cc_file* file, const cc_filepath* path) {
+hc_result File_Open(hc_file* file, const hc_filepath* path) {
 	if (!hdd_mounted) return ReturnCode_FileNotFound;
 	return DoFile(file, path->buffer, GENERIC_READ, OPEN_EXISTING);
 }
 
-cc_result File_Create(cc_file* file, const cc_filepath* path) {
+hc_result File_Create(hc_file* file, const hc_filepath* path) {
 	if (!hdd_mounted) return ERR_NOT_SUPPORTED;
 	return DoFile(file, path->buffer, GENERIC_WRITE | GENERIC_READ, CREATE_ALWAYS);
 }
 
-cc_result File_OpenOrCreate(cc_file* file, const cc_filepath* path) {
+hc_result File_OpenOrCreate(hc_file* file, const hc_filepath* path) {
 	if (!hdd_mounted) return ERR_NOT_SUPPORTED;
 	return DoFile(file, path->buffer, GENERIC_WRITE | GENERIC_READ, OPEN_ALWAYS);
 }
 
-cc_result File_Read(cc_file file, void* data, cc_uint32 count, cc_uint32* bytesRead) {
+hc_result File_Read(hc_file file, void* data, hc_uint32 count, hc_uint32* bytesRead) {
 	BOOL success = ReadFile(file, data, count, bytesRead, NULL);
 	return success ? 0 : GetLastError();
 }
 
-cc_result File_Write(cc_file file, const void* data, cc_uint32 count, cc_uint32* bytesWrote) {
+hc_result File_Write(hc_file file, const void* data, hc_uint32 count, hc_uint32* bytesWrote) {
 	BOOL success = WriteFile(file, data, count, bytesWrote, NULL);
 	return success ? 0 : GetLastError();
 }
 
-cc_result File_Close(cc_file file) {
+hc_result File_Close(hc_file file) {
 	NTSTATUS status = NtClose(file);
 	return NT_SUCCESS(status) ? 0 : status;
 }
 
-cc_result File_Seek(cc_file file, int offset, int seekType) {
-	static cc_uint8 modes[3] = { FILE_BEGIN, FILE_CURRENT, FILE_END };
+hc_result File_Seek(hc_file file, int offset, int seekType) {
+	static hc_uint8 modes[3] = { FILE_BEGIN, FILE_CURRENT, FILE_END };
 	DWORD pos = SetFilePointer(file, offset, NULL, modes[seekType]);
 	return pos != INVALID_SET_FILE_POINTER ? 0 : GetLastError();
 }
 
-cc_result File_Position(cc_file file, cc_uint32* pos) {
+hc_result File_Position(hc_file file, hc_uint32* pos) {
 	*pos = SetFilePointer(file, 0, NULL, FILE_CURRENT);
 	return *pos != INVALID_SET_FILE_POINTER ? 0 : GetLastError();
 }
 
-cc_result File_Length(cc_file file, cc_uint32* len) {
+hc_result File_Length(hc_file file, hc_uint32* len) {
 	*len = GetFileSize(file, NULL);
 	return *len != INVALID_FILE_SIZE ? 0 : GetLastError();
 }
@@ -225,7 +225,7 @@ static void WaitForSignal(HANDLE handle, LARGE_INTEGER* duration) {
 	}
 }
 
-void Thread_Sleep(cc_uint32 milliseconds) { Sleep(milliseconds); }
+void Thread_Sleep(hc_uint32 milliseconds) { Sleep(milliseconds); }
 static DWORD WINAPI ExecThread(void* param) {
 	Thread_StartFunc func = (Thread_StartFunc)param;
 	func();
@@ -291,7 +291,7 @@ void Waitable_Wait(void* handle) {
 	WaitForSignal((HANDLE)handle, NULL);
 }
 
-void Waitable_WaitFor(void* handle, cc_uint32 milliseconds) {
+void Waitable_WaitFor(void* handle, hc_uint32 milliseconds) {
 	LARGE_INTEGER duration;
 	duration.QuadPart = ((LONGLONG)milliseconds) * -10000; // negative for relative timeout
 
@@ -302,9 +302,9 @@ void Waitable_WaitFor(void* handle, cc_uint32 milliseconds) {
 /*########################################################################################################################*
 *---------------------------------------------------------Socket----------------------------------------------------------*
 *#########################################################################################################################*/
-cc_result Socket_ParseAddress(const cc_string* address, int port, cc_sockaddr* addrs, int* numValidAddrs) {
+hc_result Socket_ParseAddress(const hc_string* address, int port, hc_sockaddr* addrs, int* numValidAddrs) {
 	char str[NATIVE_STR_LEN];
-	char portRaw[32]; cc_string portStr;
+	char portRaw[32]; hc_string portStr;
 	struct addrinfo hints = { 0 };
 	struct addrinfo* result;
 	struct addrinfo* cur;
@@ -334,7 +334,7 @@ cc_result Socket_ParseAddress(const cc_string* address, int port, cc_sockaddr* a
 	return i == 0 ? ERR_INVALID_ARGUMENT : 0;
 }
 
-cc_result Socket_Create(cc_socket* s, cc_sockaddr* addr, cc_bool nonblocking) {
+hc_result Socket_Create(hc_socket* s, hc_sockaddr* addr, hc_bool nonblocking) {
 	struct sockaddr* raw = (struct sockaddr*)addr->data;
 
 	*s = lwip_socket(raw->sa_family, SOCK_STREAM, 0);
@@ -347,31 +347,31 @@ cc_result Socket_Create(cc_socket* s, cc_sockaddr* addr, cc_bool nonblocking) {
 	return 0;
 }
 
-cc_result Socket_Connect(cc_socket s, cc_sockaddr* addr) {
+hc_result Socket_Connect(hc_socket s, hc_sockaddr* addr) {
 	struct sockaddr* raw = (struct sockaddr*)addr->data;
 
 	int res = lwip_connect(s, raw, addr->size);
 	return res == -1 ? errno : 0;
 }
 
-cc_result Socket_Read(cc_socket s, cc_uint8* data, cc_uint32 count, cc_uint32* modified) {
+hc_result Socket_Read(hc_socket s, hc_uint8* data, hc_uint32 count, hc_uint32* modified) {
 	int recvCount = lwip_recv(s, data, count, 0);
 	if (recvCount != -1) { *modified = recvCount; return 0; }
 	*modified = 0; return errno;
 }
 
-cc_result Socket_Write(cc_socket s, const cc_uint8* data, cc_uint32 count, cc_uint32* modified) {
+hc_result Socket_Write(hc_socket s, const hc_uint8* data, hc_uint32 count, hc_uint32* modified) {
 	int sentCount = lwip_send(s, data, count, 0);
 	if (sentCount != -1) { *modified = sentCount; return 0; }
 	*modified = 0; return errno;
 }
 
-void Socket_Close(cc_socket s) {
+void Socket_Close(hc_socket s) {
 	lwip_shutdown(s, SHUT_RDWR);
 	lwip_close(s);
 }
 
-static cc_result Socket_Poll(cc_socket s, int mode, cc_bool* success) {
+static hc_result Socket_Poll(hc_socket s, int mode, hc_bool* success) {
 	struct pollfd pfd;
 	int flags;
 
@@ -385,13 +385,13 @@ static cc_result Socket_Poll(cc_socket s, int mode, cc_bool* success) {
 	return 0;
 }
 
-cc_result Socket_CheckReadable(cc_socket s, cc_bool* readable) {
+hc_result Socket_CheckReadable(hc_socket s, hc_bool* readable) {
 	return Socket_Poll(s, SOCKET_POLL_READ, readable);
 }
 
-cc_result Socket_CheckWritable(cc_socket s, cc_bool* writable) {
+hc_result Socket_CheckWritable(hc_socket s, hc_bool* writable) {
 	socklen_t resultSize = sizeof(socklen_t);
-	cc_result res = Socket_Poll(s, SOCKET_POLL_WRITE, writable);
+	hc_result res = Socket_Poll(s, SOCKET_POLL_WRITE, writable);
 	if (res || *writable) return res;
 
 	/* https://stackoverflow.com/questions/29479953/so-error-value-after-successful-socket-operation */
@@ -415,14 +415,14 @@ static void InitHDD(void) {
 		return;
 	}
 	
-	cc_filepath* root = FILEPATH_RAW(root_path.buffer);
+	hc_filepath* root = FILEPATH_RAW(root_path.buffer);
 	Directory_Create(root);
 }
 
 void Platform_Init(void) {
 	InitHDD();
 	Stopwatch_Init();
-#ifndef CC_BUILD_CXBX
+#ifndef HC_BUILD_CXBX
 	nxNetInit(NULL);
 #endif
 }
@@ -430,12 +430,12 @@ void Platform_Init(void) {
 void Platform_Free(void) {
 }
 
-cc_bool Platform_DescribeError(cc_result res, cc_string* dst) {
+hc_bool Platform_DescribeError(hc_result res, hc_string* dst) {
 	return false;
 }
 
-cc_bool Process_OpenSupported = false;
-cc_result Process_StartOpen(const cc_string* args) {
+hc_bool Process_OpenSupported = false;
+hc_result Process_StartOpen(const hc_string* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
@@ -445,7 +445,7 @@ cc_result Process_StartOpen(const cc_string* args) {
 *#########################################################################################################################*/
 #define MACHINE_KEY "XboxXboxXboxXbox"
 
-static cc_result GetMachineID(cc_uint32* key) {
+static hc_result GetMachineID(hc_uint32* key) {
 	Mem_Copy(key, MACHINE_KEY, sizeof(MACHINE_KEY) - 1);
 	return 0;
 }

@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_PS3
+#if defined HC_BUILD_PS3
 #include "_GraphicsBase.h"
 #include "Errors.h"
 #include "Logger.h"
@@ -7,7 +7,7 @@
 #include <malloc.h>
 #include <rsx/rsx.h>
 #include <sysutil/video.h>
-static cc_bool renderingDisabled;
+static hc_bool renderingDisabled;
 
 static gcmContextData* context;
 static u32 cur_fb;
@@ -19,7 +19,7 @@ static u32 cur_fb;
 /*########################################################################################################################*
 *----------------------------------------------------- Vertex Shaders ----------------------------------------------------*
 *#########################################################################################################################*/
-typedef struct CCVertexProgram {
+typedef struct HCVertexProgram {
 	rsxVertexProgram* prog;
 	void* ucode;
 	rsxProgramConst* mvp;
@@ -33,7 +33,7 @@ extern const u8 vs_offset_vpo[];
 static VertexProgram  VP_list[3];
 static VertexProgram* VP_active;
 
-static cc_bool textureOffseting;
+static hc_bool textureOffseting;
 static float textureOffset[4] __attribute__((aligned(16)));
 static struct Matrix mvp      __attribute__((aligned(64)));
 
@@ -82,7 +82,7 @@ static void VP_UpdateUniforms() {
 /*########################################################################################################################*
 *---------------------------------------------------- Fragment Shaders ---------------------------------------------------*
 *#########################################################################################################################*/
-typedef struct CCFragmentProgram {
+typedef struct HCFragmentProgram {
 	rsxFragmentProgram* prog;
 	void* ucode;
 	u32* buffer;
@@ -266,9 +266,9 @@ void Gfx_Create(void) {
 void Gfx_Free(void) { Gfx_FreeState(); }
 
 
-cc_bool Gfx_TryRestoreContext(void) { return true; }
-cc_bool Gfx_WarnIfNecessary(void)   { return false; }
-cc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
+hc_bool Gfx_TryRestoreContext(void) { return true; }
+hc_bool Gfx_WarnIfNecessary(void)   { return false; }
+hc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
 
 void Gfx_RestoreState(void) {
 	InitDefaultResources();
@@ -303,38 +303,38 @@ void Gfx_TransferImage(u32 offset, s32 w, s32 h) {
 /*########################################################################################################################*
 *-----------------------------------------------------State management----------------------------------------------------*
 *#########################################################################################################################*/
-static cc_uint32 clearColor;
+static hc_uint32 clearColor;
 
-void Gfx_SetFaceCulling(cc_bool enabled) {
+void Gfx_SetFaceCulling(hc_bool enabled) {
 	rsxSetCullFaceEnable(context, enabled);
 }
 
-static void SetAlphaBlend(cc_bool enabled) {
+static void SetAlphaBlend(hc_bool enabled) {
 	rsxSetBlendEnable(context, enabled);
 }
-void Gfx_SetAlphaArgBlend(cc_bool enabled) { }
+void Gfx_SetAlphaArgBlend(hc_bool enabled) { }
 
 void Gfx_ClearColor(PackedCol color) {
-	cc_uint32 R = PackedCol_R(color);
-	cc_uint32 G = PackedCol_G(color);
-	cc_uint32 B = PackedCol_B(color);
+	hc_uint32 R = PackedCol_R(color);
+	hc_uint32 G = PackedCol_G(color);
+	hc_uint32 B = PackedCol_B(color);
 
 	clearColor  = B | (G << 8) | (R << 16) | (0xFF << 24);
 }
 
-void Gfx_SetDepthWrite(cc_bool enabled) {
+void Gfx_SetDepthWrite(hc_bool enabled) {
 	rsxSetDepthWriteEnable(context, enabled);
 }
 
-void Gfx_SetDepthTest(cc_bool enabled) {
+void Gfx_SetDepthTest(hc_bool enabled) {
 	rsxSetDepthTestEnable(context, enabled);
 }
 
-static void SetAlphaTest(cc_bool enabled) {
+static void SetAlphaTest(hc_bool enabled) {
 	rsxSetAlphaTestEnable(context, enabled);
 }
 
-static void SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a) {
+static void SetColorWrite(hc_bool r, hc_bool g, hc_bool b, hc_bool a) {
 	unsigned mask = 0;
 	if (r) mask |= GCM_COLOR_MASK_R;
 	if (g) mask |= GCM_COLOR_MASK_G;
@@ -344,8 +344,8 @@ static void SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a) {
 	rsxSetColorMask(context, mask);
 }
 
-void Gfx_DepthOnlyRendering(cc_bool depthOnly) {
-	cc_bool enabled = !depthOnly;
+void Gfx_DepthOnlyRendering(hc_bool depthOnly) {
+	hc_bool enabled = !depthOnly;
 	SetColorWrite(enabled & gfx_colorMask[0], enabled & gfx_colorMask[1], 
 				  enabled & gfx_colorMask[2], enabled & gfx_colorMask[3]);
 }
@@ -389,18 +389,18 @@ void Gfx_CalcPerspectiveMatrix(struct Matrix* matrix, float fov, float aspect, f
 /*########################################################################################################################*
 *-----------------------------------------------------------Misc----------------------------------------------------------*
 *#########################################################################################################################*/
-cc_result Gfx_TakeScreenshot(struct Stream* output) {
+hc_result Gfx_TakeScreenshot(struct Stream* output) {
 	return ERR_NOT_SUPPORTED;
 }
 
-void Gfx_GetApiInfo(cc_string* info) {
+void Gfx_GetApiInfo(hc_string* info) {
 	int pointerSize = sizeof(void*) * 8;
 
 	String_Format1(info, "-- Using PS3 (%i bit) --\n", &pointerSize);
 	PrintMaxTextureInfo(info);
 }
 
-void Gfx_SetVSync(cc_bool vsync) {
+void Gfx_SetVSync(hc_bool vsync) {
 	gfx_vsync = vsync;
 }
 
@@ -432,7 +432,7 @@ static void ResetFrameState(void) {
 }
 
 // https://github.com/ps3dev/PSL1GHT/blob/master/ppu/include/rsx/rsx.h#L30
-static cc_bool everFlipped;
+static hc_bool everFlipped;
 void Gfx_WaitFlip(void) {
 	if (everFlipped) {
 		while (gcmGetFlipStatus() != 0) usleep(200);
@@ -575,15 +575,15 @@ void Gfx_DeleteDynamicVb(GfxResourceID* vb) { Gfx_DeleteVb(vb); }
 /*########################################################################################################################*
 *---------------------------------------------------------Textures--------------------------------------------------------*
 *#########################################################################################################################*/
-typedef struct CCTexture_ {
-	cc_uint32 width, height;
-	cc_uint32 pad[(128 - 8)/4]; // TODO better way of aligning to 128 bytes
-	cc_uint32 pixels[];
-} CCTexture;
+typedef struct HCTexture_ {
+	hc_uint32 width, height;
+	hc_uint32 pad[(128 - 8)/4]; // TODO better way of aligning to 128 bytes
+	hc_uint32 pixels[];
+} HCTexture;
 
-static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8 flags, cc_bool mipmaps) {
+static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, hc_uint8 flags, hc_bool mipmaps) {
 	int size = bmp->width * bmp->height * 4;
-	CCTexture* tex = (CCTexture*)rsxMemalign(128, 128 + size);
+	HCTexture* tex = (HCTexture*)rsxMemalign(128, 128 + size);
 	
 	tex->width  = bmp->width;
 	tex->height = bmp->height;
@@ -593,7 +593,7 @@ static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8
 }
 
 void Gfx_BindTexture(GfxResourceID texId) {
-	CCTexture* tex = (CCTexture*)texId;
+	HCTexture* tex = (HCTexture*)texId;
 	if (!tex) tex  = white_square; 
 	/* TODO */
 	
@@ -635,8 +635,8 @@ void Gfx_DeleteTexture(GfxResourceID* texId) {
 	*texId = NULL;
 }
 
-void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, cc_bool mipmaps) {
-	CCTexture* tex = (CCTexture*)texId;
+void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, hc_bool mipmaps) {
+	HCTexture* tex = (HCTexture*)texId;
 	
 	// NOTE: Only valid for LINEAR textures
 	BitmapCol* dst = (tex->pixels + x) + y * tex->width;	
@@ -654,7 +654,7 @@ void Gfx_DisableMipmaps(void) { }
 /*########################################################################################################################*
 *-----------------------------------------------------State management----------------------------------------------------*
 *#########################################################################################################################*/
-void Gfx_SetFog(cc_bool enabled) {/* TODO */
+void Gfx_SetFog(hc_bool enabled) {/* TODO */
 }
 
 void Gfx_SetFogCol(PackedCol color) {/* TODO */

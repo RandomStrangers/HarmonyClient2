@@ -1,7 +1,7 @@
-#ifndef CC_WINDOW_H
-#define CC_WINDOW_H
+#ifndef HC_WINDOW_H
+#define HC_WINDOW_H
 #include "Core.h"
-CC_BEGIN_HEADER
+HC_BEGIN_HEADER
 
 /* 
 Abstracts interaction with a windowing system (creating window, moving cursor, etc)
@@ -18,7 +18,7 @@ enum KeyboardType { KEYBOARD_TYPE_TEXT, KEYBOARD_TYPE_NUMBER, KEYBOARD_TYPE_PASS
 /* (can't name these structs Window/Display, as that conflicts with X11's Window/Display typedef) */
 
 /* Data for the display monitor. */
-CC_VAR extern struct _DisplayData {
+HC_VAR extern struct _DisplayData {
 	/* Number of bits per pixel. (red bits + green bits + blue bits + alpha bits) */
 	/* NOTE: Only 24 or 32 bits per pixel are officially supported. */
 	/* Support for other values of bits per pixel is platform dependent. */
@@ -33,11 +33,11 @@ CC_VAR extern struct _DisplayData {
 	/* Size/Dimensions of this display in pixels. */
 	int Width, Height;
 	/* Whether accounting for system DPI scaling is enabled */
-	cc_bool DPIScaling;
+	hc_bool DPIScaling;
 	/* Whether the soft keyboard is currently being shown */
-	cc_bool ShowingSoftKeyboard;
+	hc_bool ShowingSoftKeyboard;
 	/* Whether the cursor is currently visible */
-	cc_bool CursorVisible;
+	hc_bool CursorVisible;
 	/* Amount to offset content near the edges of the window by */
 	/*  Mainly intended for when the game is rendered on TV displays, where */
 	/*  pixels on the edges of the screen may be hidden due to overscan */
@@ -45,31 +45,31 @@ CC_VAR extern struct _DisplayData {
 } DisplayInfo;
 
 /* Scales the given X coordinate from 96 dpi to current display dpi. */
-static CC_INLINE int Display_ScaleX(int x) { return (int)(x * DisplayInfo.ScaleX); }
+static HC_INLINE int Display_ScaleX(int x) { return (int)(x * DisplayInfo.ScaleX); }
 /* Scales the given Y coordinate from 96 dpi to current display dpi. */
-static CC_INLINE int Display_ScaleY(int y) { return (int)(y * DisplayInfo.ScaleY); }
+static HC_INLINE int Display_ScaleY(int y) { return (int)(y * DisplayInfo.ScaleY); }
 
 /* Data for a window */
-struct cc_window {
+struct hc_window {
 	/* Readonly platform-specific handle to the window. */
-	cc_pointer Handle;
+	hc_pointer Handle;
 	/* Size of the content area of the window. (i.e. area that can draw to) */
 	/* This area does NOT include borders and titlebar surrounding the window. */
 	int Width, Height;
 	/* Whether the window is actually valid (i.e. not destroyed). */
-	cc_bool Exists;
+	hc_bool Exists;
 	/* Whether the user is interacting with the window. */
-	cc_bool Focused;
+	hc_bool Focused;
 	/* The type of on-screen keyboard this platform supports. (usually SOFT_KEYBOARD_NONE) */
-	cc_uint8 SoftKeyboard;
+	hc_uint8 SoftKeyboard;
 	/* Whether this window is backgrounded / inactivated */
 	/* (rendering is not performed when window is inactive) */
-	cc_bool Inactive;
+	hc_bool Inactive;
 	/* Whether input should be ignored due to soft keyboard being open */
-	cc_bool SoftKeyboardFocus;
+	hc_bool SoftKeyboardFocus;
 	/* Whether on-screen keyboard should be instantly opened when an input field is selected */
 	/* Otherwise, the on-screen keyboard is only opened when the input field is clicked */
-	cc_uint8 SoftKeyboardInstant;
+	hc_uint8 SoftKeyboardInstant;
 	/* Scale factors specifically for some in-game elements (e.g. chat) */
 	/*  that vary their elements based on the window dimensions */
 	float UIScaleX, UIScaleY;
@@ -79,10 +79,10 @@ struct cc_window {
 #define DEFAULT_UI_SCALE_Y (1.0f / 480)
 
 /* Data for the game/launcher window */
-CC_VAR extern struct cc_window WindowInfo; /* Named WindowInfo for backwards compatibility */
+HC_VAR extern struct hc_window WindowInfo; /* Named WindowInfo for backwards compatibility */
 #define Window_Main WindowInfo
 /* Data for alternate game window (e.g. 3DS) */
-extern struct cc_window Window_Alt;
+extern struct hc_window Window_Alt;
 
 /* Initialises necessary state before initing platform and loading options */
 void Window_PreInit(void);
@@ -100,23 +100,23 @@ void Window_Create3D(int width, int height);
 void Window_Destroy(void);
 
 /* Sets the text of the titlebar above the window. */
-CC_API void Window_SetTitle(const cc_string* title);
+HC_API void Window_SetTitle(const hc_string* title);
 
 /* Gets the text currently on the clipboard. */
 /* NOTE: On most platforms this function can be called at any time. */
 /* In web backend, can only be called during INPUT_CLIPBOARD_PASTE event. */
-CC_API void Clipboard_GetText(cc_string* value);
+HC_API void Clipboard_GetText(hc_string* value);
 /* Sets the text currently on the clipboard. */
 /* NOTE: On most platforms this function can be called at any time. */
 /* In web backend, can only be called during INPUT_CLIPBOARD_COPY event. */
-CC_API void Clipboard_SetText(const cc_string* value);
+HC_API void Clipboard_SetText(const hc_string* value);
 
 /* Gets the current state of the window, see WindowState enum. */
 int Window_GetWindowState(void);
 /* Attempts to switch the window to occupy the entire screen. */
-cc_result Window_EnterFullscreen(void);
+hc_result Window_EnterFullscreen(void);
 /* Attempts to restore the window to before it entered full screen. */
-cc_result Window_ExitFullscreen(void);
+hc_result Window_ExitFullscreen(void);
 /* Returns non-zero if the window is obscured (occluded or minimised) */
 /* NOTE: Not supported by all windowing backends */
 int Window_IsObscured(void);
@@ -141,16 +141,16 @@ void Gamepads_Process(float delta);
 /* NOTE: This should be avoided because it is unsupported on some platforms. */
 void Cursor_SetPosition(int x, int y);
 /* Shows a dialog box window. */
-CC_API void Window_ShowDialog(const char* title, const char* msg);
+HC_API void Window_ShowDialog(const char* title, const char* msg);
 
 #define OFD_UPLOAD_DELETE  0 /* (webclient) Deletes the uploaded file after invoking callback function */
 #define OFD_UPLOAD_PERSIST 1 /* (webclient) Saves the uploded file into IndexedDB */
-typedef void (*FileDialogCallback)(const cc_string* path);
+typedef void (*FileDialogCallback)(const hc_string* path);
 
 struct SaveFileDialogArgs {
 	const char* const* filters; /* File extensions to limit dialog to showing (e.g. ".zip", NULL) */
 	const char* const* titles;  /* Descriptions to show for each file extension */
-	cc_string defaultName;      /* Default filename (without extension), required by some backends */
+	hc_string defaultName;      /* Default filename (without extension), required by some backends */
 	FileDialogCallback Callback;
 };
 struct OpenFileDialogArgs {
@@ -161,9 +161,9 @@ struct OpenFileDialogArgs {
 	const char* uploadFolder; /* For webclient, folder to upload the file to */
 };
 /* Shows an 'load file' dialog window */
-cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args);
+hc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args);
 /* Shows an 'save file' dialog window */
-cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args);
+hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args);
 
 /* Allocates a framebuffer that can be drawn/transferred to the window. */
 /* NOTE: Do NOT free bmp->Scan0, use Window_FreeFramebuffer. */
@@ -177,12 +177,12 @@ void Window_DrawFramebuffer(Rect2D r, struct Bitmap* bmp);
 void Window_FreeFramebuffer(struct Bitmap* bmp);
 
 struct OpenKeyboardArgs { 
-	const cc_string* text; 
+	const hc_string* text; 
 	int type, yOffset;
 	const char* placeholder; 
-	cc_bool opaque, multiline; 
+	hc_bool opaque, multiline; 
 };
-static CC_INLINE void OpenKeyboardArgs_Init(struct OpenKeyboardArgs* args, STRING_REF const cc_string* text, int type) {
+static HC_INLINE void OpenKeyboardArgs_Init(struct OpenKeyboardArgs* args, STRING_REF const hc_string* text, int type) {
 	args->text    = text;
 	args->type    = type;
 	args->yOffset = 0;
@@ -199,11 +199,11 @@ void OnscreenKeyboard_Open(struct OpenKeyboardArgs* args);
 /*  because it is backed by a HTML input, rather than true keyboard input events. */
 /* As such, this is necessary to ensure the HTML input is consistent with */
 /*  whatever text input widget is actually being displayed on screen. */
-void OnscreenKeyboard_SetText(const cc_string* text);
+void OnscreenKeyboard_SetText(const hc_string* text);
 /* Hides/Removes the previously displayed on-screen keyboard. */
 void OnscreenKeyboard_Close(void);
 /* Locks/Unlocks the landscape orientation. */
-void Window_LockLandscapeOrientation(cc_bool lock);
+void Window_LockLandscapeOrientation(hc_bool lock);
 
 /* Begins listening for raw input and starts raising PointerEvents.RawMoved. */
 /* NOTE: Some backends only raise it when Window_UpdateRawMouse is called. */
@@ -216,7 +216,7 @@ void Window_UpdateRawMouse(void);
 void Window_DisableRawMouse(void);
 
 /* OpenGL contexts are heavily tied to the window, so for simplicitly are also provided here */
-#if CC_GFX_BACKEND_IS_GL()
+#if HC_GFX_BACKEND_IS_GL()
 #define GLCONTEXT_DEFAULT_DEPTH 24
 /* Creates an OpenGL context, then makes it the active context. */
 /* NOTE: You MUST have created the window beforehand, as the GL context is attached to the window. */
@@ -238,10 +238,10 @@ void* GLContext_GetAddress(const char* function);
 cc_bool GLContext_SwapBuffers(void);
 /* Sets whether synchronisation with the monitor is enabled. */
 /* NOTE: The implementation may choose to still ignore this. */
-void GLContext_SetVSync(cc_bool vsync);
+void GLContext_SetVSync(hc_bool vsync);
 /* Gets OpenGL context specific graphics information. */
-void GLContext_GetApiInfo(cc_string* info);
+void GLContext_GetApiInfo(hc_string* info);
 #endif
 
-CC_END_HEADER
+HC_END_HEADER
 #endif

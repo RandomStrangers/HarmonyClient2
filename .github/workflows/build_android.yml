@@ -44,20 +44,20 @@ jobs:
           chmod +x build-tools/zipalign
 
           cd $ROOT_DIR/src
-          $NDK_ROOT/armv7a-linux-androideabi19-clang *.c $DROID_FLAGS -march=armv5 $DROID_LIBS $LATEST_FLAG -o cc-droid-arm_16
-          $NDK_ROOT/armv7a-linux-androideabi19-clang *.c $DROID_FLAGS $DROID_LIBS $LATEST_FLAG -o cc-droid-arm_32
-          $NDK_ROOT/aarch64-linux-android21-clang *.c $DROID_FLAGS $DROID_LIBS $LATEST_FLAG -o cc-droid-arm_64
-          $NDK_ROOT/i686-linux-android21-clang *.c $DROID_FLAGS $DROID_LIBS $LATEST_FLAG -o cc-droid-x86_32
-          $NDK_ROOT/x86_64-linux-android21-clang *.c $DROID_FLAGS $DROID_LIBS $LATEST_FLAG -o cc-droid-x86_64
+          $NDK_ROOT/armv7a-linux-androideabi19-clang *.c $DROID_FLAGS -march=armv5 $DROID_LIBS $LATEST_FLAG -o hc-droid-arm_16
+          $NDK_ROOT/armv7a-linux-androideabi19-clang *.c $DROID_FLAGS $DROID_LIBS $LATEST_FLAG -o hc-droid-arm_32
+          $NDK_ROOT/aarch64-linux-android21-clang *.c $DROID_FLAGS $DROID_LIBS $LATEST_FLAG -o hc-droid-arm_64
+          $NDK_ROOT/i686-linux-android21-clang *.c $DROID_FLAGS $DROID_LIBS $LATEST_FLAG -o hc-droid-x86_32
+          $NDK_ROOT/x86_64-linux-android21-clang *.c $DROID_FLAGS $DROID_LIBS $LATEST_FLAG -o hc-droid-x86_64
           
           cd $ROOT_DIR/android/app/src/main
           # copy required native libraries
           mkdir lib lib/armeabi lib/armeabi-v7a lib/arm64-v8a lib/x86 lib/x86_64
-          cp $ROOT_DIR/src/cc-droid-arm_16 lib/armeabi/libclassicube.so
-          cp $ROOT_DIR/src/cc-droid-arm_32 lib/armeabi-v7a/libclassicube.so
-          cp $ROOT_DIR/src/cc-droid-arm_64 lib/arm64-v8a/libclassicube.so
-          cp $ROOT_DIR/src/cc-droid-x86_32 lib/x86/libclassicube.so
-          cp $ROOT_DIR/src/cc-droid-x86_64 lib/x86_64/libclassicube.so
+          cp $ROOT_DIR/src/hc-droid-arm_16 lib/armeabi/libharmonyclient.so
+          cp $ROOT_DIR/src/hc-droid-arm_32 lib/armeabi-v7a/libharmonyclient.so
+          cp $ROOT_DIR/src/hc-droid-arm_64 lib/arm64-v8a/libharmonyclient.so
+          cp $ROOT_DIR/src/hc-droid-x86_32 lib/x86/libharmonyclient.so
+          cp $ROOT_DIR/src/hc-droid-x86_64 lib/x86_64/libharmonyclient.so
           
           # The following commands are for manually building an .apk, see
           #  https://spin.atomicobject.com/2011/08/22/building-android-application-bundles-apks-by-hand/
@@ -67,7 +67,7 @@ jobs:
           #  https://github.com/skanti/Android-Manual-Build-Command-Line/blob/master/hello-jni/CMakeLists.txt
           
           # compile java files into multiple .class files
-          cd $ROOT_DIR/android/app/src/main/java/com/classicube
+          cd $ROOT_DIR/android/app/src/main/java/com/harmonyclient
           javac *.java -d $ROOT_DIR/android/app/src/main/obj -classpath $SDK_ROOT/android.jar --release 8
           
           cd $ROOT_DIR/android/app/src/main
@@ -77,16 +77,16 @@ jobs:
           # compile the multiple .class files into one .dex file
           $TOOLS_ROOT/dx --dex --output=obj/classes.dex ./obj
           # create initial .apk with packaged version of resources
-          $TOOLS_ROOT/aapt package -f -M AndroidManifest.xml -S res -F obj/cc-unsigned.apk -I $SDK_ROOT/android.jar
+          $TOOLS_ROOT/aapt package -f -M AndroidManifest.xml -S res -F obj/hc-unsigned.apk -I $SDK_ROOT/android.jar
           # and add all the required files
           cp obj/classes.dex classes.dex
-          $TOOLS_ROOT/aapt add -f obj/cc-unsigned.apk classes.dex lib/armeabi/libclassicube.so lib/armeabi-v7a/libclassicube.so lib/arm64-v8a/libclassicube.so lib/x86/libclassicube.so lib/x86_64/libclassicube.so
+          $TOOLS_ROOT/aapt add -f obj/hc-unsigned.apk classes.dex lib/armeabi/libharmonyclient.so lib/armeabi-v7a/libharmonyclient.so lib/arm64-v8a/libharmonyclient.so lib/x86/libharmonyclient.so lib/x86_64/libharmonyclient.so
           # sign the apk with debug key (https://stackoverflow.com/questions/16711233/)
-          cp obj/cc-unsigned.apk obj/cc-signed.apk
-          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore debug.keystore -storepass android -keypass android obj/cc-signed.apk androiddebugkey
+          cp obj/hc-unsigned.apk obj/hc-signed.apk
+          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore debug.keystore -storepass android -keypass android obj/hc-signed.apk androiddebugkey
           # jarsigner -verbose
           # create aligned .apk file
-          $TOOLS_ROOT/zipalign -f 4 obj/cc-signed.apk $ROOT_DIR/src/cc.apk
+          $TOOLS_ROOT/zipalign -f 4 obj/hc-signed.apk $ROOT_DIR/src/hc.apk
 
 
       - uses: ./.github/actions/notify_failure
@@ -99,7 +99,7 @@ jobs:
       - uses: ./.github/actions/upload_build
         if: ${{ always() && steps.compile.outcome == 'success' }}
         with:
-          SOURCE_FILE: 'src/cc.apk'
+          SOURCE_FILE: 'src/hc.apk'
           DEST_NAME: 'HarmonyClient.apk'
 
       - uses: ./.github/actions/notify_success

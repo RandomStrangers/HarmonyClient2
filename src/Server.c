@@ -43,7 +43,7 @@ static void Server_ResetState(void) {
 	Server.SupportsFullCP437       = false;
 }
 
-void Server_RetrieveTexturePack(const cc_string* url) {
+void Server_RetrieveTexturePack(const hc_string* url) {
 	if (!Game_AllowServerTextures || TextureCache_HasDenied(url)) return;
 
 	if (!url->length || TextureCache_HasAccepted(url)) {
@@ -57,7 +57,7 @@ void Server_RetrieveTexturePack(const cc_string* url) {
 /*########################################################################################################################*
 *--------------------------------------------------------PingList---------------------------------------------------------*
 *#########################################################################################################################*/
-struct PingEntry { cc_int64 sent, recv; cc_uint16 id; };
+struct PingEntry { hc_int64 sent, recv; hc_uint16 id; };
 static struct PingEntry ping_entries[10];
 static int ping_head;
 
@@ -86,7 +86,7 @@ void Ping_Update(int id) {
 
 int Ping_AveragePingMS(void) {
 	int i, measures = 0, totalMs;
-	cc_int64 total = 0;
+	hc_int64 total = 0;
 
 	for (i = 0; i < Array_Elems(ping_entries); i++) {
 		struct PingEntry entry = ping_entries[i];
@@ -114,10 +114,10 @@ static void Ping_Reset(void) {
 *-------------------------------------------------Singleplayer connection-------------------------------------------------*
 *#########################################################################################################################*/
 static char autoloadBuffer[FILENAME_SIZE];
-cc_string SP_AutoloadMap = String_FromArray(autoloadBuffer);
+hc_string SP_AutoloadMap = String_FromArray(autoloadBuffer);
 
 static void SPConnection_BeginConnect(void) {
-	static const cc_string logName = String_FromConst("Singleplayer");
+	static const hc_string logName = String_FromConst("Singleplayer");
 	RNGState rnd;
 	int horSize, verSize;
 	Chat_SetLogName(&logName);
@@ -131,10 +131,10 @@ static void SPConnection_BeginConnect(void) {
 	Random_SeedFromCurrentTime(&rnd);
 	World_NewMap();
 
-#if defined CC_BUILD_NDS || defined CC_BUILD_PS1 || defined CC_BUILD_SATURN || defined CC_BUILD_MACCLASSIC
+#if defined HC_BUILD_NDS || defined HC_BUILD_PS1 || defined HC_BUILD_SATURN || defined HC_BUILD_MACCLASSIC
 	horSize = 16;
 	verSize = 16;
-#elif defined CC_BUILD_LOWMEM
+#elif defined HC_BUILD_LOWMEM
 	horSize = 64;
 	verSize = 64;
 #else
@@ -143,7 +143,7 @@ static void SPConnection_BeginConnect(void) {
 #endif
 	World_SetDimensions(horSize, verSize, horSize);
 
-#if defined CC_BUILD_N64 || defined CC_BUILD_NDS || defined CC_BUILD_PS1 || defined CC_BUILD_SATURN
+#if defined HC_BUILD_N64 || defined HC_BUILD_NDS || defined HC_BUILD_PS1 || defined HC_BUILD_SATURN
 	Gen_Active = &FlatgrassGen;
 #else
 	Gen_Active = &NotchyGen;
@@ -156,8 +156,8 @@ static void SPConnection_BeginConnect(void) {
 }
 
 static char sp_lastCol;
-static void SPConnection_AddPart(const cc_string* text) {
-	cc_string tmp; char tmpBuffer[STRING_SIZE * 2];
+static void SPConnection_AddPart(const hc_string* text) {
+	hc_string tmp; char tmpBuffer[STRING_SIZE * 2];
 	char col;
 	int i;
 	String_InitArray(tmp, tmpBuffer);
@@ -180,8 +180,8 @@ static void SPConnection_AddPart(const cc_string* text) {
 	Chat_Add(&tmp);
 }
 
-static void SPConnection_SendChat(const cc_string* text) {
-	cc_string left, part;
+static void SPConnection_SendChat(const hc_string* text) {
+	hc_string left, part;
 	if (!text->length) return;
 
 	sp_lastCol = '\0';
@@ -199,7 +199,7 @@ static void SPConnection_SendBlock(int x, int y, int z, BlockID old, BlockID now
 	Physics_OnBlockChanged(x, y, z, old, now);
 }
 
-static void SPConnection_SendData(const cc_uint8* data, cc_uint32 len) { }
+static void SPConnection_SendData(const hc_uint8* data, hc_uint32 len) { }
 
 static void SPConnection_Tick(struct ScheduledTask* task) {
 	if (Server.Disconnected) return;
@@ -229,17 +229,17 @@ static void SPConnection_Init(void) {
 /*########################################################################################################################*
 *--------------------------------------------------Multiplayer connection-------------------------------------------------*
 *#########################################################################################################################*/
-static cc_socket net_socket = -1;
-static cc_result net_writeFailure;
+static hc_socket net_socket = -1;
+static hc_result net_writeFailure;
 static void OnClose(void);
 
-#ifdef CC_BUILD_NETWORKING
-static cc_uint8  net_readBuffer[4096 * 5];
-static cc_uint8* net_readCurrent;
+#ifdef HC_BUILD_NETWORKING
+static hc_uint8  net_readBuffer[4096 * 5];
+static hc_uint8* net_readCurrent;
 static double net_lastPacket;
-static cc_uint8 lastOpcode;
+static hc_uint8 lastOpcode;
 
-static cc_bool net_connecting;
+static hc_bool net_connecting;
 static double net_connectTimeout;
 #define NET_TIMEOUT_SECS 15
 
@@ -253,8 +253,8 @@ static void MPConnection_FinishConnect(void) {
 	Classic_SendLogin();
 }
 
-static void MPConnection_Fail(const cc_string* reason) {
-	cc_string msg; char msgBuffer[STRING_SIZE * 2];
+static void MPConnection_Fail(const hc_string* reason) {
+	hc_string msg; char msgBuffer[STRING_SIZE * 2];
 	String_InitArray(msg, msgBuffer);
 	net_connecting = false;
 
@@ -263,9 +263,9 @@ static void MPConnection_Fail(const cc_string* reason) {
 	OnClose();
 }
 
-static void MPConnection_FailConnect(cc_result result) {
-	static const cc_string reason = String_FromConst("You failed to connect to the server. It's probably down!");
-	cc_string msg; char msgBuffer[STRING_SIZE * 2];
+static void MPConnection_FailConnect(hc_result result) {
+	static const hc_string reason = String_FromConst("You failed to connect to the server. It's probably down!");
+	hc_string msg; char msgBuffer[STRING_SIZE * 2];
 	String_InitArray(msg, msgBuffer);
 
 	if (result) {
@@ -276,9 +276,9 @@ static void MPConnection_FailConnect(cc_result result) {
 }
 
 static void MPConnection_TickConnect(void) {
-	cc_bool writable;
+	hc_bool writable;
 	double now    = Game.Time;
-	cc_result res = Socket_CheckWritable(net_socket, &writable);
+	hc_result res = Socket_CheckWritable(net_socket, &writable);
 
 	if (res) {
 		MPConnection_FailConnect(res);
@@ -293,11 +293,11 @@ static void MPConnection_TickConnect(void) {
 }
 
 static void MPConnection_BeginConnect(void) {
-	static const cc_string invalid_reason = String_FromConst("Invalid IP address");
-	cc_string title; char titleBuffer[STRING_SIZE];
-	cc_sockaddr addrs[SOCKET_MAX_ADDRS];
+	static const hc_string invalid_reason = String_FromConst("Invalid IP address");
+	hc_string title; char titleBuffer[STRING_SIZE];
+	hc_sockaddr addrs[SOCKET_MAX_ADDRS];
 	int numValidAddrs;
-	cc_result res;
+	hc_result res;
 	String_InitArray(title, titleBuffer);
 
 	/* Default block permissions (in case server supports SetBlockPermissions but doesn't send) */
@@ -340,8 +340,8 @@ static void MPConnection_SendBlock(int x, int y, int z, BlockID old, BlockID now
 	}
 }
 
-static void MPConnection_SendChat(const cc_string* text) {
-	cc_string left;
+static void MPConnection_SendChat(const hc_string* text) {
+	hc_string left;
 	if (!text->length || net_connecting) return;
 	left = *text;
 
@@ -353,13 +353,13 @@ static void MPConnection_SendChat(const cc_string* text) {
 }
 
 static void MPConnection_Disconnect(void) {
-	static const cc_string title  = String_FromConst("Disconnected!");
-	static const cc_string reason = String_FromConst("You've lost connection to the server");
+	static const hc_string title  = String_FromConst("Disconnected!");
+	static const hc_string reason = String_FromConst("You've lost connection to the server");
 	Game_Disconnect(&title, &reason);
 }
 
-static void DisconnectReadFailed(cc_result res) {
-	cc_string msg; char msgBuffer[STRING_SIZE * 2];
+static void DisconnectReadFailed(hc_result res) {
+	hc_string msg; char msgBuffer[STRING_SIZE * 2];
 	String_InitArray(msg, msgBuffer);
 	String_Format3(&msg, "Error reading from %s:%i: %e" _NL, &Server.Address, &Server.Port, &res);
 
@@ -367,9 +367,9 @@ static void DisconnectReadFailed(cc_result res) {
 	MPConnection_Disconnect();
 }
 
-static void DisconnectInvalidOpcode(cc_uint8 opcode) {
-	static const cc_string title = String_FromConst("Disconnected");
-	cc_string tmp; char tmpBuffer[STRING_SIZE];
+static void DisconnectInvalidOpcode(hc_uint8 opcode) {
+	static const hc_string title = String_FromConst("Disconnected");
+	hc_string tmp; char tmpBuffer[STRING_SIZE];
 	String_InitArray(tmp, tmpBuffer);
 
 	String_Format2(&tmp, "Server sent invalid packet %b! (prev %b)", &opcode, &lastOpcode);
@@ -378,11 +378,11 @@ static void DisconnectInvalidOpcode(cc_uint8 opcode) {
 
 static void MPConnection_Tick(struct ScheduledTask* task) {
 	Net_Handler handler;
-	cc_uint8* readEnd;
-	cc_uint8* readCur;
-	cc_uint32 read;
+	hc_uint8* readEnd;
+	hc_uint8* readCur;
+	hc_uint32 read;
 	int i, remaining;
-	cc_result res;
+	hc_result res;
 
 	if (Server.Disconnected) return;
 	if (net_connecting) { MPConnection_TickConnect(); return; }
@@ -407,7 +407,7 @@ static void MPConnection_Tick(struct ScheduledTask* task) {
 		net_lastPacket = Game.Time;
 
 		while (readCur < readEnd) {
-			cc_uint8 opcode = readCur[0];
+			hc_uint8 opcode = readCur[0];
 
 			/* Workaround for older D3 servers which wrote one byte too many for HackControl packets */
 			if (cpe_needD3Fix && lastOpcode == OPCODE_HACK_CONTROL && (opcode == 0x00 || opcode == 0xFF)) {
@@ -449,9 +449,9 @@ static void MPConnection_Tick(struct ScheduledTask* task) {
 	Protocol_Tick();
 }
 
-static void MPConnection_SendData(const cc_uint8* data, cc_uint32 len) {
-	cc_uint32 wrote;
-	cc_result res;
+static void MPConnection_SendData(const hc_uint8* data, hc_uint32 len) {
+	hc_uint32 wrote;
+	hc_result res;
 	int tries = 0;
 	if (Server.Disconnected) return;
 
@@ -518,7 +518,7 @@ static void OnInit(void) {
 	String_AppendConst(&Server.AppName, GAME_APP_NAME);
 	String_AppendConst(&Server.AppName, Platform_AppNameSuffix);
 
-#ifdef CC_BUILD_WEB
+#ifdef HC_BUILD_WEB
 	if (!Input_TouchMode) return;
 	Server.AppName.length = 0;
 	String_AppendConst(&Server.AppName, GAME_APP_ALT);

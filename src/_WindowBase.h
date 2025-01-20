@@ -5,7 +5,7 @@
 #include "Platform.h"
 
 struct _DisplayData DisplayInfo;
-struct cc_window WindowInfo;
+struct hc_window WindowInfo;
 
 #define Display_CentreX(width)  (DisplayInfo.x + (DisplayInfo.Width  - width)  / 2)
 #define Display_CentreY(height) (DisplayInfo.y + (DisplayInfo.Height - height) / 2)
@@ -16,10 +16,10 @@ static void Cursor_GetRawPos(int* x, int* y);
 /* Sets whether the cursor is visible when over this window */
 /* NOTE: You MUST BE VERY CAREFUL with this! OS typically uses a counter for visibility, */
 /*  so setting invisible multiple times means you must then set visible multiple times. */
-static void Cursor_DoSetVisible(cc_bool visible);
+static void Cursor_DoSetVisible(hc_bool visible);
 
 /* Sets whether the cursor is visible when over this window */
-static void Cursor_SetVisible(cc_bool visible) {
+static void Cursor_SetVisible(hc_bool visible) {
 	if (DisplayInfo.CursorVisible == visible) return;
 	DisplayInfo.CursorVisible = visible;
 	Cursor_DoSetVisible(visible);
@@ -42,18 +42,18 @@ static void RegrabMouse(void) {
 	CentreMousePosition();
 }
 
-static CC_INLINE void DefaultEnableRawMouse(void) {
+static HC_INLINE void DefaultEnableRawMouse(void) {
 	Input.RawMode = true;
 	RegrabMouse();
 	Cursor_SetVisible(false);
 }
 
-static CC_INLINE void DefaultUpdateRawMouse(void) {
+static HC_INLINE void DefaultUpdateRawMouse(void) {
 	MoveRawUsingCursorDelta();
 	CentreMousePosition();
 }
 
-static CC_INLINE void DefaultDisableRawMouse(void) {
+static HC_INLINE void DefaultDisableRawMouse(void) {
 	Input.RawMode = false;
 	RegrabMouse();
 	Cursor_SetVisible(true);
@@ -63,7 +63,7 @@ static CC_INLINE void DefaultDisableRawMouse(void) {
 static void ShowDialogCore(const char* title, const char* msg);
 void Window_ShowDialog(const char* title, const char* msg) {
 	/* Ensure cursor is usable while showing message box */
-	cc_bool rawMode = Input.RawMode;
+	hc_bool rawMode = Input.RawMode;
 
 	if (rawMode) Window_DisableRawMouse();
 	ShowDialogCore(title, msg);
@@ -73,7 +73,7 @@ void Window_ShowDialog(const char* title, const char* msg) {
 
 struct GraphicsMode { int R, G, B, A; };
 /* Creates a GraphicsMode compatible with the default display device */
-static CC_INLINE void InitGraphicsMode(struct GraphicsMode* m) {
+static HC_INLINE void InitGraphicsMode(struct GraphicsMode* m) {
 	int bpp = DisplayInfo.Depth;
 	m->A = 0;
 
@@ -99,7 +99,7 @@ static CC_INLINE void InitGraphicsMode(struct GraphicsMode* m) {
 }
 
 /* EGL is window system agnostic, other OpenGL context backends are tied to one windowing system */
-#if CC_GFX_BACKEND_IS_GL() && defined CC_BUILD_EGL
+#if HC_GFX_BACKEND_IS_GL() && defined HC_BUILD_EGL
 /*########################################################################################################################*
 *-------------------------------------------------------EGL OpenGL--------------------------------------------------------*
 *#########################################################################################################################*/
@@ -110,7 +110,7 @@ static EGLSurface ctx_surface;
 static EGLConfig ctx_config;
 static EGLint ctx_numConfig;
 
-#ifdef CC_BUILD_SWITCH
+#ifdef HC_BUILD_SWITCH
 static void GLContext_InitSurface(void); // replacement in Window_Switch.c for handheld/docked resolution fix
 #else
 static void GLContext_InitSurface(void) {
@@ -131,7 +131,7 @@ static void GLContext_FreeSurface(void) {
 }
 
 void GLContext_Create(void) {
-#if CC_GFX_BACKEND == CC_GFX_BACKEND_GL2
+#if HC_GFX_BACKEND == HC_GFX_BACKEND_GL2
 	static EGLint context_attribs[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
 #else
 	static EGLint context_attribs[] = { EGL_CONTEXT_CLIENT_VERSION, 1, EGL_NONE };
@@ -144,9 +144,9 @@ void GLContext_Create(void) {
 		EGL_COLOR_BUFFER_TYPE, EGL_RGB_BUFFER,
 		EGL_SURFACE_TYPE,      EGL_WINDOW_BIT,
 
-#if defined CC_BUILD_GLES && (CC_GFX_BACKEND == CC_GFX_BACKEND_GL2)
+#if defined HC_BUILD_GLES && (HC_GFX_BACKEND == HC_GFX_BACKEND_GL2)
 		EGL_RENDERABLE_TYPE,   EGL_OPENGL_ES2_BIT,
-#elif defined CC_BUILD_GLES
+#elif defined HC_BUILD_GLES
 		EGL_RENDERABLE_TYPE,   EGL_OPENGL_ES_BIT,
 #else
 		EGL_RENDERABLE_TYPE,   EGL_OPENGL_BIT,
@@ -168,7 +168,7 @@ void GLContext_Create(void) {
 		attribs[9] = 16; // some older devices only support 16 bit depth buffer
 		eglChooseConfig(ctx_display, attribs, &ctx_config, 1, &ctx_numConfig);
 	}
-	if (!ctx_config) Window_ShowDialog("Warning", "Failed to choose EGL config, ClassiCube may be unable to start");
+	if (!ctx_config) Window_ShowDialog("Warning", "Failed to choose EGL config, Harmony client may be unable to start");
 
 	ctx_context = eglCreateContext(ctx_display, ctx_config, EGL_NO_CONTEXT, context_attribs);
 	if (!ctx_context) Logger_Abort2(eglGetError(), "Failed to create EGL context");
@@ -180,7 +180,7 @@ void GLContext_Update(void) {
 	GLContext_InitSurface();
 }
 
-cc_bool GLContext_TryRestore(void) {
+hc_bool GLContext_TryRestore(void) {
 	GLContext_FreeSurface();
 	GLContext_InitSurface();
 	return ctx_surface != NULL;
@@ -196,7 +196,7 @@ void* GLContext_GetAddress(const char* function) {
 	return eglGetProcAddress(function);
 }
 
-cc_bool GLContext_SwapBuffers(void) {
+hc_bool GLContext_SwapBuffers(void) {
 	EGLint err;
 	if (!ctx_surface) return false;
 	if (eglSwapBuffers(ctx_display, ctx_surface)) return true;
@@ -207,8 +207,8 @@ cc_bool GLContext_SwapBuffers(void) {
 	return false;
 }
 
-void GLContext_SetVSync(cc_bool vsync) {
+void GLContext_SetVSync(hc_bool vsync) {
 	eglSwapInterval(ctx_display, vsync);
 }
-void GLContext_GetApiInfo(cc_string* info) { }
+void GLContext_GetApiInfo(hc_string* info) { }
 #endif

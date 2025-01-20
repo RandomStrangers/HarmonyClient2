@@ -1,7 +1,7 @@
-#ifndef CC_BUILDER_H
-#define CC_BUILDER_H
+#ifndef HC_BUILDER_H
+#define HC_BUILDER_H
 #include "Core.h"
-CC_BEGIN_HEADER
+HC_BEGIN_HEADER
 
 /* 
 Converts a 16x16x16 chunk into a mesh of vertices
@@ -17,12 +17,12 @@ extern struct IGameComponent Builder_Component;
 
 extern int Builder_SidesLevel, Builder_EdgeLevel;
 /* Whether smooth/advanced lighting mesh builder is used. */
-extern cc_bool Builder_SmoothLighting;
+extern hc_bool Builder_SmoothLighting;
 
 /* Builds the mesh of vertices for the given chunk. */
 void Builder_MakeChunk(struct ChunkInfo* info);
 
 void Builder_ApplyActive(void);
 
-CC_END_HEADER
+HC_END_HEADER
 #endif

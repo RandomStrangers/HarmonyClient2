@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_GCWII
+#if defined HC_BUILD_GCWII
 #include "Window.h"
 #include "Platform.h"
 #include "Input.h"
@@ -18,14 +18,14 @@
 #include <wiikeyboard/keyboard.h>
 #endif
 
-static cc_bool needsFBUpdate;
-static cc_bool launcherMode;
+static hc_bool needsFBUpdate;
+static hc_bool launcherMode;
 #include "VirtualCursor.h"
 static void* xfb;
 static GXRModeObj* rmode;
 void* Window_XFB;
 struct _DisplayData DisplayInfo;
-struct cc_window WindowInfo;
+struct hc_window WindowInfo;
 
 
 static void OnPowerOff(void) {
@@ -171,7 +171,7 @@ static void ProcessPADInputs(float delta) {
 *--------------------------------------------------Kebyaord processing----------------------------------------------------*
 *#########################################################################################################################*/
 #if defined HW_RVL
-static const cc_uint8 key_map[] = {
+static const hc_uint8 key_map[] = {
 /* 0x00 */ 0,0,0,0,         'A','B','C','D', 
 /* 0x08 */ 'E','F','G','H', 'I','J','K','L',
 /* 0x10 */ 'M','N','O','P', 'Q','R','S','T',
@@ -237,7 +237,7 @@ static void ProcessKeyboardInput(void) {
 #if defined HW_RVL
 static int dragCurX, dragCurY;
 static int dragStartX, dragStartY;
-static cc_bool dragActive;
+static hc_bool dragActive;
 
 void Window_ProcessEvents(float delta) {
 	ProcessKeyboardInput();
@@ -347,7 +347,7 @@ static const BindMapping default_nunchuck[BIND_COUNT] = {
 
 static int dragCurX, dragCurY;
 static int dragStartX, dragStartY;
-static cc_bool dragActive;
+static hc_bool dragActive;
 
 static void ProcessWPAD_Buttons(int port, int mods) {
 	Gamepad_SetButton(port, CCPAD_L, mods & WPAD_BUTTON_1);
@@ -512,12 +512,12 @@ void Window_DrawFramebuffer(Rect2D r, struct Bitmap* bmp) {
 	// TODO XFB is raw yuv, but is absolutely a pain to work with..
 	for (int y = r.y; y < r.y + r.height; y++) 
 	{
-		cc_uint32* src = Bitmap_GetRow(bmp, y)           + r.x;
+		hc_uint32* src = Bitmap_GetRow(bmp, y)           + r.x;
 		u16* dst       = (u16*)xfb  + y * rmode->fbWidth + r.x;
 		
 		for (int x = 0; x < r.width / 2; x++) {
-			cc_uint32 rgb0 = src[(x<<1) + 0];
-			cc_uint32 rgb1 = src[(x<<1) + 1];
+			hc_uint32 rgb0 = src[(x<<1) + 0];
+			hc_uint32 rgb1 = src[(x<<1) + 1];
 			
 			((u32*)dst)[x] = CvtRGB(BitmapCol_R(rgb0), BitmapCol_G(rgb0), BitmapCol_B(rgb0),
 					BitmapCol_R(rgb1),  BitmapCol_G(rgb1), BitmapCol_B(rgb1));
@@ -538,7 +538,7 @@ void OnscreenKeyboard_Open(struct OpenKeyboardArgs* args) {
 	VirtualKeyboard_Open(args, launcherMode);
 }
 
-void OnscreenKeyboard_SetText(const cc_string* text) {
+void OnscreenKeyboard_SetText(const hc_string* text) {
 	VirtualKeyboard_SetText(text);
 }
 
@@ -550,13 +550,13 @@ void OnscreenKeyboard_Close(void) {
 /*########################################################################################################################*
 *-------------------------------------------------------Misc/Other--------------------------------------------------------*
 *#########################################################################################################################*/
-void Window_SetTitle(const cc_string* title)   { }
-void Clipboard_GetText(cc_string* value)       { }
-void Clipboard_SetText(const cc_string* value) { }
+void Window_SetTitle(const hc_string* title)   { }
+void Clipboard_GetText(hc_string* value)       { }
+void Clipboard_SetText(const hc_string* value) { }
 
 int Window_GetWindowState(void) { return WINDOW_STATE_FULLSCREEN; }
-cc_result Window_EnterFullscreen(void) { return 0; }
-cc_result Window_ExitFullscreen(void)  { return 0; }
+hc_result Window_EnterFullscreen(void) { return 0; }
+hc_result Window_ExitFullscreen(void)  { return 0; }
 int Window_IsObscured(void)            { return 0; }
 
 void Window_Show(void) { }
@@ -569,11 +569,11 @@ void Window_ShowDialog(const char* title, const char* msg) {
 	Platform_LogConst(msg);
 }
 
-cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
+hc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
-cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
+hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 #endif

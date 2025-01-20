@@ -5,16 +5,16 @@
 #include <stdlib.h>
 #define PI 3.141592653589793238462643383279502884197169399
 
-static const cc_uint64 _DBL_NAN = 0x7FF8000000000000ULL;
+static const hc_uint64 _DBL_NAN = 0x7FF8000000000000ULL;
 #define DBL_NAN  *((double*)&_DBL_NAN)
-static const cc_uint64 _POS_INF = 0x7FF0000000000000ULL;
+static const hc_uint64 _POS_INF = 0x7FF0000000000000ULL;
 #define POS_INF *((double*)&_POS_INF)
-static const cc_uint64 _NEG_INF = 0xFFF0000000000000ULL;
+static const hc_uint64 _NEG_INF = 0xFFF0000000000000ULL;
 #define NEG_INF *((double*)&_NEG_INF)
 
 
 /* Sega saturn is missing these intrinsics */
-#ifdef CC_BUILD_SATURN
+#ifdef HC_BUILD_SATURN
 #include <stdint.h>
 extern int32_t fix16_sqrt(int32_t value);
 static int abs(int x) { return x < 0 ? -x : x; }
@@ -27,7 +27,7 @@ float sqrtf(float x) {
 #endif
 
 
-#if defined CC_BUILD_PS1
+#if defined HC_BUILD_PS1
 	/* PS1 is missing these intrinsics */
 	#include <psxgte.h>
 	float Math_AbsF(float x)  { return __builtin_fabsf(x); }
@@ -59,8 +59,8 @@ int Math_Ceil(float value) {
 	return valueI < value ? valueI + 1 : valueI;
 }
 
-int Math_ilog2(cc_uint32 value) {
-	cc_uint32 r = 0;
+int Math_ilog2(hc_uint32 value) {
+	hc_uint32 r = 0;
 	while (value >>= 1) r++;
 	return r;
 }
@@ -89,8 +89,8 @@ float Math_LerpAngle(float leftAngle, float rightAngle, float t) {
 	/* Need to potentially adjust a bit when interpolating some angles */
 	/* Consider 350* --> 0*, we only want to interpolate across the 10* */
 	/* But without adjusting for this case, we would interpolate back the whole 350* degrees */
-	cc_bool invertLeft  = leftAngle  > 270.0f && rightAngle < 90.0f;
-	cc_bool invertRight = rightAngle > 270.0f && leftAngle  < 90.0f;
+	hc_bool invertLeft  = leftAngle  > 270.0f && rightAngle < 90.0f;
+	hc_bool invertRight = rightAngle > 270.0f && leftAngle  < 90.0f;
 	if (invertLeft)  leftAngle  = leftAngle  - 360.0f;
 	if (invertRight) rightAngle = rightAngle - 360.0f;
 
@@ -103,7 +103,7 @@ int Math_NextPowOf2(int value) {
 	return next;
 }
 
-cc_bool Math_IsPowOf2(int value) {
+hc_bool Math_IsPowOf2(int value) {
 	return value != 0 && (value & (value - 1)) == 0;
 }
 
@@ -115,7 +115,7 @@ cc_bool Math_IsPowOf2(int value) {
 #define RND_MASK ((1ULL << 48) - 1)
 
 void Random_SeedFromCurrentTime(RNGState* rnd) {
-	cc_uint64 now = Stopwatch_Measure();
+	hc_uint64 now = Stopwatch_Measure();
 	Random_Seed(rnd, (int)now);
 }
 
@@ -124,12 +124,12 @@ void Random_Seed(RNGState* seed, int seedInit) {
 }
 
 int Random_Next(RNGState* seed, int n) {
-	cc_int64 raw;
+	hc_int64 raw;
 	int bits, val;
 
 	if ((n & -n) == n) { /* i.e., n is a power of 2 */
 		*seed = (*seed * RND_VALUE + 0xBLL) & RND_MASK;
-		raw   = (cc_int64)(*seed >> (48 - 31));
+		raw   = (hc_int64)(*seed >> (48 - 31));
 		return (int)((n * raw) >> 31);
 	}
 
@@ -153,7 +153,7 @@ float Random_Float(RNGState* seed) {
 /*########################################################################################################################*
 *--------------------------------------------------Transcendental functions-----------------------------------------------*
 *#########################################################################################################################*/
-#if defined CC_BUILD_DREAMCAST
+#if defined HC_BUILD_DREAMCAST
 #include <math.h>
 
 /* If don't have some code referencing libm, then gldc will fail to link with undefined reference to fabs */
@@ -162,7 +162,7 @@ float Random_Float(RNGState* seed) {
 
 float Math_SinF(float x)   { return sinf(x); }
 float Math_CosF(float x)   { return cosf(x); }
-#elif defined CC_BUILD_PS1 || defined CC_BUILD_SATURN || defined CC_BUILD_NDS
+#elif defined HC_BUILD_PS1 || defined HC_BUILD_SATURN || defined HC_BUILD_NDS
 
 // Source https://www.coranac.com/2009/07/sines
 #define ISIN_QN	10
@@ -170,7 +170,7 @@ float Math_CosF(float x)   { return cosf(x); }
 #define ISIN_B	19900
 #define	ISIN_C	3516
 
-static CC_INLINE int isin_s4(int x) {
+static HC_INLINE int isin_s4(int x) {
 	int c, x2, y;
 
 	c  = x << (30 - ISIN_QN);		// Semi-circle info into carry.
@@ -329,7 +329,7 @@ float Math_CosF(float x) {
 /*########################################################################################################################*
 *--------------------------------------------------Transcendental functions-----------------------------------------------*
 *#########################################################################################################################*/
-#if defined CC_BUILD_DREAMCAST
+#if defined HC_BUILD_DREAMCAST
 #include <math.h>
 
 double Math_Exp2(double x) { return exp2(x); }
@@ -412,7 +412,7 @@ static double Exp2Stage1(double x) {
  */
 double Math_Exp2(double x) {
 	int x_int;
-	union { double d; cc_uint64 i; } doi;
+	union { double d; hc_uint64 i; } doi;
 
 	if (x == POS_INF || x == DBL_NAN)
 		return x;
@@ -488,7 +488,7 @@ static double Log2Stage1(double x) {
  * Allowed input range: anything
  */
 double Math_Log2(double x) {
-	union { double d; cc_uint64 i; } doi;
+	union { double d; hc_uint64 i; } doi;
 	int exponent;
 
 	if (x == POS_INF)
@@ -501,8 +501,8 @@ double Math_Log2(double x) {
 	exponent = (doi.i >> 52);
 	exponent -= 1023;
 
-	doi.i |= (((cc_uint64) 1023) << 52);
-	doi.i &= ~(((cc_uint64) 1024) << 52);
+	doi.i |= (((hc_uint64) 1023) << 52);
+	doi.i &= ~(((hc_uint64) 1024) << 52);
 
 	return exponent + Log2Stage1(doi.d);
 }

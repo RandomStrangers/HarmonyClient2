@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_WEB && !defined CC_BUILD_SDL
+#if defined HC_BUILD_WEB && !defined HC_BUILD_SDL
 #include "_WindowBase.h"
 #include "Game.h"
 #include "String.h"
@@ -16,7 +16,7 @@ extern int interop_CanvasHeight(void);
 extern int interop_ScreenWidth(void);
 extern int interop_ScreenHeight(void);
 
-static cc_bool keyboardOpen, needResize;
+static hc_bool keyboardOpen, needResize;
 static int RawDpiScale(int x)    { return (int)(x * emscripten_get_device_pixel_ratio()); }
 static int GetScreenWidth(void)  { return RawDpiScale(interop_ScreenWidth()); }
 static int GetScreenHeight(void) { return RawDpiScale(interop_ScreenHeight()); }
@@ -56,7 +56,7 @@ static EM_BOOL OnMouseWheel(int type, const EmscriptenWheelEvent* ev, void* data
 }
 
 static EM_BOOL OnMouseButton(int type, const EmscriptenMouseEvent* ev, void* data) {
-	cc_bool down = type == EMSCRIPTEN_EVENT_MOUSEDOWN;
+	hc_bool down = type == EMSCRIPTEN_EVENT_MOUSEDOWN;
 	/* https://stackoverflow.com/questions/60895686/how-to-get-mouse-buttons-4-5-browser-back-browser-forward-working-in-firef */
 	switch (ev->button) {
 		case 0: Input_Set(CCMOUSE_L, down); break;
@@ -190,7 +190,7 @@ static const char* OnBeforeUnload(int type, const void* ev, void *data) {
 }
 
 static EM_BOOL OnVisibilityChanged(int eventType, const EmscriptenVisibilityChangeEvent* ev, void* data) {
-	cc_bool inactive = ev->visibilityState == EMSCRIPTEN_VISIBILITY_HIDDEN;
+	hc_bool inactive = ev->visibilityState == EMSCRIPTEN_VISIBILITY_HIDDEN;
 	if (Window_Main.Inactive == inactive) return false;
 
 	Window_Main.Inactive = inactive;
@@ -443,14 +443,14 @@ void Window_Create3D(int width, int height) { DoCreateWindow(); }
 void Window_Destroy(void) { }
 
 extern void interop_SetPageTitle(const char* title);
-void Window_SetTitle(const cc_string* title) {
+void Window_SetTitle(const hc_string* title) {
 	char str[NATIVE_STR_LEN];
 	String_EncodeUtf8(str, title);
 	interop_SetPageTitle(str);
 }
 
 static char pasteBuffer[512];
-static cc_string pasteStr;
+static hc_string pasteStr;
 EMSCRIPTEN_KEEPALIVE void Window_RequestClipboardText(void) {
 	Event_RaiseInput(&InputEvents.Down2, INPUT_CLIPBOARD_COPY, 0, &NormDevice);
 }
@@ -466,7 +466,7 @@ EMSCRIPTEN_KEEPALIVE void Window_GotClipboardText(char* src) {
 }
 
 extern void interop_TryGetClipboardText(void);
-void Clipboard_GetText(cc_string* value) {
+void Clipboard_GetText(hc_string* value) {
 	/* Window_StoreClipboardText may or may not be called by this */
 	interop_TryGetClipboardText();
 
@@ -479,7 +479,7 @@ void Clipboard_GetText(cc_string* value) {
 }
 
 extern void interop_TrySetClipboardText(const char* text);
-void Clipboard_SetText(const cc_string* value) {
+void Clipboard_SetText(const hc_string* value) {
 	char str[NATIVE_STR_LEN];
 	String_EncodeUtf8(str, value);
 	interop_TrySetClipboardText(str);
@@ -493,7 +493,7 @@ int Window_GetWindowState(void) {
 
 extern int interop_GetContainerID(void);
 extern void interop_EnterFullscreen(void);
-cc_result Window_EnterFullscreen(void) {
+hc_result Window_EnterFullscreen(void) {
 	EmscriptenFullscreenStrategy strategy;
 	const char* target;
 	int res;
@@ -516,7 +516,7 @@ cc_result Window_EnterFullscreen(void) {
 	return 0;
 }
 
-cc_result Window_ExitFullscreen(void) {
+hc_result Window_ExitFullscreen(void) {
 	emscripten_exit_fullscreen();
 	UpdateWindowBounds();
 	return 0;
@@ -563,7 +563,7 @@ static void Cursor_GetRawPos(int* x, int* y) { *x = 0; *y = 0; }
 void Cursor_SetPosition(int x, int y) { }
 
 extern void interop_SetCursorVisible(int visible);
-static void Cursor_DoSetVisible(cc_bool visible) {
+static void Cursor_DoSetVisible(hc_bool visible) {
 	interop_SetCursorVisible(visible);
 }
 
@@ -649,7 +649,7 @@ static void ShowDialogCore(const char* title, const char* msg) {
 
 static FileDialogCallback dialog_callback;
 EMSCRIPTEN_KEEPALIVE void Window_OnFileUploaded(const char* src) { 
-	cc_string path; char buffer[FILENAME_SIZE];
+	hc_string path; char buffer[FILENAME_SIZE];
 	String_InitArray(path, buffer);
 
 	String_AppendUtf8(&path, src, String_Length(src));
@@ -658,9 +658,9 @@ EMSCRIPTEN_KEEPALIVE void Window_OnFileUploaded(const char* src) {
 }
 
 extern void interop_OpenFileDialog(const char* filter, int action, const char* folder);
-cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
+hc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 	const char* const* filters = args->filters;
-	cc_string filter; char filterBuffer[1024];
+	hc_string filter; char filterBuffer[1024];
 	int i;
 
 	/* Filter tokens are , separated - e.g. ".cw,.dat */
@@ -679,8 +679,8 @@ cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 }
 
 extern int interop_DownloadFile(const char* filename, const char* const* filters, const char* const* titles);
-cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
-	cc_string file; char fileBuffer[FILENAME_SIZE];
+hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
+	hc_string file; char fileBuffer[FILENAME_SIZE];
 	if (!args->defaultName.length) return SFD_ERR_NEED_DEFAULT_NAME;
 	dialog_callback = args->Callback;
 
@@ -702,7 +702,7 @@ extern void interop_SetKeyboardText(const char* text);
 extern void interop_CloseKeyboard(void);
 
 EMSCRIPTEN_KEEPALIVE void Window_OnTextChanged(const char* src) { 
-	cc_string str; char buffer[800];
+	hc_string str; char buffer[800];
 	String_InitArray(str, buffer);
 	
 	String_AppendUtf8(&str, src, String_CalcLen(src, 3200));
@@ -720,7 +720,7 @@ void OnscreenKeyboard_Open(struct OpenKeyboardArgs* args) {
 	args->opaque = true;
 }
 
-void OnscreenKeyboard_SetText(const cc_string* text) {
+void OnscreenKeyboard_SetText(const hc_string* text) {
 	char str[NATIVE_STR_LEN];
 	if (!Input_TouchMode) return;
 
@@ -751,7 +751,7 @@ void Window_DisableRawMouse(void) {
 /*########################################################################################################################*
 *------------------------------------------------Emscripten WebGL context-------------------------------------------------*
 *#########################################################################################################################*/
-#if CC_GFX_BACKEND_IS_GL()
+#if HC_GFX_BACKEND_IS_GL()
 #include "Graphics.h"
 static EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx_handle;
 
@@ -770,7 +770,7 @@ void GLContext_Create(void) {
 
 	ctx_handle = emscripten_webgl_create_context("#canvas", &attribs);
 	if (!ctx_handle) {
-		Window_ShowDialog("WebGL unsupported", "WebGL is required to run ClassiCube");
+		Window_ShowDialog("WebGL unsupported", "WebGL is required to run Harmony Client");
 		Process_Exit(0x57474C20);
 	}
 
@@ -781,7 +781,7 @@ void GLContext_Create(void) {
 void GLContext_Update(void) {
 	/* TODO: do we need to do something here.... ? */
 }
-cc_bool GLContext_TryRestore(void) {
+hc_bool GLContext_TryRestore(void) {
 	return !emscripten_is_webgl_context_lost(0);
 }
 
@@ -791,13 +791,13 @@ void GLContext_Free(void) {
 }
 
 void* GLContext_GetAddress(const char* function) { return NULL; }
-cc_bool GLContext_SwapBuffers(void) { return true; /* Browser implicitly does this */ }
+hc_bool GLContext_SwapBuffers(void) { return true; /* Browser implicitly does this */ }
 
 void Window_SetMinFrameTime(float timeMS) {
 	emscripten_set_main_loop_timing(EM_TIMING_SETTIMEOUT, (int)timeMS);
 }
 
-void GLContext_SetVSync(cc_bool vsync) {
+void GLContext_SetVSync(hc_bool vsync) {
 	if (vsync) {
 		emscripten_set_main_loop_timing(EM_TIMING_RAF, 1);
 	} else {
@@ -806,7 +806,7 @@ void GLContext_SetVSync(cc_bool vsync) {
 }
 
 extern void interop_GetGpuRenderer(char* buffer, int len);
-void GLContext_GetApiInfo(cc_string* info) { 
+void GLContext_GetApiInfo(hc_string* info) { 
 	char buffer[NATIVE_STR_LEN];
 	int len;
 	interop_GetGpuRenderer(buffer, NATIVE_STR_LEN);

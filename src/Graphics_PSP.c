@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_PSP
+#if defined HC_BUILD_PSP
 #include "_GraphicsBase.h"
 #include "Errors.h"
 #include "Logger.h"
@@ -86,7 +86,7 @@ void Gfx_Free(void) {
 	Gfx_FreeState();
 }
 
-cc_bool Gfx_TryRestoreContext(void) { return true; }
+hc_bool Gfx_TryRestoreContext(void) { return true; }
 
 void Gfx_RestoreState(void) {
 	InitDefaultResources();
@@ -108,15 +108,15 @@ void Gfx_FreeState(void) {
 /*########################################################################################################################*
 *---------------------------------------------------------Textures--------------------------------------------------------*
 *#########################################################################################################################*/
-typedef struct CCTexture_ {
-	cc_uint32 width, height;
-	cc_uint32 pad1, pad2; // data must be aligned to 16 bytes
+typedef struct HCTexture_ {
+	hc_uint32 width, height;
+	hc_uint32 pad1, pad2; // data must be aligned to 16 bytes
 	BitmapCol pixels[];
-} CCTexture;
+} HCTexture;
 
-static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8 flags, cc_bool mipmaps) {
+static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, hc_uint8 flags, hc_bool mipmaps) {
 	int size = bmp->width * bmp->height * 4;
-	CCTexture* tex = (CCTexture*)memalign(16, 16 + size);
+	HCTexture* tex = (HCTexture*)memalign(16, 16 + size);
 	
 	tex->width  = bmp->width;
 	tex->height = bmp->height;
@@ -125,8 +125,8 @@ static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8
 	return tex;
 }
 
-void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, cc_bool mipmaps) {
-	CCTexture* tex = (CCTexture*)texId;
+void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, hc_bool mipmaps) {
+	HCTexture* tex = (HCTexture*)texId;
 	BitmapCol* dst = (tex->pixels + x) + y * tex->width;
 
 	CopyTextureData(dst, tex->width * BITMAPCOLOR_SIZE,
@@ -135,9 +135,9 @@ void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, i
 	sceKernelDcacheWritebackInvalidateRange(dst, (tex->width * part->height) * 4);
 }
 
-/*void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, cc_bool mipmaps) {
-	CCTexture* tex = (CCTexture*)texId;
-	cc_uint32* dst = (tex->pixels + x) + y * tex->width;
+/*void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, hc_bool mipmaps) {
+	HCTexture* tex = (HCTexture*)texId;
+	hc_uint32* dst = (tex->pixels + x) + y * tex->width;
 
 	for (int yy = 0; yy < part->height; yy++) {
 		Mem_Copy(dst + (y + yy) * tex->width, part->scan0 + yy * rowWidth, part->width * 4);
@@ -154,7 +154,7 @@ void Gfx_EnableMipmaps(void) { }
 void Gfx_DisableMipmaps(void) { }
 
 void Gfx_BindTexture(GfxResourceID texId) {
-	CCTexture* tex = (CCTexture*)texId;
+	HCTexture* tex = (HCTexture*)texId;
 	if (!tex) tex  = white_square; 
 	
 	sceGuTexMode(GU_PSM_8888,0,0,0);
@@ -166,9 +166,9 @@ void Gfx_BindTexture(GfxResourceID texId) {
 *-----------------------------------------------------State management----------------------------------------------------*
 *#########################################################################################################################*/
 static PackedCol gfx_clearColor;
-void Gfx_SetFaceCulling(cc_bool enabled)   { GU_Toggle(GU_CULL_FACE); }
-static void SetAlphaBlend(cc_bool enabled) { GU_Toggle(GU_BLEND); }
-void Gfx_SetAlphaArgBlend(cc_bool enabled) { }
+void Gfx_SetFaceCulling(hc_bool enabled)   { GU_Toggle(GU_CULL_FACE); }
+static void SetAlphaBlend(hc_bool enabled) { GU_Toggle(GU_BLEND); }
+void Gfx_SetAlphaArgBlend(hc_bool enabled) { }
 
 void Gfx_ClearColor(PackedCol color) {
 	if (color == gfx_clearColor) return;
@@ -176,7 +176,7 @@ void Gfx_ClearColor(PackedCol color) {
 	gfx_clearColor = color;
 }
 
-static void SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a) {
+static void SetColorWrite(hc_bool r, hc_bool g, hc_bool b, hc_bool a) {
 	unsigned int mask = 0xffffffff;
 	if (r) mask &= 0xffffff00;
 	if (g) mask &= 0xffff00ff;
@@ -186,10 +186,10 @@ static void SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a) {
 	sceGuPixelMask(mask);
 }
 
-void Gfx_SetDepthWrite(cc_bool enabled) {
+void Gfx_SetDepthWrite(hc_bool enabled) {
 	sceGuDepthMask(enabled ? 0 : 0xffffffff); 
 }
-void Gfx_SetDepthTest(cc_bool enabled)  { GU_Toggle(GU_DEPTH_TEST); }
+void Gfx_SetDepthTest(hc_bool enabled)  { GU_Toggle(GU_DEPTH_TEST); }
 
 /*########################################################################################################################*
 *---------------------------------------------------------Matrices--------------------------------------------------------*
@@ -234,11 +234,11 @@ void Gfx_CalcPerspectiveMatrix(struct Matrix* matrix, float fov, float aspect, f
 *-----------------------------------------------------------Misc----------------------------------------------------------*
 *#########################################################################################################################*/
 static BitmapCol* PSP_GetRow(struct Bitmap* bmp, int y, void* ctx) {
-	cc_uint8* fb = (cc_uint8*)ctx;
+	hc_uint8* fb = (hc_uint8*)ctx;
 	return (BitmapCol*)(fb + y * BUFFER_WIDTH * 4);
 }
 
-cc_result Gfx_TakeScreenshot(struct Stream* output) {
+hc_result Gfx_TakeScreenshot(struct Stream* output) {
 	int fbWidth, fbFormat;
 	void* fb;
 
@@ -254,12 +254,12 @@ cc_result Gfx_TakeScreenshot(struct Stream* output) {
 	return Png_Encode(&bmp, output, PSP_GetRow, false, fb);
 }
 
-void Gfx_GetApiInfo(cc_string* info) {
+void Gfx_GetApiInfo(hc_string* info) {
 	String_AppendConst(info, "-- Using PSP--\n");
 	PrintMaxTextureInfo(info);
 }
 
-void Gfx_SetVSync(cc_bool vsync) {
+void Gfx_SetVSync(hc_bool vsync) {
 	gfx_vsync = vsync;
 }
 
@@ -289,14 +289,14 @@ void Gfx_SetViewport(int x, int y, int w, int h) { }
 void Gfx_SetScissor (int x, int y, int w, int h) { }
 
 
-static cc_uint8* gfx_vertices;
+static hc_uint8* gfx_vertices;
 static int gfx_fields;
 
 
 /*########################################################################################################################*
 *----------------------------------------------------------Buffers--------------------------------------------------------*
 *#########################################################################################################################*/
-static cc_uint16 __attribute__((aligned(16))) gfx_indices[GFX_MAX_INDICES];
+static hc_uint16 __attribute__((aligned(16))) gfx_indices[GFX_MAX_INDICES];
 static int vb_size;
 
 GfxResourceID Gfx_CreateIb2(int count, Gfx_FillIBFunc fillFunc, void* obj) {
@@ -357,7 +357,7 @@ static PackedCol gfx_fogColor;
 static float gfx_fogEnd = -1.0f, gfx_fogDensity = -1.0f;
 static int gfx_fogMode  = -1;
 
-void Gfx_SetFog(cc_bool enabled) {
+void Gfx_SetFog(hc_bool enabled) {
 	gfx_fogEnabled = enabled;
 	//GU_Toggle(GU_FOG);
 }
@@ -381,10 +381,10 @@ void Gfx_SetFogMode(FogFunc func) {
 	/* TODO: Implemen fake exp/exp2 fog */
 }
 
-static void SetAlphaTest(cc_bool enabled) { GU_Toggle(GU_ALPHA_TEST); }
+static void SetAlphaTest(hc_bool enabled) { GU_Toggle(GU_ALPHA_TEST); }
 
-void Gfx_DepthOnlyRendering(cc_bool depthOnly) {
-	cc_bool enabled = !depthOnly;
+void Gfx_DepthOnlyRendering(hc_bool depthOnly) {
+	hc_bool enabled = !depthOnly;
 	SetColorWrite(enabled & gfx_colorMask[0], enabled & gfx_colorMask[1], 
 				  enabled & gfx_colorMask[2], enabled & gfx_colorMask[3]);
 }
@@ -420,8 +420,8 @@ void Gfx_DisableTextureOffset(void) {
 /*########################################################################################################################*
 *---------------------------------------------------------Drawing---------------------------------------------------------*
 *#########################################################################################################################*/
-cc_bool Gfx_WarnIfNecessary(void) { return false; }
-cc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
+hc_bool Gfx_WarnIfNecessary(void) { return false; }
+hc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
 
 void Gfx_SetVertexFormat(VertexFormat fmt) {
 	if (fmt == gfx_format) return;

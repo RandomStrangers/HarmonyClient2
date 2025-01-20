@@ -1,5 +1,5 @@
 #include "Core.h"
-#if CC_WIN_BACKEND == CC_WIN_BACKEND_X11
+#if HC_WIN_BACKEND == HC_WIN_BACKEND_X11
 /*
    The Open Toolkit Library License
   
@@ -50,7 +50,7 @@
 #include <stdio.h>
 
 #ifdef X_HAVE_UTF8_STRING
-#define CC_BUILD_XIM
+#define HC_BUILD_XIM
 /* XIM support based off details described in */
 /* https://tedyin.com/posts/a-brief-intro-to-linux-input-method-framework/ */
 #endif
@@ -62,7 +62,7 @@
 static Display* win_display;
 static Window win_rootWin;
 static XVisualInfo win_visual;
-#ifdef CC_BUILD_XIM
+#ifdef HC_BUILD_XIM
 static XIM win_xim;
 static XIC win_xic;
 #endif
@@ -73,7 +73,7 @@ static Atom net_wm_state_fullscreen;
 
 static Atom xa_clipboard, xa_targets, xa_utf8_string, xa_data_sel;
 static Atom xa_atom = 4;
-static cc_bool grabCursor;
+static hc_bool grabCursor;
 static long win_eventMask = StructureNotifyMask | /* SubstructureNotifyMask | */ 
 	ExposureMask      | KeyReleaseMask  | KeyPressMask    | KeymapStateMask   | 
 	PointerMotionMask | FocusChangeMask | ButtonPressMask | ButtonReleaseMask | 
@@ -223,7 +223,7 @@ static int MapNativeKey(KeySym key, unsigned int state) {
 }
 
 /* NOTE: This may not be entirely accurate, because user can configure keycode mappings */
-static const cc_uint8 keycodeMap[136] = {
+static const hc_uint8 keycodeMap[136] = {
 /* 00 */ 0, 0, 0, 0, 0, 0, 0, 0, 
 /* 08 */ 0, CCKEY_ESCAPE, '1', '2', '3', '4', '5', '6',
 /* 10 */ '7', '8', '9', '0', CCKEY_MINUS, CCKEY_EQUALS, CCKEY_BACKSPACE, CCKEY_TAB, 
@@ -276,7 +276,7 @@ static X11_IOErrorHandler realXIOErrorHandler;
 
 static void LogXErrorCore(const char* msg) {
 	char traceBuffer[2048];
-	cc_string trace;
+	hc_string trace;
 	Platform_LogConst(msg);
 
 	String_InitArray(trace, traceBuffer);
@@ -303,10 +303,10 @@ static void HookXErrors(void) {
 /*########################################################################################################################*
 *--------------------------------------------------Public implementation--------------------------------------------------*
 *#########################################################################################################################*/
-#if defined CC_BUILD_EGL || !CC_GFX_BACKEND_IS_GL()
+#if defined HC_BUILD_EGL || !HC_GFX_BACKEND_IS_GL()
 static XVisualInfo GLContext_SelectVisual(void) {
 	XVisualInfo info;
-	cc_result res;
+	hc_result res;
 	int screen = DefaultScreen(win_display);
 
 	res = XMatchVisualInfo(win_display, screen, 24, TrueColor, &info) ||
@@ -345,7 +345,7 @@ void Window_Init(void) {
 
 void Window_Free(void) { }
 
-#ifdef CC_BUILD_ICON
+#ifdef HC_BUILD_ICON
 /* See misc/x11/x11_icon_gen.cs for how to generate this file */
 #include "../misc/x11/CCIcon_X11.h"
 
@@ -379,7 +379,7 @@ static void DoCreateWindow(int width, int height) {
 
 	Window win = XCreateWindow(win_display, win_rootWin, x, y, width, height,
 		0, win_visual.depth /* CopyFromParent*/, InputOutput, win_visual.visual,
-#ifdef CC_BUILD_IRIX
+#ifdef HC_BUILD_IRIX
 		CWColormap | CWEventMask | CWBlackPixel | CWBorderPixel, &attributes);
 #else
 		/* Omitting black/border pixels produces nicer looking resizing on some WMs */
@@ -388,7 +388,7 @@ static void DoCreateWindow(int width, int height) {
 
 	if (!win) Logger_Abort("XCreateWindow failed");
 
-#ifdef CC_BUILD_XIM
+#ifdef HC_BUILD_XIM
 	win_xim = XOpenIM(win_display, NULL, NULL, NULL);
 	win_xic = XCreateIC(win_xim, XNInputStyle, XIMPreeditNothing | XIMStatusNothing,
 						XNClientWindow, win, NULL);
@@ -421,9 +421,9 @@ static void DoCreateWindow(int width, int height) {
 	
 	/* So right name appears in e.g. Ubuntu Unity launchbar */
 	XClassHint hint = { 0 };
-	#ifdef CC_BUILD_FLATPAK
-		hint.res_name   = (char*)"net.classicube.flatpak.client";
-		hint.res_class  = (char*)"net.classicube.flatpak.client";
+	#ifdef HC_BUILD_FLATPAK
+		hint.res_name   = (char*)"net.harmonyclient.flatpak.client";
+		hint.res_class  = (char*)"net.harmonyclient.flatpak.client";
 	#else
 		hint.res_name   = (char*)GAME_APP_TITLE;
 		hint.res_class  = (char*)GAME_APP_TITLE;
@@ -446,7 +446,7 @@ void Window_Destroy(void) {
 	Window_Main.Exists = false;
 }
 
-void Window_SetTitle(const cc_string* title) {
+void Window_SetTitle(const hc_string* title) {
 	Window win = Window_Main.Handle.val;
 	char str[NATIVE_STR_LEN];
 	String_EncodeUtf8(str, title);
@@ -455,11 +455,11 @@ void Window_SetTitle(const cc_string* title) {
 
 static char clipboard_copy_buffer[256];
 static char clipboard_paste_buffer[256];
-static cc_string clipboard_copy_text  = String_FromArray(clipboard_copy_buffer);
-static cc_string clipboard_paste_text = String_FromArray(clipboard_paste_buffer);
-static cc_bool clipboard_paste_received;
+static hc_string clipboard_copy_text  = String_FromArray(clipboard_copy_buffer);
+static hc_string clipboard_paste_text = String_FromArray(clipboard_paste_buffer);
+static hc_bool clipboard_paste_received;
 
-void Clipboard_GetText(cc_string* value) {
+void Clipboard_GetText(hc_string* value) {
 	Window win   = Window_Main.Handle.val;
 	Window owner = XGetSelectionOwner(win_display, xa_clipboard);
 	int i;
@@ -481,14 +481,14 @@ void Clipboard_GetText(cc_string* value) {
 	}
 }
 
-void Clipboard_SetText(const cc_string* value) {
+void Clipboard_SetText(const hc_string* value) {
 	Window win = Window_Main.Handle.val;
 	String_Copy(&clipboard_copy_text, value);
 	XSetSelectionOwner(win_display, xa_clipboard, win, 0);
 }
 
 int Window_GetWindowState(void) {
-	cc_bool fullscreen = false, minimised = false;
+	hc_bool fullscreen = false, minimised = false;
 	Window win = Window_Main.Handle.val;
 	Atom prop_type;
 	unsigned long items, after;
@@ -536,10 +536,10 @@ static void ToggleFullscreen(long op) {
 	Window_ProcessEvents(0.0);
 }
 
-cc_result Window_EnterFullscreen(void) {
+hc_result Window_EnterFullscreen(void) {
 	ToggleFullscreen(_NET_WM_STATE_ADD); return 0;
 }
-cc_result Window_ExitFullscreen(void) {
+hc_result Window_ExitFullscreen(void) {
 	ToggleFullscreen(_NET_WM_STATE_REMOVE); return 0;
 }
 
@@ -675,14 +675,14 @@ void Window_ProcessEvents(float delta) {
 			key = TryGetKey(&e.xkey);
 			if (key) Input_SetPressed(key);
 			
-#ifdef CC_BUILD_XIM
+#ifdef HC_BUILD_XIM
 			cc_codepoint cp;
 			char* chars = data;
 			Status status_type;
 
 			status = Xutf8LookupString(win_xic, &e.xkey, data, Array_Elems(data), NULL, &status_type);
 			while (status > 0) {
-				i = Convert_Utf8ToCodepoint(&cp, (cc_uint8*)chars, status);
+				i = Convert_Utf8ToCodepoint(&cp, (hc_uint8*)chars, status);
 				if (!i) break;
 
 				Event_RaiseInt(&InputEvents.Press, cp);
@@ -693,7 +693,7 @@ void Window_ProcessEvents(float delta) {
 			/* This only really works for latin keys (e.g. so some finnish keys still work) */
 			status = XLookupString(&e.xkey, data, Array_Elems(data), NULL, NULL);
 			for (i = 0; i < status; i++) {
-				Event_RaiseInt(&InputEvents.Press, (cc_uint8)data[i]);
+				Event_RaiseInt(&InputEvents.Press, (hc_uint8)data[i]);
 			}
 #endif
 		} break;
@@ -750,7 +750,7 @@ void Window_ProcessEvents(float delta) {
 				Atom prop_type;
 				int prop_format;
 				unsigned long items, after;
-				cc_uint8* data = NULL;
+				hc_uint8* data = NULL;
 
 				XGetWindowProperty(win_display, win, xa_data_sel, 0, 1024, false, 0,
 					&prop_type, &prop_format, &items, &after, &data);
@@ -817,7 +817,7 @@ void Cursor_SetPosition(int x, int y) {
 }
 
 static Cursor blankCursor;
-static void Cursor_DoSetVisible(cc_bool visible) {
+static void Cursor_DoSetVisible(hc_bool visible) {
 	Window win = Window_Main.Handle.val;
 	if (visible) {
 		XUndefineCursor(win_display, win);
@@ -845,7 +845,7 @@ struct X11MessageBox {
 	unsigned long btnBorder, highlight, shadow;
 };
 
-static unsigned long X11_Col(struct X11MessageBox* m, cc_uint8 r, cc_uint8 g, cc_uint8 b) {
+static unsigned long X11_Col(struct X11MessageBox* m, hc_uint8 r, hc_uint8 g, hc_uint8 b) {
 	Colormap cmap = XDefaultColormap(m->dpy, DefaultScreen(m->dpy));
 	XColor col = { 0 };
 	col.red   = r << 8;
@@ -889,7 +889,7 @@ struct X11Textbox {
 };
 
 static void X11Textbox_Measure(struct X11Textbox* t, XFontStruct* font) {
-	cc_string str = String_FromReadonly(t->text), line;
+	hc_string str = String_FromReadonly(t->text), line;
 	XCharStruct overall;
 	int direction, ascent, descent, lines = 0;
 
@@ -905,7 +905,7 @@ static void X11Textbox_Measure(struct X11Textbox* t, XFontStruct* font) {
 }
 
 static void X11Textbox_Draw(struct X11Textbox* t, struct X11MessageBox* m) {
-	cc_string str = String_FromReadonly(t->text), line;
+	hc_string str = String_FromReadonly(t->text), line;
 	int y = t->y + t->lineHeight - t->descent; /* TODO: is -descent even right? */
 
 	for (; str.length; y += t->lineHeight) {
@@ -916,7 +916,7 @@ static void X11Textbox_Draw(struct X11Textbox* t, struct X11MessageBox* m) {
 
 struct X11Button {
 	int x, y, width, height;
-	cc_bool clicked;
+	hc_bool clicked;
 	struct X11Textbox text;
 };
 
@@ -1089,8 +1089,8 @@ static void ShowDialogCore(const char* title, const char* msg) {
 	XFlush(m.dpy); /* flush so window disappears immediately */
 }
 
-static cc_result OpenSaveFileDialog(const char* args, FileDialogCallback callback, const char* defaultExt) {
-	cc_string path; char pathBuffer[1024];
+static hc_result OpenSaveFileDialog(const char* args, FileDialogCallback callback, const char* defaultExt) {
+	hc_string path; char pathBuffer[1024];
 	char result[4096] = { 0 };
 	int len;
 	/* TODO this doesn't detect when Zenity doesn't exist */
@@ -1109,7 +1109,7 @@ static cc_result OpenSaveFileDialog(const char* args, FileDialogCallback callbac
 
 	/* Add default file extension if necessary */
 	if (defaultExt) {
-		cc_string file = path;
+		hc_string file = path;
 		Utils_UNSAFE_GetFilename(&file);
 		if (String_IndexOf(&file, '.') == -1) String_AppendConst(&path, defaultExt);
 	}
@@ -1117,9 +1117,9 @@ static cc_result OpenSaveFileDialog(const char* args, FileDialogCallback callbac
 	return 0;
 }
 
-cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
+hc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 	const char* const* filters = args->filters;
-	cc_string path; char pathBuffer[1024];
+	hc_string path; char pathBuffer[1024];
 	int i;
 
 	String_InitArray_NT(path, pathBuffer);
@@ -1142,10 +1142,10 @@ cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 	return OpenSaveFileDialog(path.buffer, args->Callback, NULL);
 }
 
-cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
+hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
 	const char* const* titles   = args->titles;
 	const char* const* fileExts = args->filters;
-	cc_string path; char pathBuffer[1024];
+	hc_string path; char pathBuffer[1024];
 	int i;
 
 	String_InitArray_NT(path, pathBuffer);
@@ -1193,7 +1193,7 @@ static void BlitFramebuffer(int x1, int y1, int width, int height, struct Bitmap
 	unsigned char* dst;
 	BitmapCol* row;
 	BitmapCol src;
-	cc_uint32 pixel;
+	hc_uint32 pixel;
 	int R, G, B, A;
 	int x, y;
 
@@ -1212,19 +1212,19 @@ static void BlitFramebuffer(int x1, int y1, int width, int height, struct Bitmap
 			{
 			case 30: /* R10 G10 B10 A2 */
 				pixel = (R << 2) | ((G << 2) << 10) | ((B << 2) << 20) | ((A >> 6) << 30);
-				((cc_uint32*)dst)[x] = pixel;
+				((hc_uint32*)dst)[x] = pixel;
 				break;
 			case 16: /* B5 G6 R5 */
 				pixel = (B >> 3) | ((G >> 2) <<  5) | ((R >> 3) << 11);
-				((cc_uint16*)dst)[x] = pixel;
+				((hc_uint16*)dst)[x] = pixel;
 				break;
 			case 15: /* B5 G5 R5 */
 				pixel = (B >> 3) | ((G >> 3) <<  5) | ((R >> 3) << 10);
-				((cc_uint16*)dst)[x] = pixel;
+				((hc_uint16*)dst)[x] = pixel;
 				break;
 			case 8:  /* B2 G3 R3 */
 				pixel = (B >> 6) | ((G >> 5) <<  2) | ((R >> 5) <<  5);
-				((cc_uint8*) dst)[x] = pixel;
+				((hc_uint8*) dst)[x] = pixel;
 				break;
 			}
 		}
@@ -1247,13 +1247,13 @@ void Window_FreeFramebuffer(struct Bitmap* bmp) {
 }
 
 void OnscreenKeyboard_Open(struct OpenKeyboardArgs* args) { }
-void OnscreenKeyboard_SetText(const cc_string* text) { }
+void OnscreenKeyboard_SetText(const hc_string* text) { }
 void OnscreenKeyboard_Close(void) { }
 
-static cc_bool rawMouseInited, rawMouseSupported;
+static hc_bool rawMouseInited, rawMouseSupported;
 static int xiOpcode;
 
-#ifdef CC_BUILD_XINPUT2
+#ifdef HC_BUILD_XINPUT2
 static void CheckMovementDelta(double dx, double dy) {
 	/* Despite the assumption that XI_RawMotion is relative,     */
 	/*  unfortunately there's a few buggy corner cases out there */
@@ -1370,7 +1370,7 @@ void Window_DisableRawMouse(void) {
 /*########################################################################################################################*
 *-------------------------------------------------------glX OpenGL--------------------------------------------------------*
 *#########################################################################################################################*/
-#if CC_GFX_BACKEND_IS_GL() && !defined CC_BUILD_EGL
+#if HC_GFX_BACKEND_IS_GL() && !defined HC_BUILD_EGL
 /* #include <GL/glx.h> */
 #include "../misc/x11/min-glx.h"
 
@@ -1381,13 +1381,13 @@ static FP_SWAPINTERVAL swapIntervalMESA, swapIntervalSGI;
 static FP_QUERYRENDERER queryRendererMESA;
 
 void GLContext_Create(void) {
-	static const cc_string vsync_mesa = String_FromConst("GLX_MESA_swap_control");
-	static const cc_string vsync_sgi  = String_FromConst("GLX_SGI_swap_control");
-	static const cc_string info_mesa  = String_FromConst("GLX_MESA_query_renderer");
+	static const hc_string vsync_mesa = String_FromConst("GLX_MESA_swap_control");
+	static const hc_string vsync_sgi  = String_FromConst("GLX_SGI_swap_control");
+	static const hc_string info_mesa  = String_FromConst("GLX_MESA_query_renderer");
 	Window win = Window_Main.Handle.val;
 
 	const char* raw_exts;
-	cc_string exts;
+	hc_string exts;
 	ctx_handle = glXCreateContext(win_display, &win_visual, NULL, true);
 
 	if (!ctx_handle) {
@@ -1420,7 +1420,7 @@ void GLContext_Create(void) {
 }
 
 void GLContext_Update(void) { }
-cc_bool GLContext_TryRestore(void) { return true; }
+hc_bool GLContext_TryRestore(void) { return true; }
 void GLContext_Free(void) {
 	if (!ctx_handle) return;
 	glXMakeCurrent(win_display, None, NULL);
@@ -1432,13 +1432,13 @@ void* GLContext_GetAddress(const char* function) {
 	return (void*)glXGetProcAddress(function);
 }
 
-cc_bool GLContext_SwapBuffers(void) {
+hc_bool GLContext_SwapBuffers(void) {
 	Window win = Window_Main.Handle.val;
 	glXSwapBuffers(win_display, win);
 	return true;
 }
 
-void GLContext_SetVSync(cc_bool vsync) {
+void GLContext_SetVSync(hc_bool vsync) {
 	int res = 0;
 	if (swapIntervalMESA) {
 		res = swapIntervalMESA(vsync);
@@ -1448,7 +1448,7 @@ void GLContext_SetVSync(cc_bool vsync) {
 	if (res) Platform_Log1("Set VSync failed, error: %i", &res);
 }
 
-void GLContext_GetApiInfo(cc_string* info) {
+void GLContext_GetApiInfo(hc_string* info) {
 	unsigned int vram, acc;
 	if (!queryRendererMESA) return;
 

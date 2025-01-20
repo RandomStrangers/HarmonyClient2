@@ -1,5 +1,5 @@
 #include "Core.h"
-#ifdef CC_BUILD_WIIU
+#ifdef HC_BUILD_WIIU
 #include "_GraphicsBase.h"
 #include "Errors.h"
 #include "Window.h"
@@ -53,7 +53,7 @@ void Gfx_Create(void) {
 	Gfx.MaxTexHeight = 1024;
 }
 
-cc_bool Gfx_TryRestoreContext(void) {
+hc_bool Gfx_TryRestoreContext(void) {
 	return true;
 }
 
@@ -84,7 +84,7 @@ static void Gfx_RestoreState(void) {
 *#########################################################################################################################*/
 static GX2Texture* pendingTex;
 
-static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8 flags, cc_bool mipmaps) {
+static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, hc_uint8 flags, hc_bool mipmaps) {
 	GX2Texture* tex = Mem_TryAllocCleared(1, sizeof(GX2Texture));
 	if (!tex) return NULL;
 
@@ -110,7 +110,7 @@ static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8
 	return tex;
 }
 
-void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, cc_bool mipmaps) {
+void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, hc_bool mipmaps) {
 	GX2Texture* tex = (GX2Texture*)texId;	
 	uint32_t* dst   = (uint32_t*)tex->surface.image + (y * tex->surface.pitch) + x;
 	
@@ -149,17 +149,17 @@ void Gfx_DisableMipmaps(void) { } // TODO
 *-----------------------------------------------------State management----------------------------------------------------*
 *#########################################################################################################################*/
 static float clearR, clearG, clearB;
-static cc_bool depthWrite = true, depthTest = true;
+static hc_bool depthWrite = true, depthTest = true;
 
 static void UpdateDepthState(void) {
 	GX2SetDepthOnlyControl(depthTest, depthWrite, GX2_COMPARE_FUNC_LEQUAL);
 }
 
-void Gfx_SetFaceCulling(cc_bool enabled) {
+void Gfx_SetFaceCulling(hc_bool enabled) {
 	GX2SetCullOnlyControl(GX2_FRONT_FACE_CCW, false, enabled);
 }
 
-void Gfx_SetFog(cc_bool enabled) {
+void Gfx_SetFog(hc_bool enabled) {
 	// TODO
 }
 
@@ -179,11 +179,11 @@ void Gfx_SetFogMode(FogFunc func) {
 	// TODO
 }
 
-static void SetAlphaTest(cc_bool enabled) {
+static void SetAlphaTest(hc_bool enabled) {
 	GX2SetAlphaTest(enabled, GX2_COMPARE_FUNC_GEQUAL, 0.5f);
 }
 
-static void SetAlphaBlend(cc_bool enabled) {
+static void SetAlphaBlend(hc_bool enabled) {
 	GX2SetBlendControl(GX2_RENDER_TARGET_0,
 		GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD,
 		true,
@@ -191,7 +191,7 @@ static void SetAlphaBlend(cc_bool enabled) {
 	GX2SetColorControl(GX2_LOGIC_OP_COPY, enabled, FALSE, TRUE);
 }
 
-void Gfx_SetAlphaArgBlend(cc_bool enabled) {
+void Gfx_SetAlphaArgBlend(hc_bool enabled) {
 }
 
 void Gfx_ClearColor(PackedCol color) {
@@ -200,17 +200,17 @@ void Gfx_ClearColor(PackedCol color) {
 	clearB = PackedCol_B(color) / 255.0f;
 }
 
-void Gfx_SetDepthTest(cc_bool enabled) {
+void Gfx_SetDepthTest(hc_bool enabled) {
 	depthTest = enabled;
 	UpdateDepthState();
 }
 
-void Gfx_SetDepthWrite(cc_bool enabled) {
+void Gfx_SetDepthWrite(hc_bool enabled) {
 	depthWrite = enabled;
 	UpdateDepthState();
 }
 
-static void SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a) {
+static void SetColorWrite(hc_bool r, hc_bool g, hc_bool b, hc_bool a) {
 	GX2ChannelMask mask = 0;
 	if (r) mask |= GX2_CHANNEL_MASK_R;
 	if (g) mask |= GX2_CHANNEL_MASK_G;
@@ -221,8 +221,8 @@ static void SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a) {
 	GX2SetTargetChannelMasks(mask, 0,0,0, 0,0,0,0);
 }
 
-void Gfx_DepthOnlyRendering(cc_bool depthOnly) {
-	cc_bool enabled = !depthOnly;
+void Gfx_DepthOnlyRendering(hc_bool depthOnly) {
+	hc_bool enabled = !depthOnly;
 	SetColorWrite(enabled & gfx_colorMask[0], enabled & gfx_colorMask[1], 
 				  enabled & gfx_colorMask[2], enabled & gfx_colorMask[3]);
 }
@@ -399,11 +399,11 @@ void Gfx_CalcPerspectiveMatrix(struct Matrix* matrix, float fov, float aspect, f
 /*########################################################################################################################*
 *-----------------------------------------------------------Misc----------------------------------------------------------*
 *#########################################################################################################################*/
-cc_result Gfx_TakeScreenshot(struct Stream* output) {
+hc_result Gfx_TakeScreenshot(struct Stream* output) {
 	return ERR_NOT_SUPPORTED;
 }
 
-void Gfx_SetVSync(cc_bool vsync) {
+void Gfx_SetVSync(hc_bool vsync) {
 	gfx_vsync = vsync;
 	// TODO GX2SetSwapInterval(1);
 }
@@ -456,10 +456,10 @@ void Gfx_EndFrame(void) {
 	GX2SetDRCEnable(TRUE);
 }
 
-cc_bool Gfx_WarnIfNecessary(void) { return false; }
-cc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
+hc_bool Gfx_WarnIfNecessary(void) { return false; }
+hc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
 
-void Gfx_GetApiInfo(cc_string* info) {
+void Gfx_GetApiInfo(hc_string* info) {
 	String_AppendConst(info, "-- Using Wii U --\n");
 	PrintMaxTextureInfo(info);
 }

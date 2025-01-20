@@ -19,7 +19,7 @@ int MapRenderer_1DUsedCount;
 struct ChunkPartInfo* MapRenderer_PartsNormal;
 struct ChunkPartInfo* MapRenderer_PartsTranslucent;
 
-static cc_bool inTranslucent;
+static hc_bool inTranslucent;
 static IVec3 chunkPos;
 
 /* The number of non-empty Normal/Translucent ChunkPartInfos (across entire world) for each 1D atlas batch. */
@@ -27,9 +27,9 @@ static IVec3 chunkPos;
 static int normPartsCount[ATLAS1D_MAX_ATLASES], tranPartsCount[ATLAS1D_MAX_ATLASES];
 /* Whether there are any visible Normal/Translucent ChunkPartInfos for each 1D atlas batch. */
 /* 1D atlas batches that do not have any visible ChunkPartInfos can be skipped. */
-static cc_bool hasNormParts[ATLAS1D_MAX_ATLASES], hasTranParts[ATLAS1D_MAX_ATLASES];
+static hc_bool hasNormParts[ATLAS1D_MAX_ATLASES], hasTranParts[ATLAS1D_MAX_ATLASES];
 /* Whether renderer should check if there are any visible Normal/Translucent ChunkPartInfos for each 1D atlas batch. */
-static cc_bool checkNormParts[ATLAS1D_MAX_ATLASES], checkTranParts[ATLAS1D_MAX_ATLASES];
+static hc_bool checkNormParts[ATLAS1D_MAX_ATLASES], checkTranParts[ATLAS1D_MAX_ATLASES];
 
 /* Render info for all chunks in the world. Unsorted. */
 static struct ChunkInfo* mapChunks;
@@ -41,7 +41,7 @@ static struct ChunkInfo** renderChunks;
 /* Number of actually used pointers in the renderChunks array. Entries past this are ignored and skipped. */
 static int renderChunksCount;
 /* Distance of each chunk from the camera. */
-static cc_uint32* distances;
+static hc_uint32* distances;
 /* Maximum number of chunk updates that can be performed in one frame. */
 static int maxChunkUpdates;
 /* Cached number of chunks in the world */
@@ -50,7 +50,7 @@ static int chunksCount;
 static void ChunkInfo_Reset(struct ChunkInfo* chunk, int x, int y, int z) {
 	chunk->centreX = x + HALF_CHUNK_SIZE; chunk->centreY = y + HALF_CHUNK_SIZE; 
 	chunk->centreZ = z + HALF_CHUNK_SIZE;
-#ifndef CC_BUILD_GL11
+#ifndef HC_BUILD_GL11
 	chunk->vb = 0;
 #endif
 
@@ -68,7 +68,7 @@ static void ChunkInfo_Reset(struct ChunkInfo* chunk, int x, int y, int z) {
 }
 
 /* Index of maximum used 1D atlas + 1 */
-CC_NOINLINE static int MapRenderer_UsedAtlases(void) {
+HC_NOINLINE static int MapRenderer_UsedAtlases(void) {
 	TextureLoc maxLoc = 0;
 	int i;
 
@@ -85,7 +85,7 @@ CC_NOINLINE static int MapRenderer_UsedAtlases(void) {
 static void CheckWeather(float delta) {
 	IVec3 pos;
 	BlockID block;
-	cc_bool outside;
+	hc_bool outside;
 	IVec3_Floor(&pos, &Camera.CurrentPos);
 
 	block   = World_SafeGetBlock(pos.x, pos.y, pos.z);
@@ -99,7 +99,7 @@ static void CheckWeather(float delta) {
 	Gfx_SetAlphaBlending(false);
 }
 
-#ifdef CC_BUILD_GL11
+#ifdef HC_BUILD_GL11
 #define DrawFace(face, ign)    Gfx_BindVb(part.vbs[face]); Gfx_DrawIndexedTris_T2fC4b(0, 0);
 #define DrawFaces(f1, f2, ign) DrawFace(f1, ign); DrawFace(f2, ign);
 #else
@@ -125,7 +125,7 @@ static void RenderNormalBatch(int batch) {
 	int batchOffset = chunksCount * batch;
 	struct ChunkInfo* info;
 	struct ChunkPartInfo part;
-	cc_bool drawMin, drawMax;
+	hc_bool drawMin, drawMax;
 	int i, offset, count;
 
 	for (i = 0; i < renderChunksCount; i++) {
@@ -136,7 +136,7 @@ static void RenderNormalBatch(int batch) {
 		if (part.offset < 0) continue;
 		hasNormParts[batch] = true;
 
-#ifndef CC_BUILD_GL11
+#ifndef HC_BUILD_GL11
 		Gfx_BindVb_Textured(info->vb);
 #endif
 
@@ -161,7 +161,7 @@ static void RenderNormalBatch(int batch) {
 
 		Gfx_SetFaceCulling(true);
 		/* TODO: fix to not render them all */
-#ifdef CC_BUILD_GL11
+#ifdef HC_BUILD_GL11
 		Gfx_BindVb(part.vbs[FACE_COUNT]);
 		Gfx_DrawIndexedTris_T2fC4b(0, 0);
 		Game_Vertices += count * 4;
@@ -229,7 +229,7 @@ static void RenderTranslucentBatch(int batch) {
 	int batchOffset = chunksCount * batch;
 	struct ChunkInfo* info;
 	struct ChunkPartInfo part;
-	cc_bool drawMin, drawMax;
+	hc_bool drawMin, drawMax;
 	int i, offset;
 
 	for (i = 0; i < renderChunksCount; i++) {
@@ -240,7 +240,7 @@ static void RenderTranslucentBatch(int batch) {
 		if (part.offset < 0) continue;
 		hasTranParts[batch] = true;
 
-#ifndef CC_BUILD_GL11
+#ifndef HC_BUILD_GL11
 		Gfx_BindVb_Textured(info->vb);
 #endif
 
@@ -315,7 +315,7 @@ void MapRenderer_RenderTranslucent(float delta) {
 static void DeleteChunk(struct ChunkInfo* info) {
 	struct ChunkPartInfo* ptr;
 	int i;
-#ifdef CC_BUILD_GL11
+#ifdef HC_BUILD_GL11
 	int j;
 #else
 	Gfx_DeleteVb(&info->vb);
@@ -334,7 +334,7 @@ static void DeleteChunk(struct ChunkInfo* info) {
 		for (i = 0; i < MapRenderer_1DUsedCount; i++, ptr += chunksCount) {
 			if (ptr->offset < 0) continue; 
 			normPartsCount[i]--;
-#ifdef CC_BUILD_GL11
+#ifdef HC_BUILD_GL11
 			for (j = 0; j < CHUNKPART_MAX_VBS; j++) Gfx_DeleteVb(&ptr->vbs[j]);
 #endif
 		}
@@ -346,7 +346,7 @@ static void DeleteChunk(struct ChunkInfo* info) {
 		for (i = 0; i < MapRenderer_1DUsedCount; i++, ptr += chunksCount) {
 			if (ptr->offset < 0) continue;
 			tranPartsCount[i]--;
-#ifdef CC_BUILD_GL11
+#ifdef HC_BUILD_GL11
 			for (j = 0; j < CHUNKPART_MAX_VBS; j++) Gfx_DeleteVb(&ptr->vbs[j]);
 #endif
 		}
@@ -407,7 +407,7 @@ static void FreeChunks(void) {
 
 static void AllocateParts(void) {
 	struct ChunkPartInfo* ptr;
-	cc_uint32 count = chunksCount * MapRenderer_1DUsedCount;
+	hc_uint32 count = chunksCount * MapRenderer_1DUsedCount;
 
 	ptr = (struct ChunkPartInfo*)Mem_AllocCleared(count * 2, sizeof(struct ChunkPartInfo), "chunk parts");
 	MapRenderer_PartsNormal      = ptr;
@@ -418,7 +418,7 @@ static void AllocateChunks(void) {
 	mapChunks    = (struct ChunkInfo*) Mem_Alloc(chunksCount, sizeof(struct ChunkInfo),  "chunk info");
 	sortedChunks = (struct ChunkInfo**)Mem_Alloc(chunksCount, sizeof(struct ChunkInfo*), "sorted chunk info");
 	renderChunks = (struct ChunkInfo**)Mem_Alloc(chunksCount, sizeof(struct ChunkInfo*), "render chunk info");
-	distances    = (cc_uint32*)Mem_Alloc(chunksCount, 4, "chunk distances");
+	distances    = (hc_uint32*)Mem_Alloc(chunksCount, 4, "chunk distances");
 }
 
 static void ResetPartFlags(void) {
@@ -498,7 +498,7 @@ void MapRenderer_Refresh(void) {
 /* Refreshes chunks on the border of the map whose y is less than 'maxHeight'. */
 static void RefreshBorderChunks(int maxHeight) {
 	int cx, cy, cz;
-	cc_bool onBorder;
+	hc_bool onBorder;
 
 	chunkPos = IVec3_MaxValue();
 	if (!mapChunks || !World.Blocks) return;
@@ -548,7 +548,7 @@ static int UpdateChunksAndVisibility(int* chunkUpdates) {
 
 	struct ChunkInfo* info;
 	int i, j = 0, distSqr;
-	cc_bool noData;
+	hc_bool noData;
 
 	for (i = 0; i < chunksCount; i++) {
 		info = sortedChunks[i];
@@ -581,7 +581,7 @@ static int UpdateChunksStill(int* chunkUpdates) {
 
 	struct ChunkInfo* info;
 	int i, j = 0, distSqr;
-	cc_bool noData;
+	hc_bool noData;
 
 	for (i = 0; i < chunksCount; i++) {
 		info = sortedChunks[i];
@@ -613,7 +613,7 @@ static int UpdateChunksStill(int* chunkUpdates) {
 
 static void UpdateChunks(float delta) {
 	struct LocalPlayer* p;
-	cc_bool samePos;
+	hc_bool samePos;
 	int chunkUpdates = 0;
 
 	/* Build more chunks if 30 FPS or over, otherwise slowdown */
@@ -637,11 +637,11 @@ static void UpdateChunks(float delta) {
 
 static void SortMapChunks(int left, int right) {
 	struct ChunkInfo** values = sortedChunks; struct ChunkInfo* value;
-	cc_uint32* keys = distances; cc_uint32 key;
+	hc_uint32* keys = distances; hc_uint32 key;
 
 	while (left < right) {
 		int i = left, j = right;
-		cc_uint32 pivot = keys[(i + j) >> 1];
+		hc_uint32 pivot = keys[(i + j) >> 1];
 
 		/* partition the list */
 		while (i <= j) {

@@ -5,14 +5,13 @@
 #include "ExtMath.h"
 #include "Block.h"
 #include "TexturePack.h"
-#include "Block.h"
 #include "Game.h"
 
 static struct VertexTextured* iso_vertices;
 static struct VertexTextured* iso_vertices_base;
 static int* iso_state;
 
-static cc_bool iso_cacheInited;
+static hc_bool iso_cacheInited;
 static PackedCol iso_colorXSide, iso_colorZSide, iso_colorYBottom;
 static float iso_posX, iso_posY;
 
@@ -68,7 +67,7 @@ static void IsometricDrawer_Flat(BlockID block, float size) {
 }
 
 static void IsometricDrawer_Angled(BlockID block, float size) {
-	cc_bool bright;
+	hc_bool bright;
 	Vec3 min, max;
 	struct VertexTextured* beg = iso_vertices;
 	struct VertexTextured* v;
@@ -131,7 +130,7 @@ void IsometricDrawer_AddBatch(BlockID block, float size, float x, float y) {
 	iso_posX = x; iso_posY = y;
 	/* See comment in Gfx_Make2DQuad() for why 0.5 is subtracted in D3D9 */
 	/* TODO pass as arguments? test diff */
-#if CC_GFX_BACKEND == CC_GFX_BACKEND_D3D9
+#if HC_GFX_BACKEND == HC_GFX_BACKEND_D3D9
 	iso_posX -= 0.5f; iso_posY -= 0.5f;
 #endif
 

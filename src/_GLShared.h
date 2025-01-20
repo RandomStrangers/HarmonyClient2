@@ -2,13 +2,13 @@
 #define _GL_BGRA_EXT                 0x80E1
 #define _GL_UNSIGNED_INT_8_8_8_8_REV 0x8367
 
-#if defined CC_BUILD_WEB || defined CC_BUILD_ANDROID
+#if defined HC_BUILD_WEB || defined HC_BUILD_ANDROID
 #define PIXEL_FORMAT GL_RGBA
 #else
 #define PIXEL_FORMAT _GL_BGRA_EXT
 #endif
 
-#if defined CC_BIG_ENDIAN
+#if defined HC_BIG_ENDIAN
 /* Pixels are stored in memory as A,R,G,B but GL_UNSIGNED_BYTE will interpret as B,G,R,A */
 /* So use GL_UNSIGNED_INT_8_8_8_8_REV instead to remedy this */
 #define TRANSFER_FORMAT _GL_UNSIGNED_INT_8_8_8_8_REV
@@ -18,8 +18,8 @@
 #define TRANSFER_FORMAT GL_UNSIGNED_BYTE
 #endif
 
-#define uint_to_ptr(raw) ((void*)((cc_uintptr)(raw)))
-#define ptr_to_uint(raw) ((GLuint)((cc_uintptr)(raw)))
+#define uint_to_ptr(raw) ((void*)((hc_uintptr)(raw)))
+#define ptr_to_uint(raw) ((GLuint)((hc_uintptr)(raw)))
 
 
 /*########################################################################################################################*
@@ -40,7 +40,7 @@ void Gfx_Create(void) {
 	GLContext_SetVSync(gfx_vsync);
 }
 
-cc_bool Gfx_TryRestoreContext(void) {
+hc_bool Gfx_TryRestoreContext(void) {
 	return GLContext_TryRestore();
 }
 
@@ -67,7 +67,7 @@ static void* FastAllocTempMem(int size) {
 /*########################################################################################################################*
 *---------------------------------------------------------Textures--------------------------------------------------------*
 *#########################################################################################################################*/
-static void Gfx_DoMipmaps(int x, int y, struct Bitmap* bmp, int rowWidth, cc_bool partial) {
+static void Gfx_DoMipmaps(int x, int y, struct Bitmap* bmp, int rowWidth, hc_bool partial) {
 	BitmapCol* prev = bmp->scan0;
 	BitmapCol* cur;
 
@@ -97,7 +97,7 @@ static void Gfx_DoMipmaps(int x, int y, struct Bitmap* bmp, int rowWidth, cc_boo
 
 /* TODO: Use GL_UNPACK_ROW_LENGTH for Desktop OpenGL instead */
 #define UPDATE_FAST_SIZE (64 * 64)
-static CC_NOINLINE void UpdateTextureSlow(int x, int y, struct Bitmap* part, int rowWidth, cc_bool full) {
+static HC_NOINLINE void UpdateTextureSlow(int x, int y, struct Bitmap* part, int rowWidth, hc_bool full) {
 	BitmapCol buffer[UPDATE_FAST_SIZE];
 	void* ptr = (void*)buffer;
 	int count = part->width * part->height;
@@ -118,7 +118,7 @@ static CC_NOINLINE void UpdateTextureSlow(int x, int y, struct Bitmap* part, int
 	if (count > UPDATE_FAST_SIZE) Mem_Free(ptr);
 }
 
-static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8 flags, cc_bool mipmaps) {
+static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, hc_uint8 flags, hc_bool mipmaps) {
 	GfxResourceID texId = NULL;
 	_glGenTextures(1, (GLuint*)&texId);
 	_glBindTexture(GL_TEXTURE_2D, ptr_to_uint(texId));
@@ -144,7 +144,7 @@ static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8
 	return texId;
 }
 
-void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, cc_bool mipmaps) {
+void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, hc_bool mipmaps) {
 	_glBindTexture(GL_TEXTURE_2D, ptr_to_uint(texId));
 
 	if (part->width == rowWidth) {
@@ -170,9 +170,9 @@ void Gfx_DisableMipmaps(void) { }
 *-----------------------------------------------------State management----------------------------------------------------*
 *#########################################################################################################################*/
 static PackedCol gfx_clearColor;
-void Gfx_SetFaceCulling(cc_bool enabled)   { gl_Toggle(GL_CULL_FACE); }
-static void SetAlphaBlend(cc_bool enabled) { gl_Toggle(GL_BLEND); }
-void Gfx_SetAlphaArgBlend(cc_bool enabled) { }
+void Gfx_SetFaceCulling(hc_bool enabled)   { gl_Toggle(GL_CULL_FACE); }
+static void SetAlphaBlend(hc_bool enabled) { gl_Toggle(GL_BLEND); }
+void Gfx_SetAlphaArgBlend(hc_bool enabled) { }
 
 static void GL_ClearColor(PackedCol color) {
 	glClearColor(PackedCol_R(color) / 255.0f, PackedCol_G(color) / 255.0f,
@@ -184,12 +184,12 @@ void Gfx_ClearColor(PackedCol color) {
 	gfx_clearColor = color;
 }
 
-static void SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a) {
+static void SetColorWrite(hc_bool r, hc_bool g, hc_bool b, hc_bool a) {
 	glColorMask(r, g, b, a);
 }
 
-void Gfx_SetDepthWrite(cc_bool enabled) { glDepthMask(enabled); }
-void Gfx_SetDepthTest(cc_bool enabled) { gl_Toggle(GL_DEPTH_TEST); }
+void Gfx_SetDepthWrite(hc_bool enabled) { glDepthMask(enabled); }
+void Gfx_SetDepthTest(hc_bool enabled) { gl_Toggle(GL_DEPTH_TEST); }
 
 
 /*########################################################################################################################*
@@ -236,9 +236,9 @@ static BitmapCol* GL_GetRow(struct Bitmap* bmp, int y, void* ctx) {
 	/* OpenGL stores bitmap in bottom-up order, so flip order when saving */
 	return Bitmap_GetRow(bmp, (bmp->height - 1) - y); 
 }
-cc_result Gfx_TakeScreenshot(struct Stream* output) {
+hc_result Gfx_TakeScreenshot(struct Stream* output) {
 	struct Bitmap bmp;
-	cc_result res;
+	hc_result res;
 	GLint vp[4];
 	
 	glGetIntegerv(GL_VIEWPORT, vp); /* { x, y, width, height } */
@@ -254,13 +254,13 @@ cc_result Gfx_TakeScreenshot(struct Stream* output) {
 	return res;
 }
 
-static void AppendVRAMStats(cc_string* info) {
-	static const cc_string memExt = String_FromConst("GL_NVX_gpu_memory_info");
+static void AppendVRAMStats(hc_string* info) {
+	static const hc_string memExt = String_FromConst("GL_NVX_gpu_memory_info");
 	GLint totalKb, curKb;
 	float total, cur;
 
 	/* NOTE: glGetString returns UTF8, but I just treat it as code page 437 */
-	cc_string exts = String_FromReadonly((const char*)glGetString(GL_EXTENSIONS));
+	hc_string exts = String_FromReadonly((const char*)glGetString(GL_EXTENSIONS));
 	if (!String_CaselessContains(&exts, &memExt)) return;
 
 	glGetIntegerv(0x9048, &totalKb);
@@ -271,12 +271,12 @@ static void AppendVRAMStats(cc_string* info) {
 	String_Format2(info, "Video memory: %f2 MB total, %f2 free\n", &total, &cur);
 }
 
-void Gfx_GetApiInfo(cc_string* info) {
+void Gfx_GetApiInfo(hc_string* info) {
 	GLint depthBits = 0;
 	int pointerSize = sizeof(void*) * 8;
 
 	glGetIntegerv(GL_DEPTH_BITS, &depthBits);
-#if CC_GFX_BACKEND == CC_GFX_BACKEND_GL2
+#if HC_GFX_BACKEND == HC_GFX_BACKEND_GL2
 	String_Format1(info, "-- Using OpenGL Modern (%i bit) --\n", &pointerSize);
 #else
 	String_Format1(info, "-- Using OpenGL (%i bit) --\n", &pointerSize);
@@ -290,7 +290,7 @@ void Gfx_GetApiInfo(cc_string* info) {
 	GLContext_GetApiInfo(info);
 }
 
-void Gfx_SetVSync(cc_bool vsync) {
+void Gfx_SetVSync(hc_bool vsync) {
 	gfx_vsync = vsync;
 	if (Gfx.Created) GLContext_SetVSync(gfx_vsync);
 }
@@ -305,7 +305,7 @@ void Gfx_ClearBuffers(GfxBuffers buffers) {
 }
 
 void Gfx_EndFrame(void) {
-#if CC_GFX_BACKEND == CC_GFX_BACKEND_GL1
+#if HC_GFX_BACKEND == HC_GFX_BACKEND_GL1
 	if (Window_IsObscured()) {
 		TickReducedPerformance();
 	} else {
@@ -334,7 +334,7 @@ void Gfx_SetViewport(int x, int y, int w, int h) {
 }
 
 void Gfx_SetScissor(int x, int y, int w, int h) {
-	cc_bool enabled = x != 0 || y != 0 || w != Game.Width || h != Game.Height;
+	hc_bool enabled = x != 0 || y != 0 || w != Game.Width || h != Game.Height;
 	if (enabled) { glEnable(GL_SCISSOR_TEST); } else { glDisable(GL_SCISSOR_TEST); }
 
 	glScissor(x, Game.Height - h - y, w, h);

@@ -1,5 +1,5 @@
 #include "Core.h"
-#if CC_WIN_BACKEND == CC_WIN_BACKEND_SDL3
+#if HC_WIN_BACKEND == HC_WIN_BACKEND_SDL3
 #include "_WindowBase.h"
 #include "Graphics.h"
 #include "String.h"
@@ -16,7 +16,7 @@ static void RefreshWindowBounds(void) {
 
 static void Window_SDLFail(const char* place) {
 	char strBuffer[256];
-	cc_string str;
+	hc_string str;
 	String_InitArray_NT(str, strBuffer);
 
 	String_Format2(&str, "Error when %c: %c", place, SDL_GetError());
@@ -26,8 +26,8 @@ static void Window_SDLFail(const char* place) {
 
 void Window_PreInit(void) {
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD);
-	#ifdef CC_BUILD_FLATPAK
-	SDL_SetHint(SDL_HINT_APP_ID, "net.classicube.flatpak.client");
+	#ifdef HC_BUILD_FLATPAK
+	SDL_SetHint(SDL_HINT_APP_ID, "net.harmonyclient.flatpak.client");
 	#endif
 	DisplayInfo.CursorVisible = true;
 }
@@ -48,7 +48,7 @@ void Window_Init(void) {
 
 void Window_Free(void) { }
 
-#ifdef CC_BUILD_ICON
+#ifdef HC_BUILD_ICON
 /* See misc/sdl/sdl_icon_gen.cs for how to generate this file */
 #include "../misc/sdl/CCIcon_SDL.h"
 
@@ -86,7 +86,7 @@ static void DoCreateWindow(int width, int height, int flags) {
 }
 
 void Window_Create2D(int width, int height) { DoCreateWindow(width, height, 0); }
-#if CC_GFX_BACKEND_IS_GL()
+#if HC_GFX_BACKEND_IS_GL()
 void Window_Create3D(int width, int height) { DoCreateWindow(width, height, SDL_WINDOW_OPENGL); }
 #else
 void Window_Create3D(int width, int height) { DoCreateWindow(width, height, 0); }
@@ -96,13 +96,13 @@ void Window_Destroy(void) {
 	SDL_DestroyWindow(win_handle);
 }
 
-void Window_SetTitle(const cc_string* title) {
+void Window_SetTitle(const hc_string* title) {
 	char str[NATIVE_STR_LEN];
 	String_EncodeUtf8(str, title);
 	SDL_SetWindowTitle(win_handle, str);
 }
 
-void Clipboard_GetText(cc_string* value) {
+void Clipboard_GetText(hc_string* value) {
 	char* ptr = SDL_GetClipboardText();
 	if (!ptr) return;
 
@@ -111,7 +111,7 @@ void Clipboard_GetText(cc_string* value) {
 	SDL_free(ptr);
 }
 
-void Clipboard_SetText(const cc_string* value) {
+void Clipboard_SetText(const hc_string* value) {
 	char str[NATIVE_STR_LEN];
 	String_EncodeUtf8(str, value);
 	SDL_SetClipboardText(str);
@@ -125,10 +125,10 @@ int Window_GetWindowState(void) {
 	return WINDOW_STATE_NORMAL;
 }
 
-cc_result Window_EnterFullscreen(void) {
+hc_result Window_EnterFullscreen(void) {
 	return SDL_SetWindowFullscreen(win_handle, true);
 }
-cc_result Window_ExitFullscreen(void) { 
+hc_result Window_ExitFullscreen(void) { 
 	return SDL_SetWindowFullscreen(win_handle, false);
 }
 
@@ -222,13 +222,13 @@ static int MapNativeKey(SDL_Keycode k) {
 }
 
 static void OnKeyEvent(const SDL_Event* e) {
-	cc_bool pressed = e->key.state == SDL_PRESSED;
+	hc_bool pressed = e->key.state == SDL_PRESSED;
 	int key = MapNativeKey(e->key.key);
 	if (key) Input_Set(key, pressed);
 }
 
 static void OnMouseEvent(const SDL_Event* e) {
-	cc_bool pressed = e->button.state == SDL_PRESSED;
+	hc_bool pressed = e->button.state == SDL_PRESSED;
 	int btn;
 	switch (e->button.button) {
 		case SDL_BUTTON_LEFT:   btn = CCMOUSE_L; break;
@@ -242,7 +242,7 @@ static void OnMouseEvent(const SDL_Event* e) {
 }
 
 static void OnTextEvent(const SDL_Event* e) {
-	cc_codepoint cp;
+	hc_codepoint cp;
 	const char* src;
 	int i, len;
 
@@ -331,7 +331,7 @@ void Cursor_SetPosition(int x, int y) {
 	SDL_WarpMouseInWindow(win_handle, x, y);
 }
 
-static void Cursor_DoSetVisible(cc_bool visible) {
+static void Cursor_DoSetVisible(hc_bool visible) {
 	if (visible) {
 		SDL_ShowCursor();
 	} else {
@@ -350,7 +350,7 @@ static void ProcessDialogEvent(SDL_Event* e) {
 	char* result = e->user.data1;
 	int length   = e->user.code;
 	
-	cc_string path; char pathBuffer[1024];
+	hc_string path; char pathBuffer[1024];
 	String_InitArray(path, pathBuffer);
 	String_AppendUtf8(&path, result, length);
 	
@@ -365,7 +365,7 @@ static void DialogCallback(void *userdata, const char* const* filelist, int filt
 	if (!result) return; /* No file provided */
 	
 	char* path    = Mem_Alloc(NATIVE_STR_LEN, 1, "Dialog path");
-	cc_string str = String_Init(path, 0, NATIVE_STR_LEN);
+	hc_string str = String_Init(path, 0, NATIVE_STR_LEN);
 	String_AppendUtf8(&str, result, String_Length(result));
 	
 	// May need to add file extension when saving, e.g. on Windows
@@ -381,13 +381,13 @@ static void DialogCallback(void *userdata, const char* const* filelist, int filt
 	SDL_PushEvent(&e);
 }
 
-cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
+hc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 	// TODO free memory
 	char* pattern = Mem_Alloc(301, 1, "OpenDialog pattern");
 	SDL_DialogFileFilter* filters = Mem_Alloc(2, sizeof(SDL_DialogFileFilter), "OpenDialog filters");
 	int i;
 	
-	cc_string str = String_Init(pattern, 0, 300);
+	hc_string str = String_Init(pattern, 0, 300);
 	for (i = 0; ; i++)
 	{
 		if (!args->filters[i]) break;
@@ -406,7 +406,7 @@ cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 }
 
 #define MAX_SAVE_DIALOG_FILTERS 10
-cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
+hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
 	// TODO free memory
 	char* defName = Mem_Alloc(NATIVE_STR_LEN, 1, "SaveDialog default");
 	SDL_DialogFileFilter* filters = Mem_Alloc(MAX_SAVE_DIALOG_FILTERS + 1, sizeof(SDL_DialogFileFilter), "SaveDialog filters");
@@ -477,7 +477,7 @@ void Window_FreeFramebuffer(struct Bitmap* bmp) {
 }
 
 void OnscreenKeyboard_Open(struct OpenKeyboardArgs* args) { SDL_StartTextInput(win_handle); }
-void OnscreenKeyboard_SetText(const cc_string* text) { }
+void OnscreenKeyboard_SetText(const hc_string* text) { }
 void OnscreenKeyboard_Close(void) { SDL_StopTextInput(win_handle); }
 
 void Window_EnableRawMouse(void) {
@@ -567,7 +567,7 @@ void Gamepads_Process(float delta) {
 /*########################################################################################################################*
 *-----------------------------------------------------OpenGL context------------------------------------------------------*
 *#########################################################################################################################*/
-#if CC_GFX_BACKEND_IS_GL() && !defined CC_BUILD_EGL
+#if HC_GFX_BACKEND_IS_GL() && !defined HC_BUILD_EGL
 static SDL_GLContext win_ctx;
 
 void GLContext_Create(void) {
@@ -581,7 +581,7 @@ void GLContext_Create(void) {
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE,   GLCONTEXT_DEFAULT_DEPTH);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, true);
-#ifdef CC_BUILD_GLES
+#ifdef HC_BUILD_GLES
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 #endif
 
@@ -590,7 +590,7 @@ void GLContext_Create(void) {
 }
 
 void GLContext_Update(void) { }
-cc_bool GLContext_TryRestore(void) { return true; }
+hc_bool GLContext_TryRestore(void) { return true; }
 void GLContext_Free(void) {
 	SDL_GL_DestroyContext(win_ctx);
 	win_ctx = NULL;
@@ -600,14 +600,14 @@ void* GLContext_GetAddress(const char* function) {
 	return SDL_GL_GetProcAddress(function);
 }
 
-cc_bool GLContext_SwapBuffers(void) {
+hc_bool GLContext_SwapBuffers(void) {
 	SDL_GL_SwapWindow(win_handle);
 	return true;
 }
 
-void GLContext_SetVSync(cc_bool vsync) {
+void GLContext_SetVSync(hc_bool vsync) {
 	SDL_GL_SetSwapInterval(vsync);
 }
-void GLContext_GetApiInfo(cc_string* info) { }
+void GLContext_GetApiInfo(hc_string* info) { }
 #endif
 #endif

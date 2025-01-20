@@ -1,7 +1,7 @@
-#ifndef CC_SERVERCONNECTION_H
-#define CC_SERVERCONNECTION_H
+#ifndef HC_SERVERCONNECTION_H
+#define HC_SERVERCONNECTION_H
 #include "Core.h"
-CC_BEGIN_HEADER
+HC_BEGIN_HEADER
 
 /* 
 Represents a connection to either a multiplayer or an internal singleplayer server
@@ -20,7 +20,7 @@ void Ping_Update(int id);
 int Ping_AveragePingMS(void);
 
 /* Data for currently active connection to a server */
-CC_VAR extern struct _ServerConnectionData {
+HC_VAR extern struct _ServerConnectionData {
 	/* Begins connecting to the server */
 	/* NOTE: Usually asynchronous, but not always */
 	void (*BeginConnect)(void);
@@ -29,50 +29,50 @@ CC_VAR extern struct _ServerConnectionData {
 	/* Sends a block update to the server */
 	void (*SendBlock)(int x, int y, int z, BlockID old, BlockID now);
 	/* Sends a chat message to the server */
-	void (*SendChat)(const cc_string* text);
+	void (*SendChat)(const hc_string* text);
 	/* NOTE: Deprecated and removed - change LocalPlayer's position instead */
 	/*  Was a function pointer to send a position update to the multiplayer server */
 	void (*__Unused)(void);
 	/* Sends raw data to the server. */
 	/* NOTE: Prefer SendBlock/SendChat instead, this does NOT work in singleplayer */
-	void (*SendData)(const cc_uint8* data, cc_uint32 len);
+	void (*SendData)(const hc_uint8* data, hc_uint32 len);
 
 	/* The current name of the server (Shows as first line when loading) */
-	cc_string Name;
+	hc_string Name;
 	/* The current MOTD of the server (Shows as second line when loading) */
-	cc_string MOTD;
+	hc_string MOTD;
 	/* The software name the client identifies itself as being to the server */
 	/* By default this is GAME_APP_NAME */
-	cc_string AppName;
+	hc_string AppName;
 
 	/* NOTE: Drprecated, was a pointer to a temp buffer  */
-	cc_uint8* ___unused;
+	hc_uint8* ___unused;
 	/* Whether the player is connected to singleplayer/internal server */
-	cc_bool IsSinglePlayer;
+	hc_bool IsSinglePlayer;
 	/* Whether the player has been disconnected from the server */
-	cc_bool Disconnected;
+	hc_bool Disconnected;
 
 	/* Whether the server supports separate tab list from entities in world */
-	cc_bool SupportsExtPlayerList;
+	hc_bool SupportsExtPlayerList;
 	/* Whether the server supports packet with detailed info on mouse clicks */
-	cc_bool SupportsPlayerClick;
+	hc_bool SupportsPlayerClick;
 	/* Whether the server supports combining multiple chat packets into one */
-	cc_bool SupportsPartialMessages;
+	hc_bool SupportsPartialMessages;
 	/* Whether the server supports all of code page 437, not just ASCII */
-	cc_bool SupportsFullCP437;
+	hc_bool SupportsFullCP437;
 
 	/* Address of the server if multiplayer, empty string if singleplayer */
-	cc_string Address;
+	hc_string Address;
 	/* Port of the server if multiplayer, 0 if singleplayer */
 	int Port;
 } Server;
 
 /* If user hasn't previously accepted url, displays a dialog asking to confirm downloading it */
 /* Otherwise just calls TexturePack_Extract */
-void Server_RetrieveTexturePack(const cc_string* url);
+void Server_RetrieveTexturePack(const hc_string* url);
 
 /* Path of map to automatically load in singleplayer */
-extern cc_string SP_AutoloadMap;
+extern hc_string SP_AutoloadMap;
 
-CC_END_HEADER
+HC_END_HEADER
 #endif

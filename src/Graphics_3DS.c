@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_3DS
+#if defined HC_BUILD_3DS
 #include "_GraphicsBase.h"
 #include "Errors.h"
 #include "Logger.h"
@@ -25,9 +25,9 @@ extern const u32 offset_shbin_size;
 	
 static void GPUBuffers_DeleteUnreferenced(void);
 static void GPUTextures_DeleteUnreferenced(void);
-static cc_uint32 frameCounter1;
+static hc_uint32 frameCounter1;
 static PackedCol clear_color;
-static cc_bool rendering3D;
+static hc_bool rendering3D;
 	
 	
 /*########################################################################################################################*
@@ -40,16 +40,16 @@ static C3D_Mtx _mvp;
 static float texOffsetX, texOffsetY;
 static int texOffset;
 
-struct CCShader {
+struct HCShader {
 	DVLB_s* dvlb;
 	shaderProgram_s program;
 	int uniforms;     // which associated uniforms need to be resent to GPU
 	int locations[2]; // location of uniforms (not constant)
 };
-static struct CCShader* gfx_activeShader;
-static struct CCShader shaders[3];
+static struct HCShader* gfx_activeShader;
+static struct HCShader shaders[3];
 
-static void Shader_Alloc(struct CCShader* shader, const u8* binData, int binSize) {
+static void Shader_Alloc(struct HCShader* shader, const u8* binData, int binSize) {
 	shader->dvlb = DVLB_ParseFile((u32*)binData, binSize);
 	shaderProgramInit(&shader->program);
 	shaderProgramSetVsh(&shader->program, &shader->dvlb->DVLE[0]);
@@ -58,7 +58,7 @@ static void Shader_Alloc(struct CCShader* shader, const u8* binData, int binSize
 	shader->locations[1] = shaderInstanceGetUniformLocation(shader->program.vertexShader, "tex_offset");
 }
 
-static void Shader_Free(struct CCShader* shader) {
+static void Shader_Free(struct HCShader* shader) {
 	shaderProgramFree(&shader->program);
 	DVLB_Free(shader->dvlb);
 }
@@ -73,7 +73,7 @@ static void DirtyUniform(int uniform) {
 
 // Sends changed uniforms to the GPU for current program
 static void ReloadUniforms(void) {
-	struct CCShader* s = gfx_activeShader;
+	struct HCShader* s = gfx_activeShader;
 	if (!s) return; // NULL if context is lost
 
 	if (s->uniforms & UNI_MVP_MATRIX) {
@@ -91,7 +91,7 @@ static void ReloadUniforms(void) {
 // Switches program to one that can render current vertex format and state
 // Loads program and reloads uniforms if needed
 static void SwitchProgram(void) {
-	struct CCShader* shader;
+	struct HCShader* shader;
 	int index = 0;
 
 	if (gfx_format == VERTEX_FORMAT_TEXTURED) index++;
@@ -112,7 +112,7 @@ static void SwitchProgram(void) {
 static C3D_RenderTarget topTargetLeft;
 static C3D_RenderTarget topTargetRight;
 static C3D_RenderTarget bottomTarget;
-static cc_bool createdTopTargetRight;
+static hc_bool createdTopTargetRight;
 static C3D_RenderTarget* topTarget;
 
 static void AllocShaders(void) {
@@ -192,7 +192,7 @@ void Gfx_Free(void) {
 	// aptUnhook(&hookCookie);
 }
 
-cc_bool Gfx_TryRestoreContext(void) { return true; }
+hc_bool Gfx_TryRestoreContext(void) { return true; }
 
 void Gfx_RestoreState(void) {
 	InitDefaultResources();
@@ -270,10 +270,10 @@ void Gfx_SetTopRight(void) {
 *#########################################################################################################################*/
 struct GPUTexture;
 struct GPUTexture {
-	cc_uint32* data;
+	hc_uint32* data;
 	C3D_Tex texture;
 	struct GPUTexture* next;
-	cc_uint32 lastFrame;
+	hc_uint32 lastFrame;
 };
 static struct GPUTexture* del_textures_head;
 static struct GPUTexture* del_textures_tail;
@@ -363,7 +363,7 @@ static void TryTransferToVRAM(C3D_Tex* tex) {
 	tex->data = vram;
 }
 
-/*static inline cc_uint32 CalcZOrder(cc_uint32 x, cc_uint32 y) {
+/*static inline hc_uint32 CalcZOrder(hc_uint32 x, hc_uint32 y) {
 	// Simplified "Interleave bits by Binary Magic Numbers" from
 	// http://graphics.stanford.edu/~seander/bithacks.html#InterleaveTableObvious
 	// TODO: Simplify to array lookup?
@@ -375,7 +375,7 @@ static void TryTransferToVRAM(C3D_Tex* tex) {
 
     return x | (y << 1);
 }*/
-static inline cc_uint32 CalcZOrder(cc_uint32 a) {
+static inline hc_uint32 CalcZOrder(hc_uint32 a) {
 	// Simplified "Interleave bits by Binary Magic Numbers" from
 	// http://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN
 	// TODO: Simplify to array lookup?
@@ -395,8 +395,8 @@ static void ToMortonTexture(C3D_Tex* tex, int originX, int originY,
 	unsigned int dstX, dstY, tileX, tileY;
 	
 	int width = bmp->width, height = bmp->height;
-	cc_uint32* dst = tex->data;
-	cc_uint32* src = bmp->scan0;
+	hc_uint32* dst = tex->data;
+	hc_uint32* src = bmp->scan0;
 
 	for (int y = 0; y < height; y++)
 	{
@@ -418,7 +418,7 @@ static void ToMortonTexture(C3D_Tex* tex, int originX, int originY,
 }
 
 
-static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8 flags, cc_bool mipmaps) {
+static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, hc_uint8 flags, hc_bool mipmaps) {
 	struct GPUTexture* tex = GPUTexture_Alloc();
 	bool success = CreateNativeTexture(&tex->texture, bmp->width, bmp->height);
 	if (!success) return NULL;
@@ -428,7 +428,7 @@ static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8
     return tex;
 }
 
-void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, cc_bool mipmaps) {
+void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, hc_bool mipmaps) {
  	struct GPUTexture* tex = (struct GPUTexture*)texId;
 	ToMortonTexture(&tex->texture, x, y, part, rowWidth);
 }
@@ -451,13 +451,13 @@ void Gfx_BindTexture(GfxResourceID texId) {
 /*########################################################################################################################*
 *-----------------------------------------------------State management----------------------------------------------------*
 *#########################################################################################################################*/
-void Gfx_SetFaceCulling(cc_bool enabled) { 
+void Gfx_SetFaceCulling(hc_bool enabled) { 
 	C3D_CullFace(enabled ? GPU_CULL_BACK_CCW : GPU_CULL_NONE);
 }
 
-void Gfx_SetAlphaArgBlend(cc_bool enabled) { }
+void Gfx_SetAlphaArgBlend(hc_bool enabled) { }
 
-static void SetAlphaBlend(cc_bool enabled) { 
+static void SetAlphaBlend(hc_bool enabled) { 
 	if (enabled) {
 		C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA);
 	} else {
@@ -465,12 +465,12 @@ static void SetAlphaBlend(cc_bool enabled) {
 	}
 }
 
-static void SetAlphaTest(cc_bool enabled) {
+static void SetAlphaTest(hc_bool enabled) {
 	C3D_AlphaTest(enabled, GPU_GREATER, 0x7F);
 }
 
-void Gfx_DepthOnlyRendering(cc_bool depthOnly) {
-	cc_bool enabled = !depthOnly;
+void Gfx_DepthOnlyRendering(hc_bool depthOnly) {
+	hc_bool enabled = !depthOnly;
 	SetColorWrite(enabled & gfx_colorMask[0], enabled & gfx_colorMask[1], 
 				  enabled & gfx_colorMask[2], enabled & gfx_colorMask[3]);
 }
@@ -480,7 +480,7 @@ void Gfx_ClearColor(PackedCol color) {
 	clear_color = (PackedCol_R(color) << 24) | (PackedCol_G(color) << 16) | (PackedCol_B(color) << 8) | 0xFF;
 }
 
-static cc_bool depthTest, depthWrite;
+static hc_bool depthTest, depthWrite;
 static int colorWriteMask = GPU_WRITE_COLOR;
 
 static void UpdateWriteState(void) {
@@ -491,17 +491,17 @@ static void UpdateWriteState(void) {
 	C3D_DepthTest(depthTest, GPU_GEQUAL, writeMask);
 }
 
-void Gfx_SetDepthWrite(cc_bool enabled) {
+void Gfx_SetDepthWrite(hc_bool enabled) {
 	depthWrite = enabled;
 	UpdateWriteState();
 }
 
-void Gfx_SetDepthTest(cc_bool enabled) { 
+void Gfx_SetDepthTest(hc_bool enabled) { 
 	depthTest = enabled;
 	UpdateWriteState();
 }
 
-static void SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a) {
+static void SetColorWrite(hc_bool r, hc_bool g, hc_bool b, hc_bool a) {
 	int mask = 0;
 	if (r) mask |= GPU_WRITE_RED;
 	if (g) mask |= GPU_WRITE_GREEN;
@@ -532,7 +532,7 @@ static BitmapCol* _3DS_GetRow(struct Bitmap* bmp, int y, void* ctx) {
 	return bmp->scan0;
 }
 
-cc_result Gfx_TakeScreenshot(struct Stream* output) {
+hc_result Gfx_TakeScreenshot(struct Stream* output) {
 	BitmapCol tmp[512];
 	u16 width, height;
 	u8* fb = gfxGetFramebuffer(GFX_TOP, GFX_LEFT, &width, &height);
@@ -546,12 +546,12 @@ cc_result Gfx_TakeScreenshot(struct Stream* output) {
 	return Png_Encode(&bmp, output, _3DS_GetRow, false, fb);
 }
 
-void Gfx_GetApiInfo(cc_string* info) {
+void Gfx_GetApiInfo(hc_string* info) {
 	String_Format1(info, "-- Using 3DS --\n", NULL);
 	PrintMaxTextureInfo(info);
 }
 
-void Gfx_SetVSync(cc_bool vsync) {
+void Gfx_SetVSync(hc_bool vsync) {
 	gfx_vsync = vsync;
 }
 
@@ -597,10 +597,10 @@ void Gfx_SetScissor (int x, int y, int w, int h) { }
 *----------------------------------------------------------Buffers--------------------------------------------------------*
 *#########################################################################################################################*/
 struct GPUBuffer {
-	cc_uint32 lastFrame;
+	hc_uint32 lastFrame;
 	struct GPUBuffer* next;
 	int pad1, pad2;
-	cc_uint8 data[]; // aligned to 16 bytes
+	hc_uint8 data[]; // aligned to 16 bytes
 };
 static struct GPUBuffer* del_buffers_head;
 static struct GPUBuffer* del_buffers_tail;
@@ -657,11 +657,11 @@ static void GPUBuffers_DeleteUnreferenced(void) {
 /*########################################################################################################################*
 *-------------------------------------------------------Index buffers-----------------------------------------------------*
 *#########################################################################################################################*/
-static cc_uint16* gfx_indices;
+static hc_uint16* gfx_indices;
 
 GfxResourceID Gfx_CreateIb2(int count, Gfx_FillIBFunc fillFunc, void* obj) {
 	if (!gfx_indices) {
-		gfx_indices = linearAlloc(count * sizeof(cc_uint16));
+		gfx_indices = linearAlloc(count * sizeof(hc_uint16));
 		if (!gfx_indices) Logger_Abort("Failed to allocate memory for index buffer");
 	}
 
@@ -680,7 +680,7 @@ void Gfx_DeleteIb(GfxResourceID* ib) { }
 /*########################################################################################################################*
 *-------------------------------------------------------Vertex buffers----------------------------------------------------*
 *#########################################################################################################################*/
-static cc_uint8* gfx_vertices;
+static hc_uint8* gfx_vertices;
 
 static GfxResourceID Gfx_AllocStaticVb(VertexFormat fmt, int count) {
 	return GPUBuffer_Alloc(count, strideSizes[fmt]);
@@ -733,7 +733,7 @@ static int fogMode = FOG_LINEAR;
 static float fogDensity = 1.0f;
 static float fogEnd = 32.0f;
 
-void Gfx_SetFog(cc_bool enabled) {
+void Gfx_SetFog(hc_bool enabled) {
 	C3D_FogGasMode(enabled ? GPU_FOG : GPU_NO_FOG, GPU_PLAIN_DENSITY, false);
 	// TODO doesn't work quite right
 }
@@ -906,8 +906,8 @@ void Gfx_DisableTextureOffset(void) {
 /*########################################################################################################################*
 *---------------------------------------------------------Drawing---------------------------------------------------------*
 *#########################################################################################################################*/
-cc_bool Gfx_WarnIfNecessary(void) { return false; }
-cc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
+hc_bool Gfx_WarnIfNecessary(void) { return false; }
+hc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
 
 static void UpdateAttribFormat(VertexFormat fmt) {
 	C3D_AttrInfo* attrInfo = C3D_GetAttrInfo();

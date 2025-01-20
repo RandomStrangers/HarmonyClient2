@@ -6,7 +6,7 @@
 #include "Graphics.h"
 #include "Game.h"
 
-static cc_bool vc_hooked;
+static hc_bool vc_hooked;
 static struct Texture vc_texture;
 static GfxResourceID  vc_vb;
 

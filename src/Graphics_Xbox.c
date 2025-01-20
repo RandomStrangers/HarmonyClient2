@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_XBOX
+#if defined HC_BUILD_XBOX
 #include "_GraphicsBase.h"
 #include "Errors.h"
 #include "Logger.h"
@@ -94,7 +94,7 @@ static void ResetState(void) {
 	p = pb_push1(p, NV097_SET_BLEND_EQUATION,     NV097_SET_BLEND_EQUATION_V_FUNC_ADD); // TODO not needed?
 	
 	p = pb_push1(p, NV097_SET_CULL_FACE, NV097_SET_CULL_FACE_V_FRONT);
-	// the order ClassiCube specifies quad vertices in are in the wrong order
+	// the order Harmony Client specifies quad vertices in are in the wrong order
 	//  compared to what the GPU expects for front and back facing quads
 	
 	/*pb_push(p, NV097_SET_VERTEX_DATA_ARRAY_FORMAT, 16); p++;
@@ -132,7 +132,7 @@ void Gfx_Free(void) {
 	pb_kill();
 }
 
-cc_bool Gfx_TryRestoreContext(void) { return true; }
+hc_bool Gfx_TryRestoreContext(void) { return true; }
 void Gfx_RestoreState(void) { }
 void Gfx_FreeState(void) { }
 
@@ -140,10 +140,10 @@ void Gfx_FreeState(void) { }
 /*########################################################################################################################*
 *---------------------------------------------------------Texturing-------------------------------------------------------*
 *#########################################################################################################################*/
-typedef struct CCTexture_ {
-	cc_uint32 width, height;
-	cc_uint32* pixels;
-} CCTexture;
+typedef struct HCTexture_ {
+	hc_uint32 width, height;
+	hc_uint32* pixels;
+} HCTexture;
 
 // See Graphics_Dreamcast.c for twiddling explanation
 static unsigned Interleave(unsigned x) {
@@ -174,7 +174,7 @@ static unsigned Interleave(unsigned x) {
 	hi_X  = (x & shifted_mask) << shift_bits; \
 	X     = lo_X | hi_X;
 
-static void ConvertTexture(cc_uint32* dst, struct Bitmap* bmp, int rowWidth) {
+static void ConvertTexture(hc_uint32* dst, struct Bitmap* bmp, int rowWidth) {
 	unsigned min_dimension;
 	unsigned interleave_mask, interleaved_bits;
 	unsigned shifted_mask, shift_bits;
@@ -185,7 +185,7 @@ static void ConvertTexture(cc_uint32* dst, struct Bitmap* bmp, int rowWidth) {
 	for (int y = 0; y < bmp->height; y++)
 	{
 		Twiddle_CalcY(y);
-		cc_uint32* src = bmp->scan0 + y * rowWidth;
+		hc_uint32* src = bmp->scan0 + y * rowWidth;
 		
 		for (int x = 0; x < bmp->width; x++, src++)
 		{
@@ -195,9 +195,9 @@ static void ConvertTexture(cc_uint32* dst, struct Bitmap* bmp, int rowWidth) {
 	}
 }
 
-static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8 flags, cc_bool mipmaps) {
+static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, hc_uint8 flags, hc_bool mipmaps) {
 	int size = bmp->width * bmp->height * 4;
-	CCTexture* tex = Mem_Alloc(1, sizeof(CCTexture), "GPU texture");
+	HCTexture* tex = Mem_Alloc(1, sizeof(HCTexture), "GPU texture");
 	tex->pixels    = MmAllocateContiguousMemoryEx(size, 0, MAX_RAM_ADDR, 0, PAGE_WRITECOMBINE | PAGE_READWRITE);
 	
 	tex->width  = bmp->width;
@@ -207,9 +207,9 @@ static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8
 }
 
 
-void Gfx_UpdateTexture(GfxResourceID texId, int originX, int originY, struct Bitmap* part, int rowWidth, cc_bool mipmaps) {
-	CCTexture* tex = (CCTexture*)texId;
-	cc_uint32* dst = tex->pixels;
+void Gfx_UpdateTexture(GfxResourceID texId, int originX, int originY, struct Bitmap* part, int rowWidth, hc_bool mipmaps) {
+	HCTexture* tex = (HCTexture*)texId;
+	hc_uint32* dst = tex->pixels;
 	
 	unsigned min_dimension;
 	unsigned interleave_mask, interleaved_bits;
@@ -234,7 +234,7 @@ void Gfx_UpdateTexture(GfxResourceID texId, int originX, int originY, struct Bit
 }
 
 void Gfx_DeleteTexture(GfxResourceID* texId) {
-	CCTexture* tex = (CCTexture*)(*texId);
+	HCTexture* tex = (HCTexture*)(*texId);
 	if (!tex) return;
 
 	MmFreeContiguousMemory(tex->pixels);
@@ -246,7 +246,7 @@ void Gfx_EnableMipmaps(void) { }
 void Gfx_DisableMipmaps(void) { }
 
 void Gfx_BindTexture(GfxResourceID texId) {
-	CCTexture* tex = (CCTexture*)texId;
+	HCTexture* tex = (HCTexture*)texId;
 	if (!tex) tex  = white_square;
 	
 	unsigned log_u = Math_ilog2(tex->width);
@@ -291,40 +291,40 @@ void Gfx_ClearColor(PackedCol color) {
 	clearColor = color;
 }
 
-void Gfx_SetFaceCulling(cc_bool enabled) { 
+void Gfx_SetFaceCulling(hc_bool enabled) { 
 	uint32_t* p = pb_begin();
 	p = pb_push1(p, NV097_SET_CULL_FACE_ENABLE, enabled);
 	pb_end(p);
 }
 
-void Gfx_SetAlphaArgBlend(cc_bool enabled) { }
+void Gfx_SetAlphaArgBlend(hc_bool enabled) { }
 
-static void SetAlphaBlend(cc_bool enabled) { 
+static void SetAlphaBlend(hc_bool enabled) { 
 	uint32_t* p = pb_begin();
 	p = pb_push1(p, NV097_SET_BLEND_ENABLE, enabled);
 	pb_end(p);
 }
 
-static void SetAlphaTest(cc_bool enabled) {
+static void SetAlphaTest(hc_bool enabled) {
 	uint32_t* p = pb_begin();
 	p = pb_push1(p, NV097_SET_ALPHA_TEST_ENABLE, enabled);
 	pb_end(p);
 }
 
-void Gfx_SetDepthWrite(cc_bool enabled) {
+void Gfx_SetDepthWrite(hc_bool enabled) {
 	uint32_t* p = pb_begin();
 	p = pb_push1(p, NV097_SET_DEPTH_MASK, enabled);
 	pb_end(p);
 }
 
-void Gfx_SetDepthTest(cc_bool enabled) { 
+void Gfx_SetDepthTest(hc_bool enabled) { 
 	uint32_t* p = pb_begin();
 	p = pb_push1(p, NV097_SET_DEPTH_TEST_ENABLE, enabled);
 	pb_end(p);
 }
 
 
-static void SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a) {
+static void SetColorWrite(hc_bool r, hc_bool g, hc_bool b, hc_bool a) {
 	unsigned mask = 0;
 	if (r) mask |= NV097_SET_COLOR_MASK_RED_WRITE_ENABLE;
 	if (g) mask |= NV097_SET_COLOR_MASK_GREEN_WRITE_ENABLE;
@@ -336,8 +336,8 @@ static void SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a) {
 	pb_end(p);
 }
 
-void Gfx_DepthOnlyRendering(cc_bool depthOnly) {
-	cc_bool enabled = !depthOnly;
+void Gfx_DepthOnlyRendering(hc_bool depthOnly) {
+	hc_bool enabled = !depthOnly;
 	SetColorWrite(enabled & gfx_colorMask[0], enabled & gfx_colorMask[1], 
 				  enabled & gfx_colorMask[2], enabled & gfx_colorMask[3]);
 }
@@ -346,16 +346,16 @@ void Gfx_DepthOnlyRendering(cc_bool depthOnly) {
 /*########################################################################################################################*
 *-----------------------------------------------------------Misc----------------------------------------------------------*
 *#########################################################################################################################*/
-cc_result Gfx_TakeScreenshot(struct Stream* output) {
+hc_result Gfx_TakeScreenshot(struct Stream* output) {
 	return ERR_NOT_SUPPORTED;
 }
 
-void Gfx_GetApiInfo(cc_string* info) {
+void Gfx_GetApiInfo(hc_string* info) {
 	String_AppendConst(info, "-- Using XBox --\n");
 	PrintMaxTextureInfo(info);
 }
 
-void Gfx_SetVSync(cc_bool vsync) {
+void Gfx_SetVSync(hc_bool vsync) {
 	gfx_vsync = vsync;
 }
 
@@ -392,7 +392,7 @@ void Gfx_EndFrame(void) {
 /*########################################################################################################################*
 *----------------------------------------------------------Buffers--------------------------------------------------------*
 *#########################################################################################################################*/
-static cc_uint8* gfx_vertices;
+static hc_uint8* gfx_vertices;
 
 static void* AllocBuffer(int count, int elemSize) {
 	return MmAllocateContiguousMemoryEx(count * elemSize, 0, MAX_RAM_ADDR, 16, PAGE_WRITECOMBINE | PAGE_READWRITE);
@@ -418,7 +418,7 @@ static GfxResourceID Gfx_AllocStaticVb(VertexFormat fmt, int count) {
 	return AllocBuffer(count, strideSizes[fmt]);
 }
 
-static uint32_t* PushAttribOffset(uint32_t* p, int index, cc_uint8* data) {
+static uint32_t* PushAttribOffset(uint32_t* p, int index, hc_uint8* data) {
 	return pb_push1(p, NV097_SET_VERTEX_DATA_ARRAY_OFFSET + index * 4,
 						(uint32_t)data & 0x03ffffff);
 }
@@ -464,7 +464,7 @@ void Gfx_DeleteDynamicVb(GfxResourceID* vb) { Gfx_DeleteVb(vb); }
 /*########################################################################################################################*
 *-----------------------------------------------------State management----------------------------------------------------*
 *#########################################################################################################################*/
-void Gfx_SetFog(cc_bool enabled) {
+void Gfx_SetFog(hc_bool enabled) {
 }
 
 void Gfx_SetFogCol(PackedCol color) {
@@ -607,8 +607,8 @@ void Gfx_SetScissor(int x, int y, int w, int h) {
 /*########################################################################################################################*
 *---------------------------------------------------------Drawing---------------------------------------------------------*
 *#########################################################################################################################*/
-cc_bool Gfx_WarnIfNecessary(void) { return false; }
-cc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
+hc_bool Gfx_WarnIfNecessary(void) { return false; }
+hc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
 
 static uint32_t* PushAttrib(uint32_t* p, int index, int format, int size, int stride) {
 	return pb_push1(p, NV097_SET_VERTEX_DATA_ARRAY_FORMAT + index * 4,

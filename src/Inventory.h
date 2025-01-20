@@ -1,8 +1,8 @@
-#ifndef CC_INVENTORY_H
-#define CC_INVENTORY_H
+#ifndef HC_INVENTORY_H
+#define HC_INVENTORY_H
 #include "Core.h"
 #include "BlockID.h"
-CC_BEGIN_HEADER
+HC_BEGIN_HEADER
 
 
 /* Manages inventory hotbar, and ordering of blocks in the inventory menu.
@@ -17,7 +17,7 @@ extern struct IGameComponent Inventory_Component;
 #define INVENTORY_HOTBARS 9
 #define HOTBAR_MAX_INDEX (INVENTORY_BLOCKS_PER_HOTBAR - 1)
 
-CC_VAR extern struct _InventoryData {
+HC_VAR extern struct _InventoryData {
 	/* Stores the currently bound blocks for all hotbars. */
 	BlockID Table[INVENTORY_HOTBARS * INVENTORY_BLOCKS_PER_HOTBAR];
 	/* Mapping of indices in inventory menu to block IDs. */
@@ -27,9 +27,9 @@ CC_VAR extern struct _InventoryData {
 	/* Currently selected hotbar. */
 	int Offset;
 	/* Whether the user is allowed to change selected/held block. */
-	cc_bool CanChangeSelected;
+	hc_bool CanChangeSelected;
 	/* Number of blocks in each row in inventory menu. */
-	cc_uint8 BlocksPerRow;
+	hc_uint8 BlocksPerRow;
 } Inventory;
 
 /* Gets the block at the nth index in the current hotbar. */
@@ -41,7 +41,7 @@ CC_VAR extern struct _InventoryData {
 
 /* Checks if the user can change their selected/held block. */
 /* NOTE: Shows a message in chat if they are unable to. */
-cc_bool Inventory_CheckChangeSelected(void);
+hc_bool Inventory_CheckChangeSelected(void);
 /* Attempts to set the currently selected index in a hotbar. */
 void Inventory_SetSelectedIndex(int index);
 /* Attempts to set the currently active hotbar. */
@@ -63,5 +63,5 @@ void Inventory_AddDefault(BlockID block);
 /* Removes any slots with the given block from the inventory. */
 void Inventory_Remove(BlockID block);
 
-CC_END_HEADER
+HC_END_HEADER
 #endif

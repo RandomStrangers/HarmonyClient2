@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_MACCLASSIC
+#if defined HC_BUILD_MACCLASSIC
 
 #include "_WindowBase.h"
 #include "String.h"
@@ -21,7 +21,7 @@
 #endif
 #include <Gestalt.h>
 static WindowPtr win;
-static cc_bool hasColorQD, useGWorld;
+static hc_bool hasColorQD, useGWorld;
 
 
 /*########################################################################################################################*
@@ -129,7 +129,7 @@ MAC_SYSAPI(void) _SetEventMask(MAC_EventMask value) MAC_TWOWORDINLINE(0x31DF, 0x
 /*########################################################################################################################*
 *--------------------------------------------------Public implementation--------------------------------------------------*
 *#########################################################################################################################*/
-static const cc_uint8 key_map[8 * 16] = {
+static const hc_uint8 key_map[8 * 16] = {
 /* 0x00 */ 'A', 'S', 'D', 'F', 'H', 'G', 'Z', 'X',
 /* 0x08 */ 'C', 'V',   0, 'B', 'Q', 'W', 'E', 'R',
 /* 0x10 */ 'Y', 'T', '1', '2', '3', '4', '6', '5',
@@ -190,9 +190,9 @@ static void DoCreateWindow(int width, int height) {
     InsetRect(&r, 100, 100);
 
 	if (hasColorQD) {
-    	win = NewCWindow(NULL, &r, "\pClassiCube", true, documentProc, (WindowPtr)-1, true, 0);
+    	win = NewCWindow(NULL, &r, "\pHarmonyClient", true, documentProc, (WindowPtr)-1, true, 0);
 	} else {
-		win = NewWindow( NULL, &r, "\pClassiCube", true, documentProc, (WindowPtr)-1, true, 0);
+		win = NewWindow( NULL, &r, "\pHarmonyClient", true, documentProc, (WindowPtr)-1, true, 0);
 	}
 
 	if (hasColorQD) {
@@ -219,11 +219,11 @@ void Window_Create3D(int width, int height) { DoCreateWindow(width, height); }
 
 void Window_Destroy(void) { }
 
-void Window_SetTitle(const cc_string* title) {
+void Window_SetTitle(const hc_string* title) {
 	// TODO
 }
 
-void Clipboard_GetText(cc_string* value) {
+void Clipboard_GetText(hc_string* value) {
 	Handle tmp = NewHandle(0);
 	HLock(tmp);
 	int dataSize = GetScrap(tmp, 'TEXT', 0);
@@ -234,7 +234,7 @@ void Clipboard_GetText(cc_string* value) {
 	// TODO
 }
 
-void Clipboard_SetText(const cc_string* value) {
+void Clipboard_SetText(const hc_string* value) {
 	PutScrap(value->length, 'TEXT', value->buffer);
 	// TODO
 }
@@ -244,12 +244,12 @@ int Window_GetWindowState(void) {
 	// TODO
 }
 
-cc_result Window_EnterFullscreen(void) {
+hc_result Window_EnterFullscreen(void) {
 	// TODO
 	return 0;
 }
 
-cc_result Window_ExitFullscreen(void) {
+hc_result Window_ExitFullscreen(void) {
 	// TODO
 	return 0;
 }
@@ -408,7 +408,7 @@ void Cursor_SetPosition(int x, int y) {
 	//LMSetRawMouseLocation(where);
 }
 
-static void Cursor_DoSetVisible(cc_bool visible) {
+static void Cursor_DoSetVisible(hc_bool visible) {
 	if (visible) {
 		ShowCursor();
 	} else {
@@ -425,12 +425,12 @@ static void ShowDialogCore(const char* title, const char* msg) {
 	}
 }
 
-cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
+hc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 	// TODO
 	return ERR_NOT_SUPPORTED;
 }
 
-cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
+hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
 	// TODO
 	return ERR_NOT_SUPPORTED;
 }
@@ -482,9 +482,9 @@ static void DrawFramebufferSlow(Rect2D r, struct Bitmap* bmp) {
 		{
             // TODO optimise
             BitmapCol	col = row[x];
-			cc_uint8 R = BitmapCol_R(col);
-			cc_uint8 G = BitmapCol_G(col);
-			cc_uint8 B = BitmapCol_B(col);
+			hc_uint8 R = BitmapCol_R(col);
+			hc_uint8 G = BitmapCol_G(col);
+			hc_uint8 B = BitmapCol_B(col);
 
             RGBColor pixelColor;
 			pixelColor.red   = R << 8;
@@ -518,7 +518,7 @@ void Window_FreeFramebuffer(struct Bitmap* bmp) {
 }
 
 void OnscreenKeyboard_Open(struct OpenKeyboardArgs* args) { }
-void OnscreenKeyboard_SetText(const cc_string* text) { }
+void OnscreenKeyboard_SetText(const hc_string* text) { }
 void OnscreenKeyboard_Close(void) { }
 
 void Window_EnableRawMouse(void) {
@@ -537,13 +537,13 @@ void Window_DisableRawMouse(void) {
 /*########################################################################################################################*
 *-------------------------------------------------------WGL OpenGL--------------------------------------------------------*
 *#########################################################################################################################*/
-#if CC_GFX_BACKEND_IS_GL() && !defined CC_BUILD_EGL
+#if HC_GFX_BACKEND_IS_GL() && !defined HC_BUILD_EGL
 void GLContext_Create(void) {
 	// TODO
 }
 
 void GLContext_Update(void) { }
-cc_bool GLContext_TryRestore(void) { return true; }
+hc_bool GLContext_TryRestore(void) { return true; }
 void GLContext_Free(void) {
 	// TODO
 }
@@ -552,14 +552,14 @@ void* GLContext_GetAddress(const char* function) {
 	return NULL;
 }
 
-cc_bool GLContext_SwapBuffers(void) {
+hc_bool GLContext_SwapBuffers(void) {
 	// TODO
 	return true;
 }
 
-void GLContext_SetVSync(cc_bool vsync) {
+void GLContext_SetVSync(hc_bool vsync) {
 	// TODO
 }
-void GLContext_GetApiInfo(cc_string* info) { }
+void GLContext_GetApiInfo(hc_string* info) { }
 #endif
 #endif

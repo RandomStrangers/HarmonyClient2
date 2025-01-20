@@ -21,26 +21,26 @@
 
 struct _GuiData Gui;
 struct Screen* Gui_Screens[GUI_MAX_SCREENS];
-static cc_uint8 priorities[GUI_MAX_SCREENS];
-#ifdef CC_BUILD_DUALSCREEN
+static hc_uint8 priorities[GUI_MAX_SCREENS];
+#ifdef HC_BUILD_DUALSCREEN
 static struct Texture touchBgTex;
 #endif
 
 /*########################################################################################################################*
 *----------------------------------------------------------Gui------------------------------------------------------------*
 *#########################################################################################################################*/
-static CC_NOINLINE int GetWindowScale(void) {
+static HC_NOINLINE int GetWindowScale(void) {
 	float widthScale  = Window_Main.Width  * Window_Main.UIScaleX;
 	float heightScale = Window_Main.Height * Window_Main.UIScaleY;
 
 	/* Use larger UI scaling on mobile */
 	/* TODO move this DPI scaling elsewhere.,. */
-#ifndef CC_BUILD_DUALSCREEN
+#ifndef HC_BUILD_DUALSCREEN
 	if (!Gui_TouchUI) {
 #endif
 		widthScale  /= DisplayInfo.ScaleX;
 		heightScale /= DisplayInfo.ScaleY;
-#ifndef CC_BUILD_DUALSCREEN
+#ifndef HC_BUILD_DUALSCREEN
 	}
 #endif
 	return 1 + (int)(min(widthScale, heightScale));
@@ -72,7 +72,7 @@ float Gui_GetCrosshairScale(void) {
 void Gui_MakeTitleFont(struct FontDesc* font) { Font_Make(font, 16, FONT_FLAGS_BOLD); }
 void Gui_MakeBodyFont(struct FontDesc* font)  { Font_Make(font, 16, FONT_FLAGS_NONE); }
 
-int Gui_CalcPos(cc_uint8 anchor, int offset, int size, int axisLen) {
+int Gui_CalcPos(hc_uint8 anchor, int offset, int size, int axisLen) {
 	if (anchor == ANCHOR_MIN) return offset;
 	if (anchor == ANCHOR_MAX) return axisLen - size - offset;
 
@@ -99,13 +99,13 @@ int Gui_ContainsPointers(int x, int y, int width, int height) {
 void Gui_ShowDefault(void) {
 	HUDScreen_Show();
 	ChatScreen_Show();
-#ifdef CC_BUILD_TOUCH
+#ifdef HC_BUILD_TOUCH
 	TouchScreen_Show();
 #endif
 }
 
-#ifdef CC_BUILD_TOUCH
-void Gui_SetTouchUI(cc_bool enabled) {
+#ifdef HC_BUILD_TOUCH
+void Gui_SetTouchUI(hc_bool enabled) {
 	Gui.TouchUI = enabled; /* TODO toggle or not */
 }
 #endif
@@ -239,7 +239,7 @@ void Gui_RemoveCore(struct Screen* s) {
 	s->VTABLE->Free(s);
 }
 
-CC_NOINLINE static void Gui_OnScreensChanged(void) {
+HC_NOINLINE static void Gui_OnScreensChanged(void) {
 	Gui_UpdateInputGrab();
 	InputHandler_OnScreensChanged();
 }
@@ -314,7 +314,7 @@ void Gui_RenderGui(float delta) {
 	int i;
 
 	Gfx_3DS_SetRenderScreen(BOTTOM_SCREEN);
-#ifdef CC_BUILD_DUALSCREEN
+#ifdef HC_BUILD_DUALSCREEN
 	Texture_Render(&touchBgTex);
 #endif
 
@@ -335,7 +335,7 @@ void Gui_RenderGui(float delta) {
 /*########################################################################################################################*
 *-------------------------------------------------------TextAtlas---------------------------------------------------------*
 *#########################################################################################################################*/
-void TextAtlas_Make(struct TextAtlas* atlas, const cc_string* chars, struct FontDesc* font, const cc_string* prefix) {
+void TextAtlas_Make(struct TextAtlas* atlas, const hc_string* chars, struct FontDesc* font, const hc_string* prefix) {
 	struct DrawTextArgs args; 
 	struct Context2D ctx;
 	int width, height;
@@ -398,7 +398,7 @@ void TextAtlas_AddInt(struct TextAtlas* atlas, int value, struct VertexTextured*
 	if (value < 0) {
 		TextAtlas_Add(atlas, 10, vertices); value = -value; /* - sign */
 	}
-	count = String_MakeUInt32((cc_uint32)value, digits);
+	count = String_MakeUInt32((hc_uint32)value, digits);
 
 	for (i = count - 1; i >= 0; i--) 
 	{
@@ -410,7 +410,7 @@ void TextAtlas_AddInt(struct TextAtlas* atlas, int value, struct VertexTextured*
 /*########################################################################################################################*
 *-------------------------------------------------------Widget base-------------------------------------------------------*
 *#########################################################################################################################*/
-void Widget_SetLocation(void* widget, cc_uint8 horAnchor, cc_uint8 verAnchor, int xOffset, int yOffset) {
+void Widget_SetLocation(void* widget, hc_uint8 horAnchor, hc_uint8 verAnchor, int xOffset, int yOffset) {
 	struct Widget* w = (struct Widget*)widget;
 	w->horAnchor = horAnchor; w->verAnchor = verAnchor;
 	w->xOffset = Display_ScaleX(xOffset);
@@ -422,7 +422,7 @@ void Widget_CalcPosition(void* widget) {
 	struct Widget* w = (struct Widget*)widget;
 	int windowWidth, windowHeight;
 	
-#ifdef CC_BUILD_DUALSCREEN
+#ifdef HC_BUILD_DUALSCREEN
 	windowWidth  = (w->flags & WIDGET_FLAG_MAINSCREEN) ? Window_Main.Width  : Window_Alt.Width;
 	windowHeight = (w->flags & WIDGET_FLAG_MAINSCREEN) ? Window_Main.Height : Window_Alt.Height;
 #else
@@ -618,25 +618,25 @@ static void OnAxisUpdate(void* obj, int port, int axis, float x, float y) {
 /*########################################################################################################################*
 *------------------------------------------------------Gui component------------------------------------------------------*
 *#########################################################################################################################*/
-static void GuiPngProcess(struct Stream* stream, const cc_string* name) {
+static void GuiPngProcess(struct Stream* stream, const hc_string* name) {
 	int heightDivisor = 2; /* only top half of gui png is used */
 	Game_UpdateTexture(&Gui.GuiTex, stream, name, NULL, &heightDivisor);
 }
 static struct TextureEntry gui_entry = { "gui.png", GuiPngProcess };
 
-static void GuiClassicPngProcess(struct Stream* stream, const cc_string* name) {
+static void GuiClassicPngProcess(struct Stream* stream, const hc_string* name) {
 	int heightDivisor = 2; /* only top half of gui png is used */
 	Game_UpdateTexture(&Gui.GuiClassicTex, stream, name, NULL, &heightDivisor);
 }
 static struct TextureEntry guiClassic_entry = { "gui_classic.png", GuiClassicPngProcess };
 
-static void IconsPngProcess(struct Stream* stream, const cc_string* name) {
+static void IconsPngProcess(struct Stream* stream, const hc_string* name) {
 	int heightDivisor = 4; /* only top quarter of icons png is used */
 	Game_UpdateTexture(&Gui.IconsTex, stream, name, NULL, &heightDivisor);
 }
 static struct TextureEntry icons_entry = { "icons.png", IconsPngProcess };
 
-static void TouchPngProcess(struct Stream* stream, const cc_string* name) {
+static void TouchPngProcess(struct Stream* stream, const hc_string* name) {
 	Game_UpdateTexture(&Gui.TouchTex, stream, name, NULL, NULL);
 }
 static struct TextureEntry touch_entry = { "touch.png", TouchPngProcess };
@@ -656,7 +656,7 @@ static void OnKeyPress(void* obj, int cp) {
 	}
 }
 
-static void OnTextChanged(void* obj, const cc_string* str) {
+static void OnTextChanged(void* obj, const hc_string* str) {
 	struct Screen* s;
 	int i;
 
@@ -688,7 +688,7 @@ static void OnInit(void) {
 	Event_Register_(&PointerEvents.Moved, NULL, OnPointerMove);
 	Event_Register_(&ControllerEvents.AxisUpdate, NULL, OnAxisUpdate);
 
-#ifdef CC_BUILD_DUALSCREEN
+#ifdef HC_BUILD_DUALSCREEN
 	struct Context2D ctx;
 	Context2D_Alloc(&ctx, 32, 32);
 	Gradient_Noise(&ctx, BitmapColor_RGB(0x40, 0x30, 0x20), 6, 0, 0, ctx.width, ctx.height);

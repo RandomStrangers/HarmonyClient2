@@ -1,10 +1,10 @@
 #include "Core.h"
-#if CC_GFX_BACKEND == CC_GFX_BACKEND_SOFTGPU
+#if HC_GFX_BACKEND == HC_GFX_BACKEND_SOFTGPU
 #include "_GraphicsBase.h"
 #include "Errors.h"
 #include "Window.h"
 
-static cc_bool faceCulling;
+static hc_bool faceCulling;
 static int fb_width, fb_height; 
 static struct Bitmap fb_bmp;
 static float vp_hwidth, vp_hheight;
@@ -12,12 +12,12 @@ static int fb_maxX, fb_maxY;
 
 static BitmapCol* colorBuffer;
 static BitmapCol clearColor;
-static cc_bool colWrite = true;
+static hc_bool colWrite = true;
 static int cb_stride;
 
 static float* depthBuffer;
-static cc_bool depthTest  = true;
-static cc_bool depthWrite = true;
+static hc_bool depthTest  = true;
+static hc_bool depthWrite = true;
 static int db_stride;
 
 static void* gfx_vertices;
@@ -59,19 +59,19 @@ void Gfx_Free(void) {
 }
 
 
-typedef struct CCTexture {
+typedef struct HCTexture {
 	int width, height;
 	BitmapCol pixels[];
-} CCTexture;
+} HCTexture;
 
-static CCTexture* curTexture;
+static HCTexture* curTexture;
 static BitmapCol* curTexPixels;
 static int curTexWidth, curTexHeight;
 static int texWidthMask, texHeightMask;
 		
 void Gfx_BindTexture(GfxResourceID texId) {
 	if (!texId) texId = white_square;
-	CCTexture* tex = texId;
+	HCTexture* tex = texId;
 
 	curTexture   = tex;
 	curTexPixels = tex->pixels;
@@ -88,8 +88,8 @@ void Gfx_DeleteTexture(GfxResourceID* texId) {
 	*texId = NULL;
 }
 		
-static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8 flags, cc_bool mipmaps) {
-	CCTexture* tex = (CCTexture*)Mem_Alloc(2 + bmp->width * bmp->height, 4, "Texture");
+static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, hc_uint8 flags, hc_bool mipmaps) {
+	HCTexture* tex = (HCTexture*)Mem_Alloc(2 + bmp->width * bmp->height, 4, "Texture");
 
 	tex->width  = bmp->width;
 	tex->height = bmp->height;
@@ -98,8 +98,8 @@ static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8
 	return tex;
 }
 
-void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, cc_bool mipmaps) {
-	CCTexture* tex = (CCTexture*)texId;
+void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, hc_bool mipmaps) {
+	HCTexture* tex = (HCTexture*)texId;
 	BitmapCol* dst = (tex->pixels + x) + y * tex->width;
 
 	CopyTextureData(dst, tex->width * BITMAPCOLOR_SIZE,
@@ -113,25 +113,25 @@ void Gfx_DisableMipmaps(void) { }
 /*########################################################################################################################*
 *------------------------------------------------------State management---------------------------------------------------*
 *#########################################################################################################################*/
-void Gfx_SetFog(cc_bool enabled)	{ }
+void Gfx_SetFog(hc_bool enabled)	{ }
 void Gfx_SetFogCol(PackedCol col)   { }
 void Gfx_SetFogDensity(float value) { }
 void Gfx_SetFogEnd(float value) 	{ }
 void Gfx_SetFogMode(FogFunc func)   { }
 
-void Gfx_SetFaceCulling(cc_bool enabled) {
+void Gfx_SetFaceCulling(hc_bool enabled) {
 	faceCulling = enabled;
 }
 
-static void SetAlphaTest(cc_bool enabled) {
+static void SetAlphaTest(hc_bool enabled) {
 	/* Uses value from Gfx_SetAlphaTest */
 }
 
-static void SetAlphaBlend(cc_bool enabled) {
+static void SetAlphaBlend(hc_bool enabled) {
 	/* Uses value from Gfx_SetAlphaBlending */
 }
 
-void Gfx_SetAlphaArgBlend(cc_bool enabled) { }
+void Gfx_SetAlphaArgBlend(hc_bool enabled) { }
 
 static void ClearColorBuffer(void) {
 	int i, x, y, size = fb_width * fb_height;
@@ -168,19 +168,19 @@ void Gfx_ClearColor(PackedCol color) {
 	clearColor = BitmapCol_Make(R, G, B, A);
 }
 
-void Gfx_SetDepthTest(cc_bool enabled) {
+void Gfx_SetDepthTest(hc_bool enabled) {
 	depthTest = enabled;
 }
 
-void Gfx_SetDepthWrite(cc_bool enabled) {
+void Gfx_SetDepthWrite(hc_bool enabled) {
 	depthWrite = enabled;
 }
 
-static void SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a) {
+static void SetColorWrite(hc_bool r, hc_bool g, hc_bool b, hc_bool a) {
 	// TODO
 }
 
-void Gfx_DepthOnlyRendering(cc_bool depthOnly) {
+void Gfx_DepthOnlyRendering(hc_bool depthOnly) {
 	colWrite = !depthOnly;
 }
 
@@ -369,7 +369,7 @@ static void ViewportVertex3D(Vertex* vertex) {
 }
 
 // Ensure it's inlined, whereas Math_FloorF might not be
-static CC_INLINE int FastFloor(float value) {
+static HC_INLINE int FastFloor(float value) {
 	int valueI = (int)value;
 	return valueI > value ? valueI - 1 : valueI;
 }
@@ -913,14 +913,14 @@ static BitmapCol* CB_GetRow(struct Bitmap* bmp, int y, void* ctx) {
 	return colorBuffer + cb_stride * y;
 }
 
-cc_result Gfx_TakeScreenshot(struct Stream* output) {
+hc_result Gfx_TakeScreenshot(struct Stream* output) {
 	struct Bitmap bmp;
 	Bitmap_Init(bmp, fb_width, fb_height, NULL);
 	return Png_Encode(&bmp, output, CB_GetRow, false, NULL);
 }
 
-cc_bool Gfx_WarnIfNecessary(void) { return false; }
-cc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
+hc_bool Gfx_WarnIfNecessary(void) { return false; }
+hc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
 
 void Gfx_BeginFrame(void) { }
 
@@ -929,7 +929,7 @@ void Gfx_EndFrame(void) {
 	Window_DrawFramebuffer(r, &fb_bmp);
 }
 
-void Gfx_SetVSync(cc_bool vsync) {
+void Gfx_SetVSync(hc_bool vsync) {
 	gfx_vsync = vsync;
 }
 
@@ -961,11 +961,11 @@ void Gfx_SetScissor (int x, int y, int w, int h) {
 	fb_maxY = y + h - 1;
 }
 
-void Gfx_GetApiInfo(cc_string* info) {
+void Gfx_GetApiInfo(hc_string* info) {
 	int pointerSize = sizeof(void*) * 8;
 	String_Format1(info, "-- Using software (%i bit) --\n", &pointerSize);
 	PrintMaxTextureInfo(info);
 }
 
-cc_bool Gfx_TryRestoreContext(void) { return true; }
+hc_bool Gfx_TryRestoreContext(void) { return true; }
 #endif

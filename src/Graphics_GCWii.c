@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_GCWII
+#if defined HC_BUILD_GCWII
 #include "_GraphicsBase.h"
 #include "Errors.h"
 #include "Logger.h"
@@ -73,7 +73,7 @@ void Gfx_Free(void) {
 	//GX_Flush(); // TODO needed?
 	VIDEO_Flush();
 }
-cc_bool Gfx_TryRestoreContext(void) { return true; }
+hc_bool Gfx_TryRestoreContext(void) { return true; }
 
 void Gfx_RestoreState(void) { 
 	InitDefaultResources();
@@ -94,10 +94,10 @@ void Gfx_FreeState(void) {
 /*########################################################################################################################*
 *---------------------------------------------------------Textures--------------------------------------------------------*
 *#########################################################################################################################*/
-typedef struct CCTexture_ {
+typedef struct HCTexture_ {
 	GXTexObj obj;
-	cc_uint32 pixels[];
-} CCTexture;
+	hc_uint32 pixels[];
+} HCTexture;
 
 // ClassiCube RGBA8 bitmaps
 // - store pixels in simple linear order
@@ -107,7 +107,7 @@ typedef struct CCTexture_ {
 // GX RGBA8 textures
 // - store pixels in 4x4 tiles
 // - store all of the AR values of the tile's pixels, then store all of the GB values
-static void ReorderPixels(CCTexture* tex, struct Bitmap* bmp, 
+static void ReorderPixels(HCTexture* tex, struct Bitmap* bmp, 
 			int originX, int originY, int rowWidth) {
 	int stride = GX_GetTexObjWidth(&tex->obj) * 4;
 	// TODO not really right
@@ -145,9 +145,9 @@ static void ReorderPixels(CCTexture* tex, struct Bitmap* bmp,
 	}
 }
 
-static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8 flags, cc_bool mipmaps) {
+static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, hc_uint8 flags, hc_bool mipmaps) {
 	int size = bmp->width * bmp->height * 4;
-	CCTexture* tex = (CCTexture*)memalign(32, 32 + size);
+	HCTexture* tex = (HCTexture*)memalign(32, 32 + size);
 	if (!tex) return NULL;
 	
 	GX_InitTexObj(&tex->obj, tex->pixels, bmp->width, bmp->height,
@@ -159,8 +159,8 @@ static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8
 	return tex;
 }
 
-void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, cc_bool mipmaps) {
-	CCTexture* tex = (CCTexture*)texId;
+void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, hc_bool mipmaps) {
+	HCTexture* tex = (HCTexture*)texId;
 	// TODO: wrong behaviour if x/y/part isn't multiple of 4 pixels
 	ReorderPixels(tex, part, x, y, rowWidth);
 	GX_InvalidateTexAll();
@@ -176,7 +176,7 @@ void Gfx_EnableMipmaps(void) { }
 void Gfx_DisableMipmaps(void) { }
 
 void Gfx_BindTexture(GfxResourceID texId) {
-	CCTexture* tex = (CCTexture*)texId;
+	HCTexture* tex = (HCTexture*)texId;
 	if (!tex) tex = white_square;
 
 	GXTexRegion* reg = regionCB(&tex->obj, GX_TEXMAP0);
@@ -189,12 +189,12 @@ void Gfx_BindTexture(GfxResourceID texId) {
 *#########################################################################################################################*/
 static GXColor gfx_clearColor = { 0, 0, 0, 255 };
 
-void Gfx_SetFaceCulling(cc_bool enabled) { 
+void Gfx_SetFaceCulling(hc_bool enabled) { 
 	// NOTE: seems like ClassiCube's triangle ordering is opposite of what GX considers front facing
 	GX_SetCullMode(enabled ? GX_CULL_FRONT : GX_CULL_NONE);
 }
 
-static void SetAlphaBlend(cc_bool enabled) {
+static void SetAlphaBlend(hc_bool enabled) {
 	if (enabled) {
 		GX_SetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
 	} else {
@@ -202,7 +202,7 @@ static void SetAlphaBlend(cc_bool enabled) {
 	}
 }
 
-void Gfx_SetAlphaArgBlend(cc_bool enabled) { 
+void Gfx_SetAlphaArgBlend(hc_bool enabled) { 
 }
 
 void Gfx_ClearColor(PackedCol color) {
@@ -213,21 +213,21 @@ void Gfx_ClearColor(PackedCol color) {
 	GX_SetCopyClear(gfx_clearColor, 0x00ffffff); // TODO: use GX_MAX_Z24 
 }
 
-static void SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a) {
+static void SetColorWrite(hc_bool r, hc_bool g, hc_bool b, hc_bool a) {
 	// TODO
 }
 
-static cc_bool depth_write = true, depth_test = true;
+static hc_bool depth_write = true, depth_test = true;
 static void UpdateDepthState(void) {
 	GX_SetZMode(depth_test, GX_LEQUAL, depth_write);
 }
 
-void Gfx_SetDepthWrite(cc_bool enabled) {
+void Gfx_SetDepthWrite(hc_bool enabled) {
 	depth_write = enabled;
 	UpdateDepthState();
 }
 
-void Gfx_SetDepthTest(cc_bool enabled) {
+void Gfx_SetDepthTest(hc_bool enabled) {
 	depth_test = enabled;
 	UpdateDepthState();
 }
@@ -259,7 +259,7 @@ static BitmapCol* GCWii_GetRow(struct Bitmap* bmp, int y, void* ctx) {
 	return bmp->scan0;
 }
 
-cc_result Gfx_TakeScreenshot(struct Stream* output) {
+hc_result Gfx_TakeScreenshot(struct Stream* output) {
 	BitmapCol tmp[1024];
 	GXRModeObj* vmode = VIDEO_GetPreferredMode(NULL);
 	int width  = vmode->fbWidth;
@@ -280,17 +280,17 @@ cc_result Gfx_TakeScreenshot(struct Stream* output) {
 	bmp.width  = width; 
 	bmp.height = height;
 
-	cc_result res = Png_Encode(&bmp, output, GCWii_GetRow, false, buffer);
+	hc_result res = Png_Encode(&bmp, output, GCWii_GetRow, false, buffer);
 	free(buffer);
 	return res;
 }
 
-void Gfx_GetApiInfo(cc_string* info) {
+void Gfx_GetApiInfo(hc_string* info) {
 	String_AppendConst(info, "-- Using GC/Wii --\n");
 	PrintMaxTextureInfo(info);
 }
 
-void Gfx_SetVSync(cc_bool vsync) {
+void Gfx_SetVSync(hc_bool vsync) {
 	gfx_vsync = vsync;
 }
 
@@ -322,14 +322,14 @@ void Gfx_SetScissor(int x, int y, int w, int h) {
 	GX_SetScissor(x, y, w, h);
 }
 
-cc_bool Gfx_WarnIfNecessary(void) { return false; }
-cc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
+hc_bool Gfx_WarnIfNecessary(void) { return false; }
+hc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
 
 
 /*########################################################################################################################*
 *-------------------------------------------------------Index Buffers-----------------------------------------------------*
 *#########################################################################################################################*/
-//static cc_uint16 __attribute__((aligned(16))) gfx_indices[GFX_MAX_INDICES];
+//static hc_uint16 __attribute__((aligned(16))) gfx_indices[GFX_MAX_INDICES];
 
 GfxResourceID Gfx_CreateIb2(int count, Gfx_FillIBFunc fillFunc, void* obj) {
 	//fillFunc(gfx_indices, count, obj);
@@ -344,7 +344,7 @@ void Gfx_DeleteIb(GfxResourceID* ib) { }
 /*########################################################################################################################*
 *------------------------------------------------------Vertex Buffers-----------------------------------------------------*
 *#########################################################################################################################*/
-static cc_uint8* gfx_vertices;
+static hc_uint8* gfx_vertices;
 static int vb_size;
 
 static GfxResourceID Gfx_AllocStaticVb(VertexFormat fmt, int count) {
@@ -426,7 +426,7 @@ static void UpdateFog(void) {
     GX_SetFog(mode, beg, end, near, far, color);
 }
 
-void Gfx_SetFog(cc_bool enabled) {
+void Gfx_SetFog(hc_bool enabled) {
 	gfx_fogEnabled = enabled;
 	UpdateFog();
 }
@@ -455,7 +455,7 @@ void Gfx_SetFogMode(FogFunc func) {
 	UpdateFog();
 }
 
-static void SetAlphaTest(cc_bool enabled) {
+static void SetAlphaTest(hc_bool enabled) {
 	if (enabled) {
 		GX_SetAlphaCompare(GX_GREATER, 127, GX_AOP_AND, GX_ALWAYS, 0);
 	} else {
@@ -469,7 +469,7 @@ static void SetAlphaTest(cc_bool enabled) {
 	GX_SetZCompLoc(!enabled);
 }
 
-void Gfx_DepthOnlyRendering(cc_bool depthOnly) {
+void Gfx_DepthOnlyRendering(hc_bool depthOnly) {
 	GX_SetColorUpdate(!depthOnly);
 	GX_SetAlphaUpdate(!depthOnly);
 }

@@ -10,20 +10,20 @@
 #include "Model.h"
 #include "Options.h"
 
-cc_bool HeldBlockRenderer_Show;
-#ifdef CC_BUILD_HELDBLOCK
+hc_bool HeldBlockRenderer_Show;
+#ifdef HC_BUILD_HELDBLOCK
 static BlockID held_block;
 static struct Entity held_entity;
 static struct Matrix held_blockProj;
 
-static cc_bool held_animating, held_breaking, held_swinging;
+static hc_bool held_animating, held_breaking, held_swinging;
 static float held_swingY;
 static float held_time, held_period = 0.25f;
 static BlockID held_lastBlock;
 
 /* Since not using Entity_SetModel, which normally automatically does this */
 static void SetHeldModel(struct Model* model) {
-#ifdef CC_BUILD_CONSOLE
+#ifdef HC_BUILD_CONSOLE
 	static int maxVertices;
 	if (model->maxVertices <= maxVertices) return;
 
@@ -93,7 +93,7 @@ static void ResetHeldState(void) {
 }
 
 static void SetBaseOffset(void) {
-	cc_bool sprite = Blocks.Draw[held_block] == DRAW_SPRITE;
+	hc_bool sprite = Blocks.Draw[held_block] == DRAW_SPRITE;
 	Vec3 normalOffset = { 0.56f, -0.72f, -0.72f };
 	Vec3 spriteOffset = { 0.46f, -0.52f, -0.72f };
 	Vec3 offset = sprite ? spriteOffset : normalOffset;
@@ -137,7 +137,7 @@ static void HeldBlockRenderer_DigAnimation(void) {
 	held_entity.RotX  += sinHalfCircleWeird    * 20.0f;
 }
 
-static void HeldBlockRenderer_ResetAnim(cc_bool setLastHeld, float period) {
+static void HeldBlockRenderer_ResetAnim(hc_bool setLastHeld, float period) {
 	held_time = 0.0f; held_swingY = 0.0f;
 	held_animating = false; held_swinging = false;
 	held_period = period;
@@ -162,7 +162,7 @@ static PackedCol HeldBlockRenderer_GetCol(struct Entity* entity) {
 	return PackedCol_Scale(col, scale);
 }
 
-void HeldBlockRenderer_ClickAnim(cc_bool digging) {
+void HeldBlockRenderer_ClickAnim(hc_bool digging) {
 	/* TODO: timing still not quite right, rotate2 still not quite right */
 	HeldBlockRenderer_ResetAnim(true, digging ? 0.35 : 0.25);
 	held_swinging  = false;
@@ -263,7 +263,7 @@ static void OnInit(void) {
 	Event_Register_(&GfxEvents.ContextLost,       NULL, OnContextLost);
 }
 #else
-void HeldBlockRenderer_ClickAnim(cc_bool digging) { }
+void HeldBlockRenderer_ClickAnim(hc_bool digging) { }
 void HeldBlockRenderer_Render(float delta) { }
 
 static void OnInit(void) { }

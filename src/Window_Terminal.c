@@ -1,5 +1,5 @@
 #include "Core.h"
-#if CC_WIN_BACKEND == CC_WIN_BACKEND_TERMINAL
+#if HC_WIN_BACKEND == HC_WIN_BACKEND_TERMINAL
 #include "_WindowBase.h"
 #include "String.h"
 #include "Funcs.h"
@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef CC_BUILD_WIN
+#ifdef HC_BUILD_WIN
 #include <windows.h>
 #else
 #include <unistd.h>
@@ -21,7 +21,7 @@
 #include <sys/ioctl.h>
 #endif
 
-#ifdef CC_BUILD_LINUX
+#ifdef HC_BUILD_LINUX
 #include <sys/kd.h>
 #include <linux/keyboard.h>
 #endif
@@ -30,7 +30,7 @@
 /*########################################################################################################################*
 *------------------------------------------------------Console output-----------------------------------------------------*
 *#########################################################################################################################*/
-#ifdef CC_BUILD_WIN
+#ifdef HC_BUILD_WIN
 	#define OutputConsole(buf, len) WriteConsoleA(hStdout, buf, len, NULL, NULL)
 	#define BOX_CHAR "\xE2\x96\x84"
 #else
@@ -38,7 +38,7 @@
 	#define BOX_CHAR "\xE2\x96\x84"
 #endif
 
-#ifdef CC_BUILD_MACOS
+#ifdef HC_BUILD_MACOS
 	// iTerm only displays trucolour properly with :
 	#define SEP_STR  ":"
 	#define SEP_CHAR ':'
@@ -48,7 +48,7 @@
 #endif
 
 static void SetMousePosition(int x, int y);
-static cc_bool pendingResize, pendingClose;
+static hc_bool pendingResize, pendingClose;
 static int supportsTruecolor;
 #define CHARS_PER_CELL 2
 #define CSI "\x1B["
@@ -63,7 +63,7 @@ static int supportsTruecolor;
 /*########################################################################################################################*
 *------------------------------------------------------Terminal backend----------------------------------------------------*
 *#########################################################################################################################*/
-#ifdef CC_BUILD_WIN
+#ifdef HC_BUILD_WIN
 static HANDLE hStdin, hStdout;
 static DWORD inOldMode, outOldMode;
 
@@ -124,7 +124,7 @@ static void HookSignals(void) {
 // (this trick was inspired from https://github.com/ichinaski/pxl/blob/master/main.go#L30)
 static struct termios tio;
 static struct winsize ws;
-#ifdef CC_BUILD_LINUX
+#ifdef HC_BUILD_LINUX
 static int orig_KB = K_XLATE;
 #endif
 
@@ -184,8 +184,8 @@ static void HookSignals(void) {
 /*########################################################################################################################*
 *---------------------------------------------------------Input backend---------------------------------------------------*
 *#########################################################################################################################*/
-#ifdef CC_BUILD_WIN
-static const cc_uint8 key_map[] = {
+#ifdef HC_BUILD_WIN
+static const hc_uint8 key_map[] = {
 /* 00 */ 0, 0, 0, 0, 0, 0, 0, 0, 
 /* 08 */ CCKEY_BACKSPACE, CCKEY_TAB, 0, 0, CCKEY_F5, CCKEY_ENTER, 0, 0,
 /* 10 */ 0, 0, 0, CCKEY_PAUSE, CCKEY_CAPSLOCK, 0, 0, 0, 
@@ -438,15 +438,15 @@ void Window_Create3D(int width, int height) { DoCreateWindow(width, height); }
 
 void Window_Destroy(void) { }
 
-void Window_SetTitle(const cc_string* title) {
+void Window_SetTitle(const hc_string* title) {
 	// TODO
 }
 
-void Clipboard_GetText(cc_string* value) {
+void Clipboard_GetText(hc_string* value) {
 	// TODO
 }
 
-void Clipboard_SetText(const cc_string* value) {
+void Clipboard_SetText(const hc_string* value) {
 	// TODO
 }
 
@@ -454,10 +454,10 @@ int Window_GetWindowState(void) {
 	return WINDOW_STATE_NORMAL;
 }
 
-cc_result Window_EnterFullscreen(void) {
+hc_result Window_EnterFullscreen(void) {
 	return 0;
 }
-cc_result Window_ExitFullscreen(void) {
+hc_result Window_ExitFullscreen(void) {
 	return 0;
 }
 
@@ -512,7 +512,7 @@ void Cursor_SetPosition(int x, int y) {
 	// TODO
 }
 
-static void Cursor_DoSetVisible(cc_bool visible) {
+static void Cursor_DoSetVisible(hc_bool visible) {
 	// TODO
 }
 
@@ -522,11 +522,11 @@ static void ShowDialogCore(const char* title, const char* msg) {
 	Platform_LogConst(msg);
 }
 
-cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
+hc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
-cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
+hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
@@ -542,7 +542,7 @@ void Window_FreeFramebuffer(struct Bitmap* bmp) {
 }
 
 void OnscreenKeyboard_Open(struct OpenKeyboardArgs* args) { }
-void OnscreenKeyboard_SetText(const cc_string* text) { }
+void OnscreenKeyboard_SetText(const hc_string* text) { }
 void OnscreenKeyboard_Close(void) { }
 
 void Window_EnableRawMouse(void) {
@@ -562,7 +562,7 @@ void Window_DisableRawMouse(void) {
 *-------------------------------------------------------Console output-----------------------------------------------------*
 *#########################################################################################################################*/
 // TODO still wrong
-static void AppendByteFast(cc_string* str, int value) {
+static void AppendByteFast(hc_string* str, int value) {
 	if (value >= 100) { 
 		String_Append(str, '0' + (value / 100)); value %= 100;
 		String_Append(str, '0' + (value /  10)); value %=  10;
@@ -588,7 +588,7 @@ static int CalcIndex(BitmapCol rgb) {
 
 void Window_DrawFramebuffer(Rect2D r, struct Bitmap* bmp) {
 	char buf[256];
-	cc_string str;
+	hc_string str;
 	int len;
 	String_InitArray(str, buf);
 	

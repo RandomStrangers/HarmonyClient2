@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_DREAMCAST
+#if defined HC_BUILD_DREAMCAST
 #include "Window.h"
 #include "Platform.h"
 #include "Input.h"
@@ -13,12 +13,12 @@
 #include "VirtualKeyboard.h"
 #include <kos.h>
 
-static cc_bool launcherMode;
+static hc_bool launcherMode;
 #include "VirtualCursor.h"
-cc_bool window_inited;
+hc_bool window_inited;
 
 struct _DisplayData DisplayInfo;
-struct cc_window WindowInfo;
+struct hc_window WindowInfo;
 
 void Window_PreInit(void) {
 	vid_set_mode(DEFAULT_VID_MODE, DEFAULT_PIXEL_MODE);
@@ -65,13 +65,13 @@ void Window_Create3D(int width, int height) {
 
 void Window_Destroy(void) { }
 
-void Window_SetTitle(const cc_string* title) { }
-void Clipboard_GetText(cc_string* value) { }
-void Clipboard_SetText(const cc_string* value) { }
+void Window_SetTitle(const hc_string* title) { }
+void Clipboard_GetText(hc_string* value) { }
+void Clipboard_SetText(const hc_string* value) { }
 
 int Window_GetWindowState(void) { return WINDOW_STATE_FULLSCREEN; }
-cc_result Window_EnterFullscreen(void) { return 0; }
-cc_result Window_ExitFullscreen(void)  { return 0; }
+hc_result Window_EnterFullscreen(void) { return 0; }
+hc_result Window_ExitFullscreen(void)  { return 0; }
 int Window_IsObscured(void)            { return 0; }
 
 void Window_Show(void) { }
@@ -86,7 +86,7 @@ void Window_RequestClose(void) {
 *----------------------------------------------------Input processing-----------------------------------------------------*
 *#########################################################################################################################*/
 // TODO: More intelligent diffing that uses less space
-static cc_bool has_prevState;
+static hc_bool has_prevState;
 static kbd_state_t prevState;
 
 static int MapKey(int k) {
@@ -346,7 +346,7 @@ void OnscreenKeyboard_Open(struct OpenKeyboardArgs* args) {
 	VirtualKeyboard_Open(args, launcherMode);
 }
 
-void OnscreenKeyboard_SetText(const cc_string* text) {
+void OnscreenKeyboard_SetText(const hc_string* text) {
 	VirtualKeyboard_SetText(text);
 }
 
@@ -364,11 +364,11 @@ void Window_ShowDialog(const char* title, const char* msg) {
 	Platform_LogConst(msg);
 }
 
-cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
+hc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
-cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
+hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 #endif

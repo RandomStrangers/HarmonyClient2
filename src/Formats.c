@@ -17,7 +17,7 @@
 #include "TexturePack.h"
 #include "Utils.h"
 
-#ifdef CC_BUILD_FILESYSTEM
+#ifdef HC_BUILD_FILESYSTEM
 static struct LocationUpdate* spawn_point;
 static struct MapImporter* imp_head;
 static struct MapImporter* imp_tail;
@@ -26,7 +26,7 @@ static struct MapImporter* imp_tail;
 /*########################################################################################################################*
 *--------------------------------------------------------General----------------------------------------------------------*
 *#########################################################################################################################*/
-static cc_result Map_ReadBlocks(struct Stream* stream) {
+static hc_result Map_ReadBlocks(struct Stream* stream) {
 	World.Volume = World.Width * World.Length * World.Height;
 	World.Blocks = (BlockRaw*)Mem_TryAlloc(World.Volume, 1);
 
@@ -34,9 +34,9 @@ static cc_result Map_ReadBlocks(struct Stream* stream) {
 	return Stream_Read(stream, World.Blocks, World.Volume);
 }
 
-static cc_result Map_SkipGZipHeader(struct Stream* stream) {
+static hc_result Map_SkipGZipHeader(struct Stream* stream) {
 	struct GZipHeader gzHeader;
-	cc_result res;
+	hc_result res;
 	GZipHeader_Init(&gzHeader);
 
 	while (!gzHeader.done) {
@@ -49,9 +49,9 @@ void MapImporter_Register(struct MapImporter* imp) {
 	LinkedList_Append(imp, imp_head, imp_tail);
 }
 
-struct MapImporter* MapImporter_Find(const cc_string* path) {
+struct MapImporter* MapImporter_Find(const hc_string* path) {
 	struct MapImporter* imp;
-	cc_string ext;
+	hc_string ext;
 
 	for (imp = imp_head; imp; imp = imp->next)
 	{
@@ -61,12 +61,12 @@ struct MapImporter* MapImporter_Find(const cc_string* path) {
 	return NULL;
 }
 
-cc_result Map_LoadFrom(const cc_string* path) {
-	cc_string relPath, fileName, fileExt;
+hc_result Map_LoadFrom(const hc_string* path) {
+	hc_string relPath, fileName, fileExt;
 	struct LocationUpdate update = { 0 };
 	struct MapImporter* imp;
 	struct Stream stream;
-	cc_result res;
+	hc_result res;
 	Game_Reset();
 	
 	spawn_point = &update;
@@ -114,7 +114,7 @@ cc_result Map_LoadFrom(const cc_string* path) {
 	U8* "Data"       (16x16x16 sparsely allocated chunks)
 }*/
 
-static const cc_uint8 Lvl_table[256] = {
+static const hc_uint8 Lvl_table[256] = {
 	 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
 	16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
 	32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
@@ -133,11 +133,11 @@ static const cc_uint8 Lvl_table[256] = {
 	29, 22, 10, 22, 22, 41, 19, 35, 21, 29, 49, 34, 16, 41,  0, 22
 };
 
-static cc_result Lvl_ReadCustomBlocks(struct Stream* stream) {	
-	cc_uint8 chunk[LVL_CHUNKSIZE * LVL_CHUNKSIZE * LVL_CHUNKSIZE];
-	cc_uint8 hasCustom;
+static hc_result Lvl_ReadCustomBlocks(struct Stream* stream) {	
+	hc_uint8 chunk[LVL_CHUNKSIZE * LVL_CHUNKSIZE * LVL_CHUNKSIZE];
+	hc_uint8 hasCustom;
 	int baseIndex, index, xx, yy, zz;
-	cc_result res;
+	hc_result res;
 	int x, y, z, i;
 
 	/* skip bounds checks when we know chunk is entirely inside map */
@@ -178,11 +178,11 @@ static cc_result Lvl_ReadCustomBlocks(struct Stream* stream) {
 
 /* Imports a world from a .lvl MCSharp server map file */
 /* Used by MCSharp/MCLawl/MCForge/MCDzienny/MCGalaxy */
-static cc_result Lvl_Load(struct Stream* stream) {
-	cc_uint8 header[18];
-	cc_uint8* blocks;
-	cc_uint8 section;
-	cc_result res;
+static hc_result Lvl_Load(struct Stream* stream) {
+	hc_uint8 header[18];
+	hc_uint8* blocks;
+	hc_uint8 section;
+	hc_result res;
 	int i;
 
 	struct Stream compStream;
@@ -254,10 +254,10 @@ static cc_result Lvl_Load(struct Stream* stream) {
 	METADATA { STR "Group", "Key", "Value" }
 	U8* "Blocks"
 }*/
-static cc_result Fcm_ReadString(struct Stream* stream) {
-	cc_uint8 data[2];
+static hc_result Fcm_ReadString(struct Stream* stream) {
+	hc_uint8 data[2];
 	int len;
-	cc_result res;
+	hc_result res;
 
 	if ((res = Stream_Read(stream, data, sizeof(data)))) return res;
 	len = Stream_GetU16_LE(data);
@@ -267,9 +267,9 @@ static cc_result Fcm_ReadString(struct Stream* stream) {
 
 /* Imports a world from a .fcm fCraft server map file (v3 only) */
 /* Used by fCraft/800Craft/LegendCraft/ProCraft */
-static cc_result Fcm_Load(struct Stream* stream) {
-	cc_uint8 header[79];	
-	cc_result res;
+static hc_result Fcm_Load(struct Stream* stream) {
+	hc_uint8 header[79];	
+	hc_result res;
 	int i, count;
 
 	struct Stream compStream;
@@ -325,34 +325,34 @@ struct NbtTag;
 
 struct NbtTag {
 	struct NbtTag* parent;
-	cc_uint8  type;
-	cc_string name;
-	cc_uint32 dataSize; /* size of data for arrays */
+	hc_uint8  type;
+	hc_string name;
+	hc_uint32 dataSize; /* size of data for arrays */
 
 	union {
-		cc_uint8  u8;
-		cc_int16  i16;
-		cc_uint16 u16;
-		cc_int32  i32;
-		cc_uint32 u32;
+		hc_uint8  u8;
+		hc_int16  i16;
+		hc_uint16 u16;
+		hc_int32  i32;
+		hc_uint32 u32;
 		float     f32;
-		cc_uint8  small[NBT_SMALL_SIZE];
-		cc_uint8* big; /* malloc for big byte arrays */
-		struct { cc_string text; char buffer[STRING_SIZE * 2]; } str;
+		hc_uint8  small[NBT_SMALL_SIZE];
+		hc_uint8* big; /* malloc for big byte arrays */
+		struct { hc_string text; char buffer[STRING_SIZE * 2]; } str;
 	} value;
 	char _nameBuffer[NBT_STRING_SIZE];
-	cc_result result;
+	hc_result result;
 	int listIndex;
 };
 
-static cc_uint8 NbtTag_U8(struct NbtTag* tag) {
+static hc_uint8 NbtTag_U8(struct NbtTag* tag) {
 	if (tag->type == NBT_I8) return tag->value.u8; 
 	
 	tag->result = NBT_ERR_EXPECTED_I8;
 	return 0;
 }
 
-static cc_int16 NbtTag_I16(struct NbtTag* tag) {
+static hc_int16 NbtTag_I16(struct NbtTag* tag) {
 	if (tag->type == NBT_I16) return tag->value.i16;
 	if (tag->type == NBT_I8)  return tag->value.u8;
 
@@ -360,7 +360,7 @@ static cc_int16 NbtTag_I16(struct NbtTag* tag) {
 	return 0;
 }
 
-static cc_uint16 NbtTag_U16(struct NbtTag* tag) {
+static hc_uint16 NbtTag_U16(struct NbtTag* tag) {
 	if (tag->type == NBT_I16) return tag->value.u16;
 	if (tag->type == NBT_I8)  return tag->value.u8;
 
@@ -384,24 +384,24 @@ static float NbtTag_F32(struct NbtTag* tag) {
 	return 0;
 }
 
-static cc_uint8* NbtTag_U8_Array(struct NbtTag* tag, int minSize) {
+static hc_uint8* NbtTag_U8_Array(struct NbtTag* tag, int minSize) {
 	if (tag->type != NBT_I8S)    { tag->result = NBT_ERR_EXPECTED_ARR;  return NULL; }
 	if (tag->dataSize < minSize) { tag->result = NBT_ERR_ARR_TOO_SMALL; return NULL; }
 
 	return NbtTag_IsSmall(tag) ? tag->value.small : tag->value.big;
 }
 
-static cc_string NbtTag_String(struct NbtTag* tag) {
+static hc_string NbtTag_String(struct NbtTag* tag) {
 	if (tag->type == NBT_STR) return tag->value.str.text;
 
 	tag->result = NBT_ERR_EXPECTED_STR;
 	return String_Empty;
 }
 
-static cc_result Nbt_ReadString(struct Stream* stream, cc_string* str) {
-	cc_uint8 buffer[NBT_STRING_SIZE * 4];
+static hc_result Nbt_ReadString(struct Stream* stream, hc_string* str) {
+	hc_uint8 buffer[NBT_STRING_SIZE * 4];
 	int len;
-	cc_result res;
+	hc_result res;
 
 	if ((res = Stream_Read(stream, buffer, 2)))   return res;
 	len = Stream_GetU16_BE(buffer);
@@ -414,13 +414,13 @@ static cc_result Nbt_ReadString(struct Stream* stream, cc_string* str) {
 }
 
 typedef void (*Nbt_Callback)(struct NbtTag* tag);
-static cc_result Nbt_ReadTag(cc_uint8 typeId, cc_bool readTagName, struct Stream* stream, 
+static hc_result Nbt_ReadTag(hc_uint8 typeId, hc_bool readTagName, struct Stream* stream, 
 							struct NbtTag* parent, Nbt_Callback callback, int listIndex) {
 	struct NbtTag tag;
-	cc_uint8 childType;
-	cc_uint8 tmp[5];	
-	cc_result res;
-	cc_uint32 i, count;
+	hc_uint8 childType;
+	hc_uint8 tmp[5];	
+	hc_result res;
+	hc_uint32 i, count;
 	
 	if (typeId == NBT_END) return 0;
 	tag.type      = typeId; 
@@ -457,7 +457,7 @@ static cc_result Nbt_ReadTag(cc_uint8 typeId, cc_bool readTagName, struct Stream
 		if (NbtTag_IsSmall(&tag)) {
 			res = Stream_Read(stream, tag.value.small, tag.dataSize);
 		} else {
-			tag.value.big = (cc_uint8*)Mem_TryAlloc(tag.dataSize, 1);
+			tag.value.big = (hc_uint8*)Mem_TryAlloc(tag.dataSize, 1);
 			if (!tag.value.big) return ERR_OUT_OF_MEMORY;
 
 			res = Stream_Read(stream, tag.value.big, tag.dataSize);
@@ -515,11 +515,11 @@ static BlockRaw* Nbt_TakeArray(struct NbtTag* tag, const char* type) {
 	return ptr;
 }
 
-static cc_result Nbt_Read(struct Stream* stream, Nbt_Callback callback) {
+static hc_result Nbt_Read(struct Stream* stream, Nbt_Callback callback) {
 	struct Stream compStream;
 	struct InflateState state;
-	cc_result res;
-	cc_uint8 tag;
+	hc_result res;
+	hc_uint8 tag;
 
 	Inflate_MakeStream2(&compStream, &state, stream);
 	if ((res = Map_SkipGZipHeader(stream))) return res;
@@ -533,17 +533,17 @@ static cc_result Nbt_Read(struct Stream* stream, Nbt_Callback callback) {
 /*########################################################################################################################*
 *--------------------------------------------------------NBTWriter--------------------------------------------------------*
 *#########################################################################################################################*/
-static cc_uint8* Nbt_WriteConst(cc_uint8* data, const char* text) {
+static hc_uint8* Nbt_WriteConst(hc_uint8* data, const char* text) {
 	int i, len = String_Length(text);
 	*data++ = 0;
-	*data++ = (cc_uint8)len;
+	*data++ = (hc_uint8)len;
 
 	for (i = 0; i < len; i++) { *data++ = text[i]; }
 	return data;
 }
 
-static cc_uint8* Nbt_WriteString(cc_uint8* data, const char* name, const cc_string* text) {
-	cc_uint8* start; int i;
+static hc_uint8* Nbt_WriteString(hc_uint8* data, const char* name, const hc_string* text) {
+	hc_uint8* start; int i;
 
 	*data++ = NBT_STR;
 	data    = Nbt_WriteConst(data, name);
@@ -558,14 +558,14 @@ static cc_uint8* Nbt_WriteString(cc_uint8* data, const char* name, const cc_stri
 	return data;
 }
 
-static cc_uint8* Nbt_WriteDict(cc_uint8* data, const char* name) {
+static hc_uint8* Nbt_WriteDict(hc_uint8* data, const char* name) {
 	*data++ = NBT_DICT;
 	data    = Nbt_WriteConst(data, name);
 
 	return data;
 }
 
-static cc_uint8* Nbt_WriteArray(cc_uint8* data, const char* name, int size) {
+static hc_uint8* Nbt_WriteArray(hc_uint8* data, const char* name, int size) {
 	*data++ = NBT_I8S;
 	data    = Nbt_WriteConst(data, name);
 
@@ -573,7 +573,7 @@ static cc_uint8* Nbt_WriteArray(cc_uint8* data, const char* name, int size) {
 	return data + 4;
 }
 
-static cc_uint8* Nbt_WriteUInt8(cc_uint8* data, const char* name, cc_uint8 value) {
+static hc_uint8* Nbt_WriteUInt8(hc_uint8* data, const char* name, hc_uint8 value) {
 	*data++ = NBT_I8;
 	data  = Nbt_WriteConst(data, name);
 
@@ -581,7 +581,7 @@ static cc_uint8* Nbt_WriteUInt8(cc_uint8* data, const char* name, cc_uint8 value
 	return data + 1;
 }
 
-static cc_uint8* Nbt_WriteUInt16(cc_uint8* data, const char* name, cc_uint16 value) {
+static hc_uint8* Nbt_WriteUInt16(hc_uint8* data, const char* name, hc_uint16 value) {
 	*data++ = NBT_I16;
 	data    = Nbt_WriteConst(data, name);
 
@@ -589,7 +589,7 @@ static cc_uint8* Nbt_WriteUInt16(cc_uint8* data, const char* name, cc_uint16 val
 	return data + 2;
 }
 
-static cc_uint8* Nbt_WriteInt32(cc_uint8* data, const char* name, int value) {
+static hc_uint8* Nbt_WriteInt32(hc_uint8* data, const char* name, int value) {
 	*data++ = NBT_I32;
 	data    = Nbt_WriteConst(data, name);
 
@@ -597,7 +597,7 @@ static cc_uint8* Nbt_WriteInt32(cc_uint8* data, const char* name, int value) {
 	return data + 4;
 }
 
-static cc_uint8* Nbt_WriteFloat(cc_uint8* data, const char* name, float value) {
+static hc_uint8* Nbt_WriteFloat(hc_uint8* data, const char* name, float value) {
 	union IntAndFloat raw;
 	*data++ = NBT_F32;
 	data    = Nbt_WriteConst(data, name);
@@ -720,7 +720,7 @@ static void Cw_Callback_4(struct NbtTag* tag) {
 		if (IsTag(tag, "SideLevel")) { Env.EdgeHeight = NbtTag_I16(tag); return; }
 
 		if (IsTag(tag, "TextureURL")) {
-			cc_string url = NbtTag_String(tag);
+			hc_string url = NbtTag_String(tag);
 			if (url.length) Server_RetrieveTexturePack(&url);
 			return;
 		}
@@ -758,7 +758,7 @@ static void Cw_Callback_4(struct NbtTag* tag) {
 	}
 
 	if (IsTag(tag->parent, "BlockDefinitions") && Game_AllowCustomBlocks) {
-		static const cc_string blockStr = String_FromConst("Block");
+		static const hc_string blockStr = String_FromConst("Block");
 		if (!String_CaselessStarts(&tag->name, &blockStr)) return;	
 
 		/* hack for sprite draw (can't rely on order of tags when reading) */
@@ -780,8 +780,8 @@ static void Cw_Callback_4(struct NbtTag* tag) {
 
 static void Cw_Callback_5(struct NbtTag* tag) {
 	BlockID id = cw_curID;
-	cc_uint8* arr;
-	cc_uint8 sound;
+	hc_uint8* arr;
+	hc_uint8 sound;
 
 	if (!IsTag(tag->parent->parent->parent, "CPE")) return;
 	if (!IsTag(tag->parent->parent->parent->parent, "Metadata")) return;
@@ -803,7 +803,7 @@ static void Cw_Callback_5(struct NbtTag* tag) {
 		if (IsTag(tag, "Shape"))          { Blocks.SpriteOffset[id] = NbtTag_U8(tag); return; }
 
 		if (IsTag(tag, "Name")) {
-			cc_string name = NbtTag_String(tag);
+			hc_string name = NbtTag_String(tag);
 			Block_SetName(id, &name);
 			return;
 		}
@@ -848,9 +848,9 @@ static void Cw_Callback_5(struct NbtTag* tag) {
 			arr = NbtTag_U8_Array(tag, 6);
 			if (!arr) return;
 
-			Blocks.MinBB[id].x = (cc_int8)arr[0] / 16.0f; Blocks.MaxBB[id].x = (cc_int8)arr[3] / 16.0f;
-			Blocks.MinBB[id].y = (cc_int8)arr[1] / 16.0f; Blocks.MaxBB[id].y = (cc_int8)arr[4] / 16.0f;
-			Blocks.MinBB[id].z = (cc_int8)arr[2] / 16.0f; Blocks.MaxBB[id].z = (cc_int8)arr[5] / 16.0f;
+			Blocks.MinBB[id].x = (hc_int8)arr[0] / 16.0f; Blocks.MaxBB[id].x = (hc_int8)arr[3] / 16.0f;
+			Blocks.MinBB[id].y = (hc_int8)arr[1] / 16.0f; Blocks.MaxBB[id].y = (hc_int8)arr[4] / 16.0f;
+			Blocks.MinBB[id].z = (hc_int8)arr[2] / 16.0f; Blocks.MaxBB[id].z = (hc_int8)arr[5] / 16.0f;
 			return;
 		}
 	}
@@ -873,7 +873,7 @@ static void Cw_Callback(struct NbtTag* tag) {
 
 /* Imports a world from a .cw ClassicWorld map file */
 /* Used by ClassiCube/ClassicalSharp */
-static cc_result Cw_Load(struct Stream* stream) {
+static hc_result Cw_Load(struct Stream* stream) {
 	return Nbt_Read(stream, Cw_Callback);
 }
 
@@ -912,20 +912,20 @@ enum JFieldType {
 #define SC_WRITE_METHOD 0x01
 #define SC_SERIALIZABLE 0x02
 
-static cc_uint32 reference_id;
+static hc_uint32 reference_id;
 #define Java_AddReference() reference_id++;
 
 union JValue {
-	cc_uint8  U8;
-	cc_int32  I32;
-	cc_uint32 U32;
+	hc_uint8  U8;
+	hc_int32  I32;
+	hc_uint32 U32;
 	float     F32;
-	struct { cc_uint8* Ptr; cc_uint32 Size; } Array;
+	struct { hc_uint8* Ptr; hc_uint32 Size; } Array;
 };
 
 struct JFieldDesc {
-	cc_uint8 Type;
-	cc_uint8 FieldName[JNAME_SIZE];
+	hc_uint8 Type;
+	hc_uint8 FieldName[JNAME_SIZE];
 	union JValue Value; 
 	/* "Value" field here is not accurate to how java deserialising actually works, */
 	/*  but easier to store here since only care about Level class values anyways */
@@ -933,33 +933,33 @@ struct JFieldDesc {
 
 struct JClassDesc;
 struct JClassDesc {
-	cc_uint8 ClassName[JNAME_SIZE];
-	cc_uint8 Flags;
+	hc_uint8 ClassName[JNAME_SIZE];
+	hc_uint8 Flags;
 	int FieldsCount;
 	struct JFieldDesc Fields[38];
-	cc_uint32 Reference;
+	hc_uint32 Reference;
 	struct JClassDesc* SuperClass;
 	struct JClassDesc* tmp;
 };
 
 struct JArray {
 	struct JClassDesc* Desc;
-	cc_uint8* Data; /* for byte arrays */
-	cc_uint32 Size; /* for byte arrays */
+	hc_uint8* Data; /* for byte arrays */
+	hc_uint32 Size; /* for byte arrays */
 };
 
 struct JUnion {
-	cc_uint8 Type;
+	hc_uint8 Type;
 	union {
-		cc_uint8 String[JNAME_SIZE]; /* TC_STRING */
+		hc_uint8 String[JNAME_SIZE]; /* TC_STRING */
 		struct JClassDesc* Object;   /* TC_OBJECT */
 		struct JArray      Array;    /* TC_ARRAY */
 	} Value;
 };
 
-static cc_result Java_ReadString(struct Stream* stream, cc_uint8* buffer) {
+static hc_result Java_ReadString(struct Stream* stream, hc_uint8* buffer) {
 	int len;
-	cc_result res;
+	hc_result res;
 
 	if ((res = Stream_Read(stream, buffer, 2))) return res;
 	len = Stream_GetU16_BE(buffer);
@@ -970,12 +970,12 @@ static cc_result Java_ReadString(struct Stream* stream, cc_uint8* buffer) {
 }
 
 
-static cc_result Java_ReadObject(struct Stream* stream,     struct JUnion* object);
-static cc_result Java_ReadObjectData(struct Stream* stream, struct JUnion* object);
-static cc_result Java_SkipAnnotation(struct Stream* stream) {
-	cc_uint8 typeCode, count;
+static hc_result Java_ReadObject(struct Stream* stream,     struct JUnion* object);
+static hc_result Java_ReadObjectData(struct Stream* stream, struct JUnion* object);
+static hc_result Java_SkipAnnotation(struct Stream* stream) {
+	hc_uint8 typeCode, count;
 	struct JUnion object;
-	cc_result res;
+	hc_result res;
 
 	for (;;)
 	{
@@ -1004,11 +1004,11 @@ static cc_result Java_SkipAnnotation(struct Stream* stream) {
 #define CLASS_CAPACITY 30
 static struct JClassDesc* class_cache;
 static int class_count;
-static cc_result Java_ReadClassDesc(struct Stream* stream, struct JClassDesc** desc);
+static hc_result Java_ReadClassDesc(struct Stream* stream, struct JClassDesc** desc);
 
-static cc_result Java_ReadFieldDesc(struct Stream* stream, struct JFieldDesc* desc) {
+static hc_result Java_ReadFieldDesc(struct Stream* stream, struct JFieldDesc* desc) {
 	struct JUnion className;
-	cc_result res;
+	hc_result res;
 
 	if ((res = stream->ReadU8(stream, &desc->Type)))      return res;
 	if ((res = Java_ReadString(stream, desc->FieldName))) return res;
@@ -1019,9 +1019,9 @@ static cc_result Java_ReadFieldDesc(struct Stream* stream, struct JFieldDesc* de
 	return 0;
 }
 
-static cc_result Java_ReadNewClassDesc(struct Stream* stream, struct JClassDesc* desc) {
-	cc_uint8 count[2];
-	cc_result res;
+static hc_result Java_ReadNewClassDesc(struct Stream* stream, struct JClassDesc* desc) {
+	hc_uint8 count[2];
+	hc_result res;
 	int i;
 
 	if ((res = Java_ReadString(stream, desc->ClassName))) return res;
@@ -1043,10 +1043,10 @@ static cc_result Java_ReadNewClassDesc(struct Stream* stream, struct JClassDesc*
 	return Java_ReadClassDesc(stream, &desc->SuperClass);
 }
 
-static cc_result Java_ReadClassDesc(struct Stream* stream, struct JClassDesc** desc) {
-	cc_uint8 typeCode;
-	cc_uint32 reference;
-	cc_result res;
+static hc_result Java_ReadClassDesc(struct Stream* stream, struct JClassDesc** desc) {
+	hc_uint8 typeCode;
+	hc_uint32 reference;
+	hc_result res;
 	int i;
 	if ((res = stream->ReadU8(stream, &typeCode))) return res;
 
@@ -1079,9 +1079,9 @@ static cc_result Java_ReadClassDesc(struct Stream* stream, struct JClassDesc** d
 }
 
 
-static cc_result Java_ReadValue(struct Stream* stream, cc_uint8 type, union JValue* value) {
+static hc_result Java_ReadValue(struct Stream* stream, hc_uint8 type, union JValue* value) {
 	struct JUnion obj;
-	cc_result res;
+	hc_result res;
 
 	switch (type) {
 	case JFIELD_I8:
@@ -1113,9 +1113,9 @@ static cc_result Java_ReadValue(struct Stream* stream, cc_uint8 type, union JVal
 	return JAVA_ERR_JVALUE_TYPE;
 }
 
-static cc_result Java_ReadClassData(struct Stream* stream, struct JClassDesc* desc) {
+static hc_result Java_ReadClassData(struct Stream* stream, struct JClassDesc* desc) {
 	struct JFieldDesc* field;
-	cc_result res;
+	hc_result res;
 	int i;
 
 	if (!(desc->Flags & SC_SERIALIZABLE))
@@ -1132,14 +1132,14 @@ static cc_result Java_ReadClassData(struct Stream* stream, struct JClassDesc* de
 	return 0;
 }
 
-static cc_result Java_ReadNewString(struct Stream* stream, struct JUnion* object) {
+static hc_result Java_ReadNewString(struct Stream* stream, struct JUnion* object) {
 	Java_AddReference();
 	return Java_ReadString(stream, object->Value.String);
 }
 
-static cc_result Java_ReadNewObject(struct Stream* stream, struct JUnion* object) {
+static hc_result Java_ReadNewObject(struct Stream* stream, struct JUnion* object) {
 	struct JClassDesc* head;
-	cc_result res;
+	hc_result res;
 	if ((res = Java_ReadClassDesc(stream, &object->Value.Object))) return res;
 	Java_AddReference();
 
@@ -1158,12 +1158,12 @@ static cc_result Java_ReadNewObject(struct Stream* stream, struct JUnion* object
 	return 0;
 }
 
-static cc_result Java_ReadNewArray(struct Stream* stream, struct JUnion* object) {
+static hc_result Java_ReadNewArray(struct Stream* stream, struct JUnion* object) {
 	struct JArray* array = &object->Value.Array;
 	union JValue value;
-	cc_uint32 count;
-	cc_uint8 type;
-	cc_result res;
+	hc_uint32 count;
+	hc_uint8 type;
+	hc_result res;
 	int i;
 
 	if ((res = Java_ReadClassDesc(stream, &array->Desc))) return res;
@@ -1181,7 +1181,7 @@ static cc_result Java_ReadNewArray(struct Stream* stream, struct JUnion* object)
 	}
 
 	array->Size = count;
-	array->Data = (cc_uint8*)Mem_TryAlloc(count, 1);
+	array->Data = (hc_uint8*)Mem_TryAlloc(count, 1);
 
 	if (!array->Data) return ERR_OUT_OF_MEMORY;
 	res = Stream_Read(stream, array->Data, count);
@@ -1189,8 +1189,8 @@ static cc_result Java_ReadNewArray(struct Stream* stream, struct JUnion* object)
 	return res;
 }
 
-static cc_result Java_ReadObjectData(struct Stream* stream, struct JUnion* object) {
-	cc_uint32 reference;
+static hc_result Java_ReadObjectData(struct Stream* stream, struct JUnion* object) {
+	hc_uint32 reference;
 	switch (object->Type) 
 	{
 		case TC_STRING:    return Java_ReadNewString(stream, object);
@@ -1202,8 +1202,8 @@ static cc_result Java_ReadObjectData(struct Stream* stream, struct JUnion* objec
 	return JAVA_ERR_INVALID_TYPECODE;
 }
 
-static cc_result Java_ReadObject(struct Stream* stream, struct JUnion* object) {
-	cc_result res;
+static hc_result Java_ReadObject(struct Stream* stream, struct JUnion* object) {
+	hc_result res;
 	if ((res = stream->ReadU8(stream, &object->Type))) return res;
 	return Java_ReadObjectData(stream, object);
 }
@@ -1246,7 +1246,7 @@ static void Dat_Format0And1(void) {
 	Env.FogCol       = PackedCol_Make(0x7F, 0xCC, 0xFF, 0xFF);
 }
 
-static cc_result Dat_LoadFormat0(struct Stream* stream) {
+static hc_result Dat_LoadFormat0(struct Stream* stream) {
 	Dat_Format0And1();
 	/* Similiar env to how it appears in preclassic client */
 	Env.EdgeBlock  = BLOCK_AIR;
@@ -1267,11 +1267,11 @@ static cc_result Dat_LoadFormat0(struct Stream* stream) {
 	return Stream_Read(stream, World.Blocks + 5, PC_VOLUME - 5);
 }
 
-static cc_result Dat_LoadFormat1(struct Stream* stream) {
-	cc_uint8 level_name[JNAME_SIZE];
-	cc_uint8 level_author[JNAME_SIZE];
-	cc_uint8 header[8 + 2 + 2 + 2];
-	cc_result res;
+static hc_result Dat_LoadFormat1(struct Stream* stream) {
+	hc_uint8 level_name[JNAME_SIZE];
+	hc_uint8 level_author[JNAME_SIZE];
+	hc_uint8 header[8 + 2 + 2 + 2];
+	hc_result res;
 
 	Dat_Format0And1();
 	if ((res = Java_ReadString(stream,   level_name))) return res;
@@ -1285,14 +1285,14 @@ static cc_result Dat_LoadFormat1(struct Stream* stream) {
 	return Map_ReadBlocks(stream);
 }
 
-static cc_result Dat_LoadFormat2(struct Stream* stream) {
+static hc_result Dat_LoadFormat2(struct Stream* stream) {
 	struct JClassDesc classes[CLASS_CAPACITY];
-	cc_uint8 header[2 + 2];
+	hc_uint8 header[2 + 2];
 	struct JUnion obj;
 	struct JClassDesc* desc;
 	struct JFieldDesc* field;
-	cc_string fieldName;
-	cc_result res;
+	hc_string fieldName;
+	hc_result res;
 	int i;
 	if ((res = Stream_Read(stream, header, sizeof(header)))) return res;
 
@@ -1340,10 +1340,10 @@ static cc_result Dat_LoadFormat2(struct Stream* stream) {
 
 /* Imports a world from a .dat classic map file */
 /* Used by Minecraft Classic/WoM client */
-static cc_result Dat_Load(struct Stream* stream) {
-	cc_uint8 header[4 + 1];
-	cc_uint32 signature;
-	cc_result res;
+static hc_result Dat_Load(struct Stream* stream) {
+	hc_uint8 header[4 + 1];
+	hc_uint32 signature;
+	hc_result res;
 
 	struct Stream compStream;
 	struct InflateState state;
@@ -1449,7 +1449,7 @@ static void MCLevel_Callback_3(struct NbtTag* tag) {
 	struct NbtTag* field = tag->parent;
 
 	if (IsTag(group, "Map") && IsTag(field, "spawn")) {
-		cc_int16 value     = NbtTag_I16(tag);
+		hc_int16 value     = NbtTag_I16(tag);
 		spawn_point->flags = LU_HAS_POS;
 
 		if (tag->listIndex == 0) spawn_point->pos.x = value;
@@ -1473,8 +1473,8 @@ static void MCLevel_Callback(struct NbtTag* tag) {
 
 /* Imports a world from a .mclevel NBT map file */
 /* Used by Minecraft Indev client */
-static cc_result MCLevel_Load(struct Stream* stream) {
-	cc_result res = Nbt_Read(stream, MCLevel_Callback);
+static hc_result MCLevel_Load(struct Stream* stream) {
+	hc_result res = Nbt_Read(stream, MCLevel_Callback);
 
 	Env.EdgeHeight  = mcl_edgeHeight;
 	Env.SidesOffset = mcl_sidesHeight - mcl_edgeHeight;
@@ -1485,7 +1485,7 @@ static cc_result MCLevel_Load(struct Stream* stream) {
 /*########################################################################################################################*
 *--------------------------------------------------ClassicWorld export----------------------------------------------------*
 *#########################################################################################################################*/
-static cc_uint8* Cw_WriteColor(cc_uint8* data, const char* name, PackedCol color) {
+static hc_uint8* Cw_WriteColor(hc_uint8* data, const char* name, PackedCol color) {
 	data = Nbt_WriteDict(data, name);
 	{
 		data  = Nbt_WriteUInt16(data, "R", PackedCol_R(color));
@@ -1496,21 +1496,21 @@ static cc_uint8* Cw_WriteColor(cc_uint8* data, const char* name, PackedCol color
 	return data;
 }
 
-static const cc_uint8 cw_end[4] = {
+static const hc_uint8 cw_end[4] = {
 			NBT_END,
 		NBT_END,
 	NBT_END,
 NBT_END,
 };
 
-static cc_result Cw_WriteBockDef(struct Stream* stream, int b) {
-	cc_uint8 buffer[1024];
+static hc_result Cw_WriteBockDef(struct Stream* stream, int b) {
+	hc_uint8 buffer[1024];
 	char nameBuffer[10];
-	cc_uint8* cur;
-	cc_string name;
-	cc_bool sprite = Blocks.Draw[b] == DRAW_SPRITE;
+	hc_uint8* cur;
+	hc_string name;
+	hc_bool sprite = Blocks.Draw[b] == DRAW_SPRITE;
 	TextureLoc tex;
-	cc_uint8 fog;
+	hc_uint8 fog;
 	PackedCol col;
 	Vec3 minBB, maxBB;	
 
@@ -1536,22 +1536,22 @@ static cc_result Cw_WriteBockDef(struct Stream* stream, int b) {
 		/*   For backwards compatibility, the lower byte of each texture is */
 		/*   written into first 6 bytes, then higher byte into next 6 bytes (ugly hack) */
 		cur = Nbt_WriteArray(cur, "Textures", 12);
-		tex = Block_Tex(b, FACE_YMAX); cur[0] = (cc_uint8)tex; cur[ 6] = (cc_uint8)(tex >> 8);
-		tex = Block_Tex(b, FACE_YMIN); cur[1] = (cc_uint8)tex; cur[ 7] = (cc_uint8)(tex >> 8);
-		tex = Block_Tex(b, FACE_XMIN); cur[2] = (cc_uint8)tex; cur[ 8] = (cc_uint8)(tex >> 8);
-		tex = Block_Tex(b, FACE_XMAX); cur[3] = (cc_uint8)tex; cur[ 9] = (cc_uint8)(tex >> 8);
-		tex = Block_Tex(b, FACE_ZMIN); cur[4] = (cc_uint8)tex; cur[10] = (cc_uint8)(tex >> 8);
-		tex = Block_Tex(b, FACE_ZMAX); cur[5] = (cc_uint8)tex; cur[11] = (cc_uint8)(tex >> 8);
+		tex = Block_Tex(b, FACE_YMAX); cur[0] = (hc_uint8)tex; cur[ 6] = (hc_uint8)(tex >> 8);
+		tex = Block_Tex(b, FACE_YMIN); cur[1] = (hc_uint8)tex; cur[ 7] = (hc_uint8)(tex >> 8);
+		tex = Block_Tex(b, FACE_XMIN); cur[2] = (hc_uint8)tex; cur[ 8] = (hc_uint8)(tex >> 8);
+		tex = Block_Tex(b, FACE_XMAX); cur[3] = (hc_uint8)tex; cur[ 9] = (hc_uint8)(tex >> 8);
+		tex = Block_Tex(b, FACE_ZMIN); cur[4] = (hc_uint8)tex; cur[10] = (hc_uint8)(tex >> 8);
+		tex = Block_Tex(b, FACE_ZMAX); cur[5] = (hc_uint8)tex; cur[11] = (hc_uint8)(tex >> 8);
 		cur += 12;
 
 		cur  = Nbt_WriteUInt8(cur,  "TransmitsLight", Blocks.BlocksLight[b] ? 0 : 1);
 		cur  = Nbt_WriteUInt8(cur,  "WalkSound",      Blocks.DigSounds[b]);
 		cur  = Nbt_WriteUInt8(cur,  "FullBright",     Block_WriteFullBright(Blocks.Brightness[b]));
-		cur  = Nbt_WriteUInt8(cur,  "Shape",          sprite ? 0 : (cc_uint8)(Blocks.MaxBB[b].y * 16));
+		cur  = Nbt_WriteUInt8(cur,  "Shape",          sprite ? 0 : (hc_uint8)(Blocks.MaxBB[b].y * 16));
 		cur  = Nbt_WriteUInt8(cur,  "BlockDraw",      sprite ? Blocks.SpriteOffset[b] : Blocks.Draw[b]);
 
 		cur = Nbt_WriteArray(cur, "Fog", 4);
-		fog = (cc_uint8)(128 * Blocks.FogDensity[b] - 1);
+		fog = (hc_uint8)(128 * Blocks.FogDensity[b] - 1);
 		col = Blocks.FogCol[b];
 		cur[0] = Blocks.FogDensity[b] ? fog : 0xFF; /* write 0xFF instead of 0 for backwards compatibility */
 		cur[1] = PackedCol_R(col); cur[2] = PackedCol_G(col); cur[3] = PackedCol_B(col);
@@ -1559,8 +1559,8 @@ static cc_result Cw_WriteBockDef(struct Stream* stream, int b) {
 
 		cur  = Nbt_WriteArray(cur,  "Coords", 6);
 		minBB  = Blocks.MinBB[b]; maxBB = Blocks.MaxBB[b];
-		cur[0] = (cc_uint8)(minBB.x * 16); cur[1] = (cc_uint8)(minBB.y * 16); cur[2] = (cc_uint8)(minBB.z * 16);
-		cur[3] = (cc_uint8)(maxBB.x * 16); cur[4] = (cc_uint8)(maxBB.y * 16); cur[5] = (cc_uint8)(maxBB.z * 16);
+		cur[0] = (hc_uint8)(minBB.x * 16); cur[1] = (hc_uint8)(minBB.y * 16); cur[2] = (hc_uint8)(minBB.z * 16);
+		cur[3] = (hc_uint8)(maxBB.x * 16); cur[4] = (hc_uint8)(maxBB.y * 16); cur[5] = (hc_uint8)(maxBB.z * 16);
 		cur += 6;
 
 		name = Block_UNSAFE_GetName(b);
@@ -1570,11 +1570,11 @@ static cc_result Cw_WriteBockDef(struct Stream* stream, int b) {
 	return Stream_Write(stream, buffer, (int)(cur - buffer));
 }
 
-cc_result Cw_Save(struct Stream* stream) {
+hc_result Cw_Save(struct Stream* stream) {
 	struct LocalPlayer* p = Entities.CurPlayer;
-	cc_uint8 buffer[2048];
-	cc_uint8* cur;
-	cc_result res;
+	hc_uint8 buffer[2048];
+	hc_uint8* cur;
+	hc_result res;
 	int b;
 
 	cur = buffer;
@@ -1594,9 +1594,9 @@ cc_result Cw_Save(struct Stream* stream) {
 	/* TODO: Maybe keep real spawn too? */
 	cur = Nbt_WriteDict(cur, "Spawn");
 	{
-		cur  = Nbt_WriteUInt16(cur, "X", (cc_uint16)p->Base.Position.x);
-		cur  = Nbt_WriteUInt16(cur, "Y", (cc_uint16)p->Base.Position.y);
-		cur  = Nbt_WriteUInt16(cur, "Z", (cc_uint16)p->Base.Position.z);
+		cur  = Nbt_WriteUInt16(cur, "X", (hc_uint16)p->Base.Position.x);
+		cur  = Nbt_WriteUInt16(cur, "Y", (hc_uint16)p->Base.Position.y);
+		cur  = Nbt_WriteUInt16(cur, "Z", (hc_uint16)p->Base.Position.z);
 		cur  = Nbt_WriteUInt8(cur,  "H", Math_Deg2Packed(p->SpawnYaw));
 		cur  = Nbt_WriteUInt8(cur,  "P", Math_Deg2Packed(p->SpawnPitch));
 	} *cur++ = NBT_END;
@@ -1621,7 +1621,7 @@ cc_result Cw_Save(struct Stream* stream) {
 	{
 		cur = Nbt_WriteDict(cur, "ClickDistance");
 		{
-			cur  = Nbt_WriteUInt16(cur, "Distance", (cc_uint16)(p->ReachDistance * 32));
+			cur  = Nbt_WriteUInt16(cur, "Distance", (hc_uint16)(p->ReachDistance * 32));
 		} *cur++ = NBT_END;
 
 		cur = Nbt_WriteDict(cur, "EnvWeatherType");
@@ -1657,7 +1657,7 @@ cc_result Cw_Save(struct Stream* stream) {
 			cur  = Nbt_WriteFloat(cur,  "CloudsSpeed",  Env.CloudsSpeed);
 			cur  = Nbt_WriteFloat(cur,  "WeatherSpeed", Env.WeatherSpeed);
 			cur  = Nbt_WriteFloat(cur,  "WeatherFade",  Env.WeatherFade);
-			cur  = Nbt_WriteUInt8(cur,  "ExpFog",       (cc_uint8)Env.ExpFog);
+			cur  = Nbt_WriteUInt8(cur,  "ExpFog",       (hc_uint8)Env.ExpFog);
 			cur  = Nbt_WriteFloat(cur,  "SkyboxHor",    Env.SkyboxHorSpeed);
 			cur  = Nbt_WriteFloat(cur,  "SkyboxVer",    Env.SkyboxVerSpeed);
 		} *cur++ = NBT_END;
@@ -1681,7 +1681,7 @@ cc_result Cw_Save(struct Stream* stream) {
 /*########################################################################################################################*
 *---------------------------------------------------Schematic export------------------------------------------------------*
 *#########################################################################################################################*/
-static cc_uint8 sc_begin[] = {
+static hc_uint8 sc_begin[] = {
 NBT_DICT, 0,9, 'S','c','h','e','m','a','t','i','c',
 	NBT_STR,  0,9,  'M','a','t','e','r','i','a','l','s', 0,7, 'C','l','a','s','s','i','c',
 	NBT_I16,  0,5,  'W','i','d','t','h',                 0,0,
@@ -1689,18 +1689,18 @@ NBT_DICT, 0,9, 'S','c','h','e','m','a','t','i','c',
 	NBT_I16,  0,6,  'L','e','n','g','t','h',             0,0,
 	NBT_I8S,  0,6,  'B','l','o','c','k','s',             0,0,0,0,
 };
-static cc_uint8 sc_data[] = {
+static hc_uint8 sc_data[] = {
 	NBT_I8S,  0,4,  'D','a','t','a',                     0,0,0,0,
 };
-static cc_uint8 sc_end[] = {
+static hc_uint8 sc_end[] = {
 	NBT_LIST, 0,8,  'E','n','t','i','t','i','e','s',                 NBT_DICT, 0,0,0,0,
 	NBT_LIST, 0,12, 'T','i','l','e','E','n','t','i','t','i','e','s', NBT_DICT, 0,0,0,0,
 NBT_END,
 };
 
-cc_result Schematic_Save(struct Stream* stream) {
-	cc_uint8 tmp[256], chunk[8192] = { 0 };
-	cc_result res;
+hc_result Schematic_Save(struct Stream* stream) {
+	hc_uint8 tmp[256], chunk[8192] = { 0 };
+	hc_result res;
 	int i;
 
 	Mem_Copy(tmp, sc_begin, sizeof(sc_begin));
@@ -1731,7 +1731,7 @@ cc_result Schematic_Save(struct Stream* stream) {
 *------------------------------------------------------Dat export---------------------------------------------------------*
 *#########################################################################################################################*/
 static const struct JField {
-	cc_uint8 type, isFloat;
+	hc_uint8 type, isFloat;
 	const char* name;
 	void* value;
 } level_fields[] = {
@@ -1745,7 +1745,7 @@ static const struct JField {
 	/* TODO classic only blocks */
 };
 
-static int WriteJavaString(cc_uint8* dst, const char* value) {
+static int WriteJavaString(hc_uint8* dst, const char* value) {
 	int length = String_Length(value);
 	dst[0] = 0;
 	dst[1] = length;
@@ -1753,15 +1753,15 @@ static int WriteJavaString(cc_uint8* dst, const char* value) {
 	return length;
 }
 
-static cc_result WriteClassDesc(struct Stream* stream, cc_uint8 typecode, const char* klass, 
+static hc_result WriteClassDesc(struct Stream* stream, hc_uint8 typecode, const char* klass, 
 								int numFields, const struct JField* fields) {
-	cc_uint8 header[256] = { 0 };
-	static const cc_uint8 footer[] = {
+	hc_uint8 header[256] = { 0 };
+	static const hc_uint8 footer[] = {
 		TC_ENDBLOCKDATA, /* classAnnotations */
 		TC_NULL          /* superClassDesc */
 	};
 	int i, length;
-	cc_result res;
+	hc_result res;
 
 	header[0] = typecode;
 	header[1] = TC_CLASSDESC;
@@ -1789,17 +1789,17 @@ static cc_result WriteClassDesc(struct Stream* stream, cc_uint8 typecode, const 
 	return 0;
 }
 
-static const cc_uint8 cpe_fallback[] = {
+static const hc_uint8 cpe_fallback[] = {
 	BLOCK_SLAB, BLOCK_BROWN_SHROOM, BLOCK_SAND, BLOCK_AIR, BLOCK_STILL_LAVA, BLOCK_PINK,
 	BLOCK_GREEN, BLOCK_DIRT, BLOCK_BLUE, BLOCK_CYAN, BLOCK_GLASS, BLOCK_IRON, BLOCK_OBSIDIAN, BLOCK_WHITE,
 	BLOCK_WOOD, BLOCK_STONE
 };
 
 #define DAT_BUFFER_SIZE (32 * 1024)
-static cc_result WriteLevelBlocks(struct Stream* stream) {
-	cc_uint8 buffer[DAT_BUFFER_SIZE];
+static hc_result WriteLevelBlocks(struct Stream* stream) {
+	hc_uint8 buffer[DAT_BUFFER_SIZE];
 	int i, bIndex = 0;
-	cc_result res;
+	hc_result res;
 	BlockID b;
 
 	for (i = 0; i < World.Volume; i++)
@@ -1810,7 +1810,7 @@ static cc_result WriteLevelBlocks(struct Stream* stream) {
 		/* TODO: Move to GameVersion.c and account for game version */
 		if (b > BLOCK_OBSIDIAN) b = cpe_fallback[b - BLOCK_COBBLE_SLAB];
 
-		buffer[bIndex] = (cc_uint8)b;
+		buffer[bIndex] = (hc_uint8)b;
 		bIndex++;
 		if (bIndex < DAT_BUFFER_SIZE) continue;
 
@@ -1822,14 +1822,14 @@ static cc_result WriteLevelBlocks(struct Stream* stream) {
 	return Stream_Write(stream, buffer, bIndex);
 }
 
-cc_result Dat_Save(struct Stream* stream) {
-	static const cc_uint8 header[] = {
+hc_result Dat_Save(struct Stream* stream) {
+	static const hc_uint8 header[] = {
 		0x27,0x1B,0xB7,0x88, 0x02, /* DAT signature + version */
 		0xAC,0xED, 0x00,0x05       /* JSF signature + version */
 	};
 	const struct JField* field;
-	cc_uint8 tmp[4];
-	cc_result res;
+	hc_uint8 tmp[4];
+	hc_result res;
 	int i, value;
 
 	if ((res = Stream_Write(stream, header, sizeof(header)))) return res;
@@ -1880,12 +1880,12 @@ static void OnFree(void) {
 }
 #else
 /* No point including map format code when can't save/load maps anyways */
-struct MapImporter* MapImporter_Find(const cc_string* path) { return NULL; }
-cc_result Map_LoadFrom(const cc_string* path) { return ERR_NOT_SUPPORTED; }
+struct MapImporter* MapImporter_Find(const hc_string* path) { return NULL; }
+hc_result Map_LoadFrom(const hc_string* path) { return ERR_NOT_SUPPORTED; }
 
-cc_result Cw_Save(struct Stream* stream)  { return ERR_NOT_SUPPORTED; }
-cc_result Dat_Save(struct Stream* stream) { return ERR_NOT_SUPPORTED; }
-cc_result Schematic_Save(struct Stream* stream) { return ERR_NOT_SUPPORTED; }
+hc_result Cw_Save(struct Stream* stream)  { return ERR_NOT_SUPPORTED; }
+hc_result Dat_Save(struct Stream* stream) { return ERR_NOT_SUPPORTED; }
+hc_result Schematic_Save(struct Stream* stream) { return ERR_NOT_SUPPORTED; }
 
 static void OnInit(void) { }
 static void OnFree(void) { }

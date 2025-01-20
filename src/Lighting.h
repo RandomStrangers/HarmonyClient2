@@ -1,7 +1,7 @@
-#ifndef CC_WORLDLIGHTING_H
-#define CC_WORLDLIGHTING_H
+#ifndef HC_WORLDLIGHTING_H
+#define HC_WORLDLIGHTING_H
 #include "PackedCol.h"
-CC_BEGIN_HEADER
+HC_BEGIN_HEADER
 
 /*
 Abstracts lighting of blocks in the world
@@ -17,14 +17,14 @@ enum LightingMode {
 	LIGHTING_MODE_CLASSIC, LIGHTING_MODE_FANCY, LIGHTING_MODE_COUNT
 };
 extern const char* const LightingMode_Names[LIGHTING_MODE_COUNT];
-extern cc_uint8 Lighting_Mode;
+extern hc_uint8 Lighting_Mode;
 
-extern cc_bool Lighting_ModeLockedByServer;
+extern hc_bool Lighting_ModeLockedByServer;
 /* True if the current lighting mode has been set by the server instead of the client */
-extern cc_bool Lighting_ModeSetByServer;
+extern hc_bool Lighting_ModeSetByServer;
 /* The lighting mode that was set by the client before being set by the server */
-extern cc_uint8 Lighting_ModeUserCached;
-void Lighting_SetMode(cc_uint8 mode, cc_bool fromServer);
+extern hc_uint8 Lighting_ModeUserCached;
+void Lighting_SetMode(hc_uint8 mode, hc_bool fromServer);
 
 
 /* How much ambient occlusion to apply in fancy lighting where 1.0f = none and 0.0f = maximum*/
@@ -37,7 +37,7 @@ void Lighting_SetMode(cc_uint8 mode, cc_bool fromServer);
 /* A byte that fills the lamp level area with ones. Equivalent to 0b_1111_0000 */
 #define FANCY_LIGHTING_LAMP_MASK 0xF0
 
-CC_VAR extern struct _Lighting {
+HC_VAR extern struct _Lighting {
 	/* Releases/Frees the per-level lighting state */
 	void (*FreeState)(void);
 	/* Allocates the per-level lighting state */
@@ -56,7 +56,7 @@ CC_VAR extern struct _Lighting {
 
 	/* Returns whether the block at the given coordinates is fully in sunlight. */
 	/* NOTE: Does ***NOT*** check that the coordinates are inside the map. */
-	cc_bool   (*IsLit)(int x, int y, int z);
+	hc_bool   (*IsLit)(int x, int y, int z);
 	/* Returns the light colour at the given coordinates. */
 	PackedCol (*Color)(int x, int y, int z);
 	/* Returns the light colour at the given coordinates. */
@@ -66,7 +66,7 @@ CC_VAR extern struct _Lighting {
 	/* and performed the necessary calculations for the given x/z coords */
 	/* _Fast functions also do NOT check coordinates are inside the map */
 
-	cc_bool   (*IsLit_Fast)(int x, int y, int z);
+	hc_bool   (*IsLit_Fast)(int x, int y, int z);
 	PackedCol (*Color_Sprite_Fast)(int x, int y, int z);
 	PackedCol (*Color_YMax_Fast)(int x, int y, int z);
 	PackedCol (*Color_YMin_Fast)(int x, int y, int z);
@@ -83,9 +83,9 @@ void ClassicLighting_FreeState(void);
 void ClassicLighting_AllocState(void);
 int ClassicLighting_GetLightHeight(int x, int z);
 void ClassicLighting_LightHint(int startX, int startY, int startZ);
-cc_bool ClassicLighting_IsLit(int x, int y, int z);
-cc_bool ClassicLighting_IsLit_Fast(int x, int y, int z);
+hc_bool ClassicLighting_IsLit(int x, int y, int z);
+hc_bool ClassicLighting_IsLit_Fast(int x, int y, int z);
 void ClassicLighting_OnBlockChanged(int x, int y, int z, BlockID oldBlock, BlockID newBlock);
 
-CC_END_HEADER
+HC_END_HEADER
 #endif

@@ -18,21 +18,21 @@ static char announcement[STRING_SIZE];
 static char bigAnnouncement[STRING_SIZE];
 static char smallAnnouncement[STRING_SIZE];
 
-cc_string Chat_Status[5]       = { String_FromArray(status[0]), String_FromArray(status[1]), String_FromArray(status[2]),
+hc_string Chat_Status[5]       = { String_FromArray(status[0]), String_FromArray(status[1]), String_FromArray(status[2]),
                                                                 String_FromArray(status[3]), String_FromArray(status[4]) };
-cc_string Chat_BottomRight[3]  = { String_FromArray(bottom[0]), String_FromArray(bottom[1]), String_FromArray(bottom[2]) };
-cc_string Chat_ClientStatus[2] = { String_FromArray(client[0]), String_FromArray(client[1]) };
+hc_string Chat_BottomRight[3]  = { String_FromArray(bottom[0]), String_FromArray(bottom[1]), String_FromArray(bottom[2]) };
+hc_string Chat_ClientStatus[2] = { String_FromArray(client[0]), String_FromArray(client[1]) };
 
-cc_string Chat_Announcement = String_FromArray(announcement);
-cc_string Chat_BigAnnouncement = String_FromArray(bigAnnouncement);
-cc_string Chat_SmallAnnouncement = String_FromArray(smallAnnouncement);
+hc_string Chat_Announcement = String_FromArray(announcement);
+hc_string Chat_BigAnnouncement = String_FromArray(bigAnnouncement);
+hc_string Chat_SmallAnnouncement = String_FromArray(smallAnnouncement);
 
 double Chat_AnnouncementReceived;
 double Chat_BigAnnouncementReceived;
 double Chat_SmallAnnouncementReceived;
 
 struct StringsBuffer Chat_Log, Chat_InputLog;
-cc_bool Chat_Logging;
+hc_bool Chat_Logging;
 
 /*########################################################################################################################*
 *-------------------------------------------------------Chat logging------------------------------------------------------*
@@ -45,9 +45,9 @@ static void ClearChatLogs(void) {
 }
 
 static char      logNameBuffer[STRING_SIZE];
-static cc_string logName = String_FromArray(logNameBuffer);
+static hc_string logName = String_FromArray(logNameBuffer);
 static char      logPathBuffer[FILENAME_SIZE];
-static cc_string logPath = String_FromArray(logPathBuffer);
+static hc_string logPath = String_FromArray(logPathBuffer);
 
 static struct Stream logStream;
 static int lastLogDay, lastLogMonth, lastLogYear;
@@ -60,7 +60,7 @@ static void ResetLogFile(void) {
 
 /* Closes handle to the chat log file */
 static void CloseLogFile(void) {
-	cc_result res;
+	hc_result res;
 	if (!logStream.meta.file) return;
 
 	res = logStream.Close(&logStream);
@@ -68,13 +68,13 @@ static void CloseLogFile(void) {
 }
 
 /* Whether the given character is an allowed in a log filename */
-static cc_bool AllowedLogNameChar(char c) {
+static hc_bool AllowedLogNameChar(char c) {
 	return
 		c == '{' || c == '}' || c == '[' || c == ']' || c == '(' || c == ')' ||
 		(c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 }
 
-void Chat_SetLogName(const cc_string* name) {
+void Chat_SetLogName(const hc_string* name) {
 	char c;
 	int i;
 	if (logName.length) return;
@@ -97,10 +97,10 @@ void Chat_DisableLogging(void) {
 	CloseLogFile();
 }
 
-static cc_bool CreateLogsDirectory(void) {
-	static const cc_string dir = String_FromConst("logs");
-	cc_filepath str;
-	cc_result res;
+static hc_bool CreateLogsDirectory(void) {
+	static const hc_string dir = String_FromConst("logs");
+	hc_filepath str;
+	hc_result res;
 	/* Utils_EnsureDirectory cannot be used here because it causes a stack overflow  */
 	/* when running the game and an error occurs when trying to create the directory */
 	/* This happens because when running the game, Logger_WarnFunc is changed to log */
@@ -122,7 +122,7 @@ static cc_bool CreateLogsDirectory(void) {
 }
 
 static void OpenChatLog(struct DateTime* now) {
-	cc_result res;
+	hc_result res;
 	int i;
 	if (Platform_ReadonlyFilesystem || !CreateLogsDirectory()) return;
 
@@ -152,10 +152,10 @@ static void OpenChatLog(struct DateTime* now) {
 	Chat_Add1("&cFailed to open a chat log file after %i tries, giving up", &i);	
 }
 
-static void AppendChatLog(const cc_string* text) {
-	cc_string str; char strBuffer[DRAWER2D_MAX_TEXT_LENGTH];
+static void AppendChatLog(const hc_string* text) {
+	hc_string str; char strBuffer[DRAWER2D_MAX_TEXT_LENGTH];
 	struct DateTime now;
-	cc_result res;	
+	hc_result res;	
 
 	if (!logName.length || !Chat_Logging) return;
 	DateTime_CurrentLocal(&now);
@@ -189,7 +189,7 @@ void Chat_Add3(const char* format, const void* a1, const void* a2, const void* a
 	Chat_Add4(format, a1, a2, a3, NULL);
 }
 void Chat_Add4(const char* format, const void* a1, const void* a2, const void* a3, const void* a4) {
-	cc_string msg; char msgBuffer[STRING_SIZE * 2];
+	hc_string msg; char msgBuffer[STRING_SIZE * 2];
 	String_InitArray(msg, msgBuffer);
 
 	String_Format4(&msg, format, a1, a2, a3, a4);
@@ -197,13 +197,13 @@ void Chat_Add4(const char* format, const void* a1, const void* a2, const void* a
 }
 
 void Chat_AddRaw(const char* raw) {
-	cc_string str = String_FromReadonly(raw);
+	hc_string str = String_FromReadonly(raw);
 	Chat_AddOf(&str, MSG_TYPE_NORMAL);
 }
-void Chat_Add(const cc_string* text) { Chat_AddOf(text, MSG_TYPE_NORMAL); }
+void Chat_Add(const hc_string* text) { Chat_AddOf(text, MSG_TYPE_NORMAL); }
 
-void Chat_AddOf(const cc_string* text, int msgType) {
-	cc_string str;
+void Chat_AddOf(const hc_string* text, int msgType) {
+	hc_string str;
 	if (msgType == MSG_TYPE_NORMAL) {
 		/* Check for chat overflow (see issue #837) */
 		/* This happens because Offset/Length are packed into a single 32 bit value, */
@@ -249,18 +249,18 @@ void Chat_AddOf(const cc_string* text, int msgType) {
 /*########################################################################################################################*
 *-------------------------------------------------------Generic chat------------------------------------------------------*
 *#########################################################################################################################*/
-static void LogInputUsage(const cc_string* text) {
+static void LogInputUsage(const hc_string* text) {
 	/* Simplify navigating through input history by not logging duplicate entries */
 	if (Chat_InputLog.count) {
 		int lastIndex  = Chat_InputLog.count - 1;
-		cc_string last = StringsBuffer_UNSAFE_Get(&Chat_InputLog, lastIndex);
+		hc_string last = StringsBuffer_UNSAFE_Get(&Chat_InputLog, lastIndex);
 
 		if (String_Equals(text, &last)) return;
 	}
 	StringsBuffer_Add(&Chat_InputLog, text);
 }
 
-void Chat_Send(const cc_string* text, cc_bool logUsage) {
+void Chat_Send(const hc_string* text, hc_bool logUsage) {
 	if (!text->length) return;
 	Event_RaiseChat(&ChatEvents.ChatSending, text, 0);
 	if (logUsage) LogInputUsage(text);
@@ -271,7 +271,7 @@ void Chat_Send(const cc_string* text, cc_bool logUsage) {
 }
 
 static void OnInit(void) {
-#if defined CC_BUILD_MOBILE || defined CC_BUILD_WEB
+#if defined HC_BUILD_MOBILE || defined HC_BUILD_WEB
 	/* Better to not log chat by default on mobile/web, */
 	/* since it's not easily visible to end users */
 	Chat_Logging = Options_GetBool(OPT_CHAT_LOGGING, false);

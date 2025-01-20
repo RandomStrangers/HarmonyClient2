@@ -12,10 +12,10 @@
 #include "Options.h"
 #include "Logger.h"
 
-#ifdef CC_BUILD_ANIMATIONS
+#ifdef HC_BUILD_ANIMATIONS
 static void Animations_Update(int loc, struct Bitmap* bmp, int stride);
 
-#ifdef CC_BUILD_LOWMEM
+#ifdef HC_BUILD_LOWMEM
 	#define LIQUID_ANIM_MAX 16
 #else
 	#define LIQUID_ANIM_MAX 64
@@ -24,9 +24,9 @@ static void Animations_Update(int loc, struct Bitmap* bmp, int stride);
 #define WATER_TEX_LOC 14
 #define LAVA_TEX_LOC  30
 
-#ifndef CC_BUILD_WEB
+#ifndef HC_BUILD_WEB
 /* Based off the incredible work from https://dl.dropboxusercontent.com/u/12694594/lava.txt
-	mirrored at https://github.com/UnknownShadow200/ClassiCube/wiki/Minecraft-Classic-lava-animation-algorithm
+	mirrored at https://github.com/ClassiCube/ClassiCube/wiki/Minecraft-Classic-lava-animation-algorithm
 	Water animation originally written by cybertoon, big thanks!
 */
 /*########################################################################################################################*
@@ -36,7 +36,7 @@ static float L_soupHeat[LIQUID_ANIM_MAX  * LIQUID_ANIM_MAX];
 static float L_potHeat[LIQUID_ANIM_MAX   * LIQUID_ANIM_MAX];
 static float L_flameHeat[LIQUID_ANIM_MAX * LIQUID_ANIM_MAX];
 static RNGState L_rnd;
-static cc_bool  L_rndInited;
+static hc_bool  L_rndInited;
 
 static void LavaAnimation_Tick(void) {
 	BitmapCol pixels[LIQUID_ANIM_MAX * LIQUID_ANIM_MAX];
@@ -61,7 +61,7 @@ static void LavaAnimation_Tick(void) {
 
 			/* Lookup table for (int)(1.2 * sin([ANGLE] * 22.5 * MATH_DEG2RAD)); */
 			/* [ANGLE] is integer x/y, so repeats every 16 intervals */
-			static cc_int8 sin_adj_table[16] = { 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, -1, -1, -1, 0, 0 };
+			static hc_int8 sin_adj_table[16] = { 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, -1, -1, -1, 0, 0 };
 			int xx = x + sin_adj_table[y & 0xF], yy = y + sin_adj_table[x & 0xF];
 
 			soupHeat =
@@ -117,7 +117,7 @@ static float W_soupHeat[LIQUID_ANIM_MAX  * LIQUID_ANIM_MAX];
 static float W_potHeat[LIQUID_ANIM_MAX   * LIQUID_ANIM_MAX];
 static float W_flameHeat[LIQUID_ANIM_MAX * LIQUID_ANIM_MAX];
 static RNGState W_rnd;
-static cc_bool  W_rndInited;
+static hc_bool  W_rndInited;
 
 static void WaterAnimation_Tick(void) {
 	BitmapCol pixels[LIQUID_ANIM_MAX * LIQUID_ANIM_MAX];
@@ -178,30 +178,30 @@ static void WaterAnimation_Tick(void) {
 *#########################################################################################################################*/
 struct AnimationData {
 	TextureLoc texLoc;       /* Tile (not pixel) coordinates in terrain.png */
-	cc_uint16 frameX, frameY; /* Top left pixel coordinates of start frame in animations.png */
-	cc_uint16 frameSize;      /* Size of each frame in pixel coordinates */
-	cc_uint16 state;          /* Current animation frame index */
-	cc_uint16 statesCount;    /* Total number of animation frames */
-	cc_uint16 delay;          /* Delay in ticks until next frame is drawn */
-	cc_uint16 frameDelay;     /* Delay between each frame */
+	hc_uint16 frameX, frameY; /* Top left pixel coordinates of start frame in animations.png */
+	hc_uint16 frameSize;      /* Size of each frame in pixel coordinates */
+	hc_uint16 state;          /* Current animation frame index */
+	hc_uint16 statesCount;    /* Total number of animation frames */
+	hc_uint16 delay;          /* Delay in ticks until next frame is drawn */
+	hc_uint16 frameDelay;     /* Delay between each frame */
 };
 
 static struct Bitmap anims_bmp;
 static struct AnimationData anims_list[ATLAS1D_MAX_ATLASES];
 static int anims_count;
-static cc_bool anims_validated, useLavaAnim, useWaterAnim, alwaysLavaAnim, alwaysWaterAnim;
+static hc_bool anims_validated, useLavaAnim, useWaterAnim, alwaysLavaAnim, alwaysWaterAnim;
 #define ANIM_MIN_ARGS 7
 
-static void Animations_ReadDescription(struct Stream* stream, const cc_string* path) {
-	cc_string line; char lineBuffer[STRING_SIZE * 2];
-	cc_string parts[ANIM_MIN_ARGS];
+static void Animations_ReadDescription(struct Stream* stream, const hc_string* path) {
+	hc_string line; char lineBuffer[STRING_SIZE * 2];
+	hc_string parts[ANIM_MIN_ARGS];
 	int count;
 	struct AnimationData data = { 0 };
-	cc_uint8 tileX, tileY;
+	hc_uint8 tileX, tileY;
 
-	cc_uint8 buffer[2048]; 
+	hc_uint8 buffer[2048]; 
 	struct Stream buffered;
-	cc_result res;
+	hc_result res;
 
 	String_InitArray(line, lineBuffer);
 	/* ReadLine reads single byte at a time */
@@ -268,7 +268,7 @@ static void Animations_Apply(struct AnimationData* data) {
 	data->delay  = data->frameDelay;
 
 	loc = data->texLoc;
-#ifndef CC_BUILD_WEB
+#ifndef HC_BUILD_WEB
 	if (loc == LAVA_TEX_LOC  && useLavaAnim)  return;
 	if (loc == WATER_TEX_LOC && useWaterAnim) return;
 #endif
@@ -282,9 +282,9 @@ static void Animations_Apply(struct AnimationData* data) {
 	Animations_Update(loc, &frame, anims_bmp.width);
 }
 
-static cc_bool Animations_IsDefaultZip(void) {
-	cc_string texPack;
-	cc_bool optExists;
+static hc_bool Animations_IsDefaultZip(void) {
+	hc_string texPack;
+	hc_bool optExists;
 	if (TexturePack_Url.length) return false;
 
 	optExists = Options_UNSAFE_Get(OPT_DEFAULT_TEX_PACK, &texPack);
@@ -335,7 +335,7 @@ static void Animations_Validate(void) {
 
 static void Animations_Tick(struct ScheduledTask* task) {
 	int i;
-#ifndef CC_BUILD_WEB
+#ifndef HC_BUILD_WEB
 	if (useLavaAnim)  LavaAnimation_Tick();
 	if (useWaterAnim) WaterAnimation_Tick();
 #endif
@@ -358,8 +358,8 @@ static void Animations_Tick(struct ScheduledTask* task) {
 /*########################################################################################################################*
 *--------------------------------------------------Animations component---------------------------------------------------*
 *#########################################################################################################################*/
-static void AnimationsPngProcess(struct Stream* stream, const cc_string* name) {
-	cc_result res = Png_Decode(&anims_bmp, stream);
+static void AnimationsPngProcess(struct Stream* stream, const hc_string* name) {
+	hc_result res = Png_Decode(&anims_bmp, stream);
 	if (!res) return;
 
 	Logger_SysWarn2(res, "decoding", name);
@@ -369,13 +369,13 @@ static void AnimationsPngProcess(struct Stream* stream, const cc_string* name) {
 static struct TextureEntry animations_entry = { "animations.png", AnimationsPngProcess };
 static struct TextureEntry animations_txt   = { "animations.txt", Animations_ReadDescription };
 
-static void UseWaterProcess(struct Stream* stream, const cc_string* name) {
+static void UseWaterProcess(struct Stream* stream, const hc_string* name) {
 	useWaterAnim    = true;
 	alwaysWaterAnim = true;
 }
 static struct TextureEntry water_entry = { "usewateranim", UseWaterProcess };
 
-static void UseLavaProcess(struct Stream* stream, const cc_string* name) {
+static void UseLavaProcess(struct Stream* stream, const hc_string* name) {
 	useLavaAnim    = true;
 	alwaysLavaAnim = true;
 }

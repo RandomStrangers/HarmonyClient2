@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_XBOX360
+#if defined CH_BUILD_XBOX360
 #include "_PlatformBase.h"
 #include "Stream.h"
 #include "Funcs.h"
@@ -23,15 +23,15 @@
 #include <fcntl.h>
 #include "_PlatformConsole.h"
 
-const cc_result ReturnCode_FileShareViolation = 1000000000; /* TODO: not used apparently */
-const cc_result ReturnCode_FileNotFound     = ENOENT;
-const cc_result ReturnCode_DirectoryExists  = EEXIST;
-const cc_result ReturnCode_SocketInProgess  = EINPROGRESS;
-const cc_result ReturnCode_SocketWouldBlock = EWOULDBLOCK;
-const cc_result ReturnCode_SocketDropped    = EPIPE;
+const hc_result ReturnCode_FileShareViolation = 1000000000; /* TODO: not used apparently */
+const hc_result ReturnCode_FileNotFound     = ENOENT;
+const hc_result ReturnCode_DirectoryExists  = EEXIST;
+const hc_result ReturnCode_SocketInProgess  = EINPROGRESS;
+const hc_result ReturnCode_SocketWouldBlock = EWOULDBLOCK;
+const hc_result ReturnCode_SocketDropped    = EPIPE;
 
-const char* Platform_AppNameSuffix = " XBox 360";
-cc_bool Platform_ReadonlyFilesystem;
+const char* Platform_AppNameSuffix = " (XBox 360)";
+hc_bool Platform_ReadonlyFilesystem;
 
 
 /*########################################################################################################################*
@@ -48,7 +48,7 @@ void Platform_Log(const char* msg, int len) {
 TimeMS DateTime_CurrentUTC(void) {
 	struct timeval cur;
 	gettimeofday(&cur, NULL);
-	return (cc_uint64)cur.tv_sec + UNIX_EPOCH_SECONDS;
+	return (hc_uint64)cur.tv_sec + UNIX_EPOCH_SECONDS;
 }
 
 void DateTime_CurrentLocal(struct DateTime* t) {
@@ -65,12 +65,12 @@ void DateTime_CurrentLocal(struct DateTime* t) {
 	t->second = loc_time.tm_sec;
 }
 
-cc_uint64 Stopwatch_ElapsedMicroseconds(cc_uint64 beg, cc_uint64 end) {
+hc_uint64 Stopwatch_ElapsedMicroseconds(hc_uint64 beg, hc_uint64 end) {
 	if (end < beg) return 0;
 	return tb_diff_usec(end, beg);
 }
 
-cc_uint64 Stopwatch_Measure(void) {
+hc_uint64 Stopwatch_Measure(void) {
 	return mftb();
 }
 
@@ -79,27 +79,27 @@ cc_uint64 Stopwatch_Measure(void) {
 *-----------------------------------------------------Directory/File------------------------------------------------------*
 *#########################################################################################################################*/
 static char root_buffer[NATIVE_STR_LEN];
-static cc_string root_path = String_FromArray(root_buffer);
+static hc_string root_path = String_FromArray(root_buffer);
 
-void Platform_EncodePath(cc_filepath* dst, const cc_string* path) {
+void Platform_EncodePath(hc_filepath* dst, const hc_string* path) {
 	char* str = dst->buffer;
 	Mem_Copy(str, root_path.buffer, root_path.length);
 	str += root_path.length;
 	String_EncodeUtf8(str, path);
 }
 
-cc_result Directory_Create(const cc_filepath* path) {
+hc_result Directory_Create(const hc_filepath* path) {
 	return mkdir(path->buffer, 0) == -1 ? errno : 0;
 }
 
-int File_Exists(const cc_filepath* path) {
+int File_Exists(const hc_filepath* path) {
 	struct stat sb;
 	return stat(path->buffer, &sb) == 0 && S_ISREG(sb.st_mode);
 }
 
-cc_result Directory_Enum(const cc_string* dirPath, void* obj, Directory_EnumCallback callback) {
-	cc_string path; char pathBuffer[FILENAME_SIZE];
-	cc_filepath str;
+hc_result Directory_Enum(const hc_string* dirPath, void* obj, Directory_EnumCallback callback) {
+	hc_string path; char pathBuffer[FILENAME_SIZE];
+	hc_filepath str;
 	struct dirent* entry;
 	int res;
 
@@ -135,46 +135,46 @@ cc_result Directory_Enum(const cc_string* dirPath, void* obj, Directory_EnumCall
 	return res;
 }
 
-static cc_result File_Do(cc_file* file, const char* path, int mode) {
+static hc_result File_Do(hc_file* file, const char* path, int mode) {
 	*file = open(path, mode, 0);
 	return *file == -1 ? errno : 0;
 }
 
-cc_result File_Open(cc_file* file, const cc_filepath* path) {
+hc_result File_Open(hc_file* file, const hc_filepath* path) {
 	return File_Do(file, path->buffer, O_RDONLY);
 }
-cc_result File_Create(cc_file* file, const cc_filepath* path) {
+hc_result File_Create(hc_file* file, const hc_filepath* path) {
 	return File_Do(file, path->buffer, O_RDWR | O_CREAT | O_TRUNC);
 }
-cc_result File_OpenOrCreate(cc_file* file, const cc_filepath* path) {
+hc_result File_OpenOrCreate(hc_file* file, const hc_filepath* path) {
 	return File_Do(file, path->buffer, O_RDWR | O_CREAT);
 }
 
-cc_result File_Read(cc_file file, void* data, cc_uint32 count, cc_uint32* bytesRead) {
+hc_result File_Read(hc_file file, void* data, hc_uint32 count, hc_uint32* bytesRead) {
 	*bytesRead = read(file, data, count);
 	return *bytesRead == -1 ? errno : 0;
 }
 
-cc_result File_Write(cc_file file, const void* data, cc_uint32 count, cc_uint32* bytesWrote) {
+hc_result File_Write(hc_file file, const void* data, hc_uint32 count, hc_uint32* bytesWrote) {
 	*bytesWrote = write(file, data, count);
 	return *bytesWrote == -1 ? errno : 0;
 }
 
-cc_result File_Close(cc_file file) {
+hc_result File_Close(hc_file file) {
 	return close(file) == -1 ? errno : 0;
 }
 
-cc_result File_Seek(cc_file file, int offset, int seekType) {
-	static cc_uint8 modes[3] = { SEEK_SET, SEEK_CUR, SEEK_END };
+hc_result File_Seek(hc_file file, int offset, int seekType) {
+	static hc_uint8 modes[3] = { SEEK_SET, SEEK_CUR, SEEK_END };
 	return lseek(file, offset, modes[seekType]) == -1 ? errno : 0;
 }
 
-cc_result File_Position(cc_file file, cc_uint32* pos) {
+hc_result File_Position(hc_file file, hc_uint32* pos) {
 	*pos = lseek(file, 0, SEEK_CUR);
 	return *pos == -1 ? errno : 0;
 }
 
-cc_result File_Length(cc_file file, cc_uint32* len) {
+hc_result File_Length(hc_file file, hc_uint32* len) {
 	struct stat st;
 	if (fstat(file, &st) == -1) { *len = -1; return errno; }
 	*len = st.st_size; return 0;
@@ -183,7 +183,7 @@ cc_result File_Length(cc_file file, cc_uint32* len) {
 /*########################################################################################################################*
 *--------------------------------------------------------Threading--------------------------------------------------------*
 *#############################################################################################################p############*/
-void Thread_Sleep(cc_uint32 milliseconds) { mdelay(milliseconds); }
+void Thread_Sleep(hc_uint32 milliseconds) { mdelay(milliseconds); }
 
 void Thread_Run(void** handle, Thread_StartFunc func, int stackSize, const char* name) {
 	*handle = NULL; // TODO
@@ -221,7 +221,7 @@ void Waitable_Wait(void* handle) {
 	// TODO
 }
 
-void Waitable_WaitFor(void* handle, cc_uint32 milliseconds) {
+void Waitable_WaitFor(void* handle, hc_uint32 milliseconds) {
 	// TODO
 }
 
@@ -229,34 +229,34 @@ void Waitable_WaitFor(void* handle, cc_uint32 milliseconds) {
 /*########################################################################################################################*
 *---------------------------------------------------------Socket----------------------------------------------------------*
 *#########################################################################################################################*/
-cc_result Socket_ParseAddress(const cc_string* address, int port, cc_sockaddr* addrs, int* numValidAddrs) {
+hc_result Socket_ParseAddress(const hc_string* address, int port, hc_sockaddr* addrs, int* numValidAddrs) {
 	return ERR_NOT_SUPPORTED;
 }
 
-cc_result Socket_Create(cc_socket* s, cc_sockaddr* addr, cc_bool nonblocking) {
+hc_result Socket_Create(hc_socket* s, hc_sockaddr* addr, hc_bool nonblocking) {
 	return ERR_NOT_SUPPORTED;
 }
 
-cc_result Socket_Connect(cc_socket s, cc_sockaddr* addr) {
+hc_result Socket_Connect(hc_socket s, hc_sockaddr* addr) {
 	return ERR_NOT_SUPPORTED;
 }
 
-cc_result Socket_Read(cc_socket s, cc_uint8* data, cc_uint32 count, cc_uint32* modified) {
+hc_result Socket_Read(hc_socket s, hc_uint8* data, hc_uint32 count, hc_uint32* modified) {
 	return ERR_NOT_SUPPORTED;
 }
 
-cc_result Socket_Write(cc_socket s, const cc_uint8* data, cc_uint32 count, cc_uint32* modified) {
+hc_result Socket_Write(hc_socket s, const hc_uint8* data, hc_uint32 count, hc_uint32* modified) {
 	return ERR_NOT_SUPPORTED;
 }
 
-void Socket_Close(cc_socket s) {
+void Socket_Close(hc_socket s) {
 }
 
-cc_result Socket_CheckReadable(cc_socket s, cc_bool* readable) {
+hc_result Socket_CheckReadable(hc_socket s, hc_bool* readable) {
 	return ERR_NOT_SUPPORTED;
 }
 
-cc_result Socket_CheckWritable(cc_socket s, cc_bool* writable) {
+hc_result Socket_CheckWritable(hc_socket s, hc_bool* writable) {
 	return ERR_NOT_SUPPORTED;
 }
 
@@ -273,12 +273,12 @@ void Platform_Init(void) {
 void Platform_Free(void) {
 }
 
-cc_bool Platform_DescribeError(cc_result res, cc_string* dst) {
+hc_bool Platform_DescribeError(hc_result res, hc_string* dst) {
 	return false;
 }
 
-cc_bool Process_OpenSupported = false;
-cc_result Process_StartOpen(const cc_string* args) {
+hc_bool Process_OpenSupported = false;
+hc_result Process_StartOpen(const hc_string* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
@@ -288,7 +288,7 @@ cc_result Process_StartOpen(const cc_string* args) {
 *#########################################################################################################################*/
 #define MACHINE_KEY "360_360_360_360_"
 
-static cc_result GetMachineID(cc_uint32* key) {
+static hc_result GetMachineID(hc_uint32* key) {
 	Mem_Copy(key, MACHINE_KEY, sizeof(MACHINE_KEY) - 1);
 	return 0;
 }

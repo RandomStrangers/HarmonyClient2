@@ -1,11 +1,11 @@
-#ifndef CC_ENTITY_H
-#define CC_ENTITY_H
+#ifndef HC_ENTITY_H
+#define HC_ENTITY_H
 #include "EntityComponents.h"
 #include "Physics.h"
 #include "Constants.h"
 #include "PackedCol.h"
 #include "String.h"
-CC_BEGIN_HEADER
+HC_BEGIN_HEADER
 
 /* Represents an in-game entity.
    Copyright 2014-2023 ClassiCube | Licensed under BSD-3
@@ -18,7 +18,7 @@ struct LocalPlayer;
 extern struct IGameComponent TabList_Component;
 extern struct IGameComponent Entities_Component;
 
-#ifdef CC_BUILD_SPLITSCREEN
+#ifdef HC_BUILD_SPLITSCREEN
 #define MAX_LOCAL_PLAYERS 4
 #else
 #define MAX_LOCAL_PLAYERS 1
@@ -69,7 +69,7 @@ enum EntityType { ENTITY_TYPE_NONE, ENTITY_TYPE_PLAYER };
 struct LocationUpdate {
 	Vec3 pos;
 	float pitch, yaw, rotX, rotZ;
-	cc_uint8 flags;
+	hc_uint8 flags;
 };
 
 /* Represents a position and orientation state */
@@ -82,7 +82,7 @@ struct EntityVTABLE {
 	void (*SetLocation)(struct Entity* e, struct LocationUpdate* update);
 	PackedCol (*GetCol)(struct Entity* e);
 	void (*RenderModel)(struct Entity* e, float delta, float t);
-	cc_bool (*ShouldRenderName)(struct Entity* e);
+	hc_bool (*ShouldRenderName)(struct Entity* e);
 };
 
 /* Skin is still being downloaded asynchronously */
@@ -112,15 +112,15 @@ struct Entity {
 
 	struct Model* Model;
 	BlockID ModelBlock; /* BlockID, if model name was originally a valid block. */
-	cc_uint8 Flags;
-	cc_bool ShouldRender;
+	hc_uint8 Flags;
+	hc_bool ShouldRender;
 	struct AABB ModelAABB;
 	Vec3 ModelScale, Size;
 	int _skinReqID;
 	
-	cc_uint8 SkinType;
-	cc_uint8 SkinFetchState;
-	cc_bool NoShade, OnGround;
+	hc_uint8 SkinType;
+	hc_uint8 SkinFetchState;
+	hc_bool NoShade, OnGround;
 	GfxResourceID TextureId, MobTextureId;
 	float uScale, vScale;
 
@@ -134,7 +134,7 @@ struct Entity {
 	struct EntityLocation prev, next;
 	GfxResourceID ModelVB;
 };
-typedef cc_bool (*Entity_TouchesCondition)(BlockID block);
+typedef hc_bool (*Entity_TouchesCondition)(BlockID block);
 
 /* Initialises non-zero fields of the given entity. */
 void Entity_Init(struct Entity* e);
@@ -144,34 +144,34 @@ Vec3 Entity_GetEyePosition(struct Entity* e);
 /* (i.e. distance to eye from feet/base of the model) */
 float Entity_GetEyeHeight(struct Entity* e);
 /* Calculates the transformation matrix applied when rendering the given entity. */
-CC_API void Entity_GetTransform(struct Entity* e, Vec3 pos, Vec3 scale, struct Matrix* m);
+HC_API void Entity_GetTransform(struct Entity* e, Vec3 pos, Vec3 scale, struct Matrix* m);
 void Entity_GetPickingBounds(struct Entity* e, struct AABB* bb);
 /* Gets the current collision bounds of the given entity. */
 void Entity_GetBounds(struct Entity* e, struct AABB* bb);
 /* Sets the model of the entity. (i.e its appearance) */
-CC_API void Entity_SetModel(struct Entity* e, const cc_string* model);
+HC_API void Entity_SetModel(struct Entity* e, const hc_string* model);
 /* Updates cached Size and ModelAABB of the given entity. */
 /* NOTE: Only needed when manually changing Model or ModelScale. */
 /* Entity_SetModel already calls this method. */
 void Entity_UpdateModelBounds(struct Entity* e);
 
 /* Whether the given entity is touching any blocks meeting the given condition */
-CC_API cc_bool Entity_TouchesAny(struct AABB* bb, Entity_TouchesCondition cond);
-cc_bool Entity_TouchesAnyRope(struct Entity* e);
-cc_bool Entity_TouchesAnyLava(struct Entity* e);
-cc_bool Entity_TouchesAnyWater(struct Entity* e);
+HC_API hc_bool Entity_TouchesAny(struct AABB* bb, Entity_TouchesCondition cond);
+hc_bool Entity_TouchesAnyRope(struct Entity* e);
+hc_bool Entity_TouchesAnyLava(struct Entity* e);
+hc_bool Entity_TouchesAnyWater(struct Entity* e);
 
 /* Sets the nametag above the given entity's head */
-void Entity_SetName(struct Entity* e, const cc_string* name);
+void Entity_SetName(struct Entity* e, const hc_string* name);
 /* Sets the skin name of the given entity. */
-void Entity_SetSkin(struct Entity* e, const cc_string* skin);
+void Entity_SetSkin(struct Entity* e, const hc_string* skin);
 void Entity_LerpAngles(struct Entity* e, float t);
 
 /* Global data for all entities */
 /* (Actual entities may point to NetPlayers_List or elsewhere) */
-CC_VAR extern struct _EntitiesData {
+HC_VAR extern struct _EntitiesData {
 	struct Entity* List[ENTITIES_MAX_COUNT];
-	cc_uint8 NamesMode, ShadowsMode;
+	hc_uint8 NamesMode, ShadowsMode;
 	struct LocalPlayer* CurPlayer;
 } Entities;
 
@@ -187,24 +187,24 @@ int Entities_GetClosest(struct Entity* src);
 
 #define TABLIST_MAX_NAMES 256
 /* Data for all entries in tab list */
-CC_VAR extern struct _TabListData {
+HC_VAR extern struct _TabListData {
 	/* Buffer indices for player/list/group names */
 	/* Use TabList_UNSAFE_GetPlayer/List/Group to get these names */
 	/* NOTE: An Offset of 0 means the entry is unused */
-	cc_uint16 NameOffsets[TABLIST_MAX_NAMES];
+	hc_uint16 NameOffsets[TABLIST_MAX_NAMES];
 	/* Position/Order of this entry within the group */
-	cc_uint8  GroupRanks[TABLIST_MAX_NAMES];
+	hc_uint8  GroupRanks[TABLIST_MAX_NAMES];
 	struct StringsBuffer _buffer;
 	/* Whether the tablist entry is automatically removed */
 	/*  when the entity with the same ID is removed */
-	cc_uint8 _entityLinked[TABLIST_MAX_NAMES >> 3];
+	hc_uint8 _entityLinked[TABLIST_MAX_NAMES >> 3];
 } TabList;
 
 /* Removes the tab list entry with the given ID, raising TabListEvents.Removed event */
-CC_API void TabList_Remove(EntityID id);
+HC_API void TabList_Remove(EntityID id);
 /* Sets the data for the tab list entry with the given id */
 /* Raises TabListEvents.Changed if replacing, TabListEvents.Added if a new entry */
-CC_API void TabList_Set(EntityID id, const cc_string* player, const cc_string* list, const cc_string* group, cc_uint8 rank);
+HC_API void TabList_Set(EntityID id, const hc_string* player, const hc_string* list, const hc_string* group, hc_uint8 rank);
 
 /* Raw unformatted name (for Tab name auto complete) */
 #define TabList_UNSAFE_GetPlayer(id) StringsBuffer_UNSAFE_Get(&TabList._buffer, TabList.NameOffsets[id] - 3)
@@ -214,8 +214,8 @@ CC_API void TabList_Set(EntityID id, const cc_string* player, const cc_string* l
 #define TabList_UNSAFE_GetGroup(id)  StringsBuffer_UNSAFE_Get(&TabList._buffer, TabList.NameOffsets[id] - 1)
 
 #define TabList_EntityLinked_Get(id)   (TabList._entityLinked[id >> 3] & (1 << (id & 0x7)))
-#define TabList_EntityLinked_Set(id)   (TabList._entityLinked[id >> 3] |=  (cc_uint8)(1 << (id & 0x7)))
-#define TabList_EntityLinked_Reset(id) (TabList._entityLinked[id >> 3] &= (cc_uint8)~(1 << (id & 0x7)))
+#define TabList_EntityLinked_Set(id)   (TabList._entityLinked[id >> 3] |=  (hc_uint8)(1 << (id & 0x7)))
+#define TabList_EntityLinked_Reset(id) (TabList._entityLinked[id >> 3] &= (hc_uint8)~(1 << (id & 0x7)))
 
 
 /* Represents another entity in multiplayer */
@@ -223,7 +223,7 @@ struct NetPlayer {
 	struct Entity Base;
 	struct NetInterpComp Interp;
 };
-CC_API void NetPlayer_Init(struct NetPlayer* player);
+HC_API void NetPlayer_Init(struct NetPlayer* player);
 extern struct NetPlayer NetPlayers_List[MAX_NET_PLAYERS];
 
 struct LocalPlayerInput;
@@ -244,8 +244,8 @@ struct LocalPlayer {
 	struct InterpComp Interp;
 	struct CollisionsComp Collisions;
 	struct PhysicsComp Physics;
-	cc_bool _warnedRespawn, _warnedFly, _warnedNoclip, _warnedZoom, _warnedCamera;
-	cc_uint8 index;
+	hc_bool _warnedRespawn, _warnedFly, _warnedNoclip, _warnedZoom, _warnedCamera;
+	hc_uint8 index;
 };
 
 extern struct LocalPlayer LocalPlayer_Instances[MAX_LOCAL_PLAYERS];
@@ -254,10 +254,10 @@ float LocalPlayer_JumpHeight(struct LocalPlayer* p);
 /* Interpolates current position and orientation between Interp.Prev and Interp.Next */
 void LocalPlayer_SetInterpPosition(struct LocalPlayer* p, float t);
 void LocalPlayer_ResetJumpVelocity(struct LocalPlayer* p);
-cc_bool LocalPlayer_CheckCanZoom(struct LocalPlayer* p);
+hc_bool LocalPlayer_CheckCanZoom(struct LocalPlayer* p);
 /* Moves local player back to spawn point. */
 void LocalPlayers_MoveToSpawn(struct LocationUpdate* update);
 void LocalPlayer_CalcDefaultSpawn(struct LocalPlayer* p, struct LocationUpdate* update);
 
-CC_END_HEADER
+HC_END_HEADER
 #endif

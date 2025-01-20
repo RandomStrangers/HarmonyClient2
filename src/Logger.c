@@ -7,9 +7,9 @@
 #include "Errors.h"
 #include "Utils.h"
 
-#if defined CC_BUILD_WEB
+#if defined HC_BUILD_WEB
 	/* Can't see native CPU state with javascript */
-#elif defined CC_BUILD_WIN
+#elif defined HC_BUILD_WIN
 	#define WIN32_LEAN_AND_MEAN
 	#define NOSERVICE
 	#define NOMCX
@@ -19,38 +19,38 @@
 	#include <windows.h>
 	#include <imagehlp.h>
 	static HANDLE curProcess = CUR_PROCESS_HANDLE;
-#elif defined CC_BUILD_OPENBSD || defined CC_BUILD_HAIKU || defined CC_BUILD_SERENITY
+#elif defined HC_BUILD_OPENBSD || defined HC_BUILD_HAIKU || defined HC_BUILD_SERENITY
 	#include <signal.h>
 	/* These operating systems don't provide sys/ucontext.h */
 	/*  But register constants be found from includes in <signal.h> */
-	#elif defined CC_BUILD_OS2
+	#elif defined HC_BUILD_OS2
 	#include <signal.h>
 	#include <386/ucontext.h>
-#elif defined CC_BUILD_LINUX || defined CC_BUILD_ANDROID
+#elif defined HC_BUILD_LINUX || defined HC_BUILD_ANDROID
 	/* Need to define this to get REG_ constants */
 	#define _GNU_SOURCE
 	#include <sys/ucontext.h>
 	#include <signal.h>
-#elif defined CC_BUILD_POSIX
+#elif defined HC_BUILD_POSIX
 	#include <signal.h>
 	#include <sys/ucontext.h>
 #endif
 
-#ifdef CC_BUILD_DARWIN
+#ifdef HC_BUILD_DARWIN
 /* Need this to detect macOS < 10.4, and switch to NS* api instead if so */
 #include <AvailabilityMacros.h>
 #endif
 /* Only show up to 50 frames in backtrace */
 #define MAX_BACKTRACE_FRAMES 50
 
-static void AbortCommon(cc_result result, const char* raw_msg, void* ctx);
+static void AbortCommon(hc_result result, const char* raw_msg, void* ctx);
 
 
 /*########################################################################################################################*
 *----------------------------------------------------------Warning--------------------------------------------------------*
 *#########################################################################################################################*/
-void Logger_DialogWarn(const cc_string* msg) {
-	cc_string dst; char dstBuffer[512];
+void Logger_DialogWarn(const hc_string* msg) {
+	hc_string dst; char dstBuffer[512];
 	String_InitArray_NT(dst, dstBuffer);
 
 	String_Copy(&dst, msg);
@@ -61,7 +61,7 @@ const char* Logger_DialogTitle = "Error";
 Logger_DoWarn Logger_WarnFunc  = Logger_DialogWarn;
 
 /* Returns a description for some ClassiCube specific error codes */
-static const char* GetCCErrorDesc(cc_result res) {
+static const char* GetCCErrorDesc(hc_result res) {
 	switch (res) {
 	case ERR_END_OF_STREAM:    return "End of stream";
 	case ERR_NOT_SUPPORTED:    return "Operation not supported";
@@ -113,9 +113,9 @@ static const char* GetCCErrorDesc(cc_result res) {
 }
 
 /* Appends more detailed information about an error if possible */
-static void AppendErrorDesc(cc_string* msg, cc_result res, Logger_DescribeError describeErr) {
+static void AppendErrorDesc(hc_string* msg, hc_result res, Logger_DescribeError describeErr) {
 	const char* cc_err;
-	cc_string err; char errBuffer[128];
+	hc_string err; char errBuffer[128];
 	String_InitArray(err, errBuffer);
 
 	cc_err = GetCCErrorDesc(res);
@@ -126,43 +126,43 @@ static void AppendErrorDesc(cc_string* msg, cc_result res, Logger_DescribeError 
 	}
 }
 
-void Logger_FormatWarn(cc_string* msg, cc_result res, const char* action, Logger_DescribeError describeErr) {
+void Logger_FormatWarn(hc_string* msg, hc_result res, const char* action, Logger_DescribeError describeErr) {
 	String_Format2(msg, "Error %e when %c", &res, action);
 	AppendErrorDesc(msg, res, describeErr);
 }
 
-void Logger_FormatWarn2(cc_string* msg, cc_result res, const char* action, const cc_string* path, Logger_DescribeError describeErr) {
+void Logger_FormatWarn2(hc_string* msg, hc_result res, const char* action, const hc_string* path, Logger_DescribeError describeErr) {
 	String_Format3(msg, "Error %e when %c '%s'", &res, action, path);
 	AppendErrorDesc(msg, res, describeErr);
 }
 
-static cc_bool DescribeSimple(cc_result res, cc_string* dst) { return false; }
-void Logger_SimpleWarn(cc_result res, const char* action) {
+static hc_bool DescribeSimple(hc_result res, hc_string* dst) { return false; }
+void Logger_SimpleWarn(hc_result res, const char* action) {
 	Logger_Warn(res, action, DescribeSimple);
 }
-void Logger_SimpleWarn2(cc_result res, const char* action, const cc_string* path) {
+void Logger_SimpleWarn2(hc_result res, const char* action, const hc_string* path) {
 	Logger_Warn2(res, action, path, DescribeSimple);
 }
 
-void Logger_Warn(cc_result res, const char* action, Logger_DescribeError describeErr) {
-	cc_string msg; char msgBuffer[256];
+void Logger_Warn(hc_result res, const char* action, Logger_DescribeError describeErr) {
+	hc_string msg; char msgBuffer[256];
 	String_InitArray(msg, msgBuffer);
 
 	Logger_FormatWarn(&msg, res, action, describeErr);
 	Logger_WarnFunc(&msg);
 }
 
-void Logger_Warn2(cc_result res, const char* action, const cc_string* path, Logger_DescribeError describeErr) {
-	cc_string msg; char msgBuffer[256];
+void Logger_Warn2(hc_result res, const char* action, const hc_string* path, Logger_DescribeError describeErr) {
+	hc_string msg; char msgBuffer[256];
 	String_InitArray(msg, msgBuffer);
 
 	Logger_FormatWarn2(&msg, res, action, path, describeErr);
 	Logger_WarnFunc(&msg);
 }
 
-void Logger_DynamicLibWarn(const char* action, const cc_string* path) {
-	cc_string err; char errBuffer[128];
-	cc_string msg; char msgBuffer[256];
+void Logger_DynamicLibWarn(const char* action, const hc_string* path) {
+	hc_string err; char errBuffer[128];
+	hc_string msg; char msgBuffer[256];
 	String_InitArray(msg, msgBuffer);
 	String_InitArray(err, errBuffer);
 
@@ -173,10 +173,10 @@ void Logger_DynamicLibWarn(const char* action, const cc_string* path) {
 	Logger_WarnFunc(&msg);
 }
 
-void Logger_SysWarn(cc_result res, const char* action) {
+void Logger_SysWarn(hc_result res, const char* action) {
 	Logger_Warn(res, action,  Platform_DescribeError);
 }
-void Logger_SysWarn2(cc_result res, const char* action, const cc_string* path) {
+void Logger_SysWarn2(hc_result res, const char* action, const hc_string* path) {
 	Logger_Warn2(res, action, path, Platform_DescribeError);
 }
 
@@ -184,8 +184,8 @@ void Logger_SysWarn2(cc_result res, const char* action, const cc_string* path) {
 /*########################################################################################################################*
 *------------------------------------------------------Frame dumping------------------------------------------------------*
 *#########################################################################################################################*/
-static void PrintFrame(cc_string* str, cc_uintptr addr, cc_uintptr symAddr, const char* symName, const char* modName) {
-	cc_string module;
+static void PrintFrame(hc_string* str, hc_uintptr addr, hc_uintptr symAddr, const char* symName, const char* modName) {
+	hc_string module;
 	int offset;
 	if (!modName) modName = "???";
 
@@ -201,13 +201,13 @@ static void PrintFrame(cc_string* str, cc_uintptr addr, cc_uintptr symAddr, cons
 	}
 }
 
-#if defined CC_BUILD_WIN
+#if defined HC_BUILD_WIN
 struct SymbolAndName { IMAGEHLP_SYMBOL symbol; char name[256]; };
 static BOOL (WINAPI *_SymGetSymFromAddr)(HANDLE process, DWORD_PTR addr, DWORD_PTR* displacement, IMAGEHLP_SYMBOL* sym);
 static BOOL (WINAPI *_SymGetModuleInfo) (HANDLE process, DWORD_PTR addr, IMAGEHLP_MODULE* module);
 
-static void DumpFrame(HANDLE process, cc_string* trace, cc_uintptr addr) {
-	char strBuffer[512]; cc_string str;
+static void DumpFrame(HANDLE process, hc_string* trace, hc_uintptr addr) {
+	char strBuffer[512]; hc_string str;
 	struct SymbolAndName s = { 0 };
 	IMAGEHLP_MODULE m = { 0 };
 
@@ -241,8 +241,8 @@ static void DumpFrame(HANDLE process, cc_string* trace, cc_uintptr addr) {
 }
 #elif defined MAC_OS_X_VERSION_MIN_REQUIRED && (MAC_OS_X_VERSION_MIN_REQUIRED < 1040)
 /* dladdr does not exist prior to macOS tiger */
-static void DumpFrame(cc_string* trace, void* addr) {
-	cc_string str; char strBuffer[384];
+static void DumpFrame(hc_string* trace, void* addr) {
+	hc_string str; char strBuffer[384];
 	String_InitArray(str, strBuffer);
 	/* alas NSModuleForSymbol doesn't work with raw addresses */
 
@@ -250,13 +250,13 @@ static void DumpFrame(cc_string* trace, void* addr) {
 	String_AppendString(trace, &str);
 	Logger_Log(&str);
 }
-#elif defined CC_BUILD_IRIX
+#elif defined HC_BUILD_IRIX
 /* IRIX doesn't expose a nice interface for dladdr */
-static void DumpFrame(cc_string* trace, void* addr) {
-	cc_uintptr addr_ = (cc_uintptr)addr;
+static void DumpFrame(hc_string* trace, void* addr) {
+	hc_uintptr addr_ = (hc_uintptr)addr;
 	String_Format1(trace, "%x", &addr_);
 }
-#elif defined CC_BUILD_POSIX && !defined CC_BUILD_OS2
+#elif defined HC_BUILD_POSIX && !defined HC_BUILD_OS2
 /* need to define __USE_GNU for dladdr */
 #ifndef __USE_GNU
 #define __USE_GNU
@@ -264,8 +264,8 @@ static void DumpFrame(cc_string* trace, void* addr) {
 #include <dlfcn.h>
 #undef __USE_GNU
 
-static void DumpFrame(cc_string* trace, void* addr) {
-	cc_string str; char strBuffer[384];
+static void DumpFrame(hc_string* trace, void* addr) {
+	hc_string str; char strBuffer[384];
 	Dl_info s;
 
 	String_InitArray(str, strBuffer);
@@ -273,7 +273,7 @@ static void DumpFrame(cc_string* trace, void* addr) {
 	s.dli_fname = NULL;
 	dladdr(addr, &s);
 
-	PrintFrame(&str, (cc_uintptr)addr, (cc_uintptr)s.dli_saddr, s.dli_sname, s.dli_fname);
+	PrintFrame(&str, (hc_uintptr)addr, (hc_uintptr)s.dli_saddr, s.dli_sname, s.dli_fname);
 	String_AppendString(trace, &str);
 	Logger_Log(&str);
 }
@@ -285,7 +285,7 @@ static void DumpFrame(cc_string* trace, void* addr) {
 /*########################################################################################################################*
 *-------------------------------------------------------Backtracing-------------------------------------------------------*
 *#########################################################################################################################*/
-#if defined CC_BUILD_WIN
+#if defined HC_BUILD_WIN
 static DWORD_PTR (WINAPI *_SymGetModuleBase)(HANDLE process, DWORD_PTR addr);
 static PVOID     (WINAPI *_SymFunctionTableAccess)(HANDLE process, DWORD_PTR addr);
 static BOOL      (WINAPI *_SymInitialize)(HANDLE process, PCSTR userSearchPath, BOOL fInvadeProcess);
@@ -313,9 +313,9 @@ static BOOL __stdcall ReadMemCallback(HANDLE process, DWORD_PTR baseAddress, PVO
 	*numBytesRead = (DWORD)numRead; /* DWORD always 32 bits */
 	return ok;
 }
-static cc_uintptr spRegister;
+static hc_uintptr spRegister;
 
-static int GetFrames(CONTEXT* ctx, cc_uintptr* addrs, int max) {
+static int GetFrames(CONTEXT* ctx, hc_uintptr* addrs, int max) {
 	STACKFRAME frame = { 0 };
 	int count, type;
 	HANDLE thread;
@@ -352,8 +352,8 @@ static int GetFrames(CONTEXT* ctx, cc_uintptr* addrs, int max) {
 	return count;
 }
 
-void Logger_Backtrace(cc_string* trace, void* ctx) {
-	cc_uintptr addrs[MAX_BACKTRACE_FRAMES];
+void Logger_Backtrace(hc_string* trace, void* ctx) {
+	hc_uintptr addrs[MAX_BACKTRACE_FRAMES];
 	int i, frames;
 
 	if (_SymInitialize) {
@@ -366,11 +366,11 @@ void Logger_Backtrace(cc_string* trace, void* ctx) {
 	}
 	String_AppendConst(trace, _NL);
 }
-#elif defined CC_BUILD_ANDROID
-	#define CC_BACKTRACE_UNWIND
-#elif defined CC_BUILD_DARWIN
+#elif defined HC_BUILD_ANDROID
+	#define HC_BACKTRACE_UNWIND
+#elif defined HC_BUILD_DARWIN
 /* backtrace is only available on macOS since 10.5 */
-void Logger_Backtrace(cc_string* trace, void* ctx) {
+void Logger_Backtrace(hc_string* trace, void* ctx) {
 	void* addrs[MAX_BACKTRACE_FRAMES];
 	unsigned i, frames;
 	/* See lldb/tools/debugserver/source/MacOSX/stack_logging.h */
@@ -387,22 +387,22 @@ void Logger_Backtrace(cc_string* trace, void* ctx) {
 	}
 	String_AppendConst(trace, _NL);
 }
-#elif defined CC_BUILD_SERENITY
-void Logger_Backtrace(cc_string* trace, void* ctx) {
+#elif defined HC_BUILD_SERENITY
+void Logger_Backtrace(hc_string* trace, void* ctx) {
 	String_AppendConst(trace, "-- backtrace unimplemented --");
 	/* TODO: Backtrace using LibSymbolication */
 }
-#elif defined CC_BUILD_IRIX
-void Logger_Backtrace(cc_string* trace, void* ctx) {
+#elif defined HC_BUILD_IRIX
+void Logger_Backtrace(hc_string* trace, void* ctx) {
 	String_AppendConst(trace, "-- backtrace unimplemented --");
 	/* TODO implement backtrace using exc_unwind https://nixdoc.net/man-pages/IRIX/man3/exception.3.html */
 }
-#elif defined CC_BACKTRACE_BUILTIN
+#elif defined HC_BACKTRACE_BUILTIN
 /* Implemented later at end of the file */
-#elif defined CC_BUILD_POSIX && defined _GLIBC_
+#elif defined HC_BUILD_POSIX && defined _GLIBC_
 #include <execinfo.h>
 
-void Logger_Backtrace(cc_string* trace, void* ctx) {
+void Logger_Backtrace(hc_string* trace, void* ctx) {
 	void* addrs[MAX_BACKTRACE_FRAMES];
 	int i, frames = backtrace(addrs, MAX_BACKTRACE_FRAMES);
 
@@ -412,11 +412,11 @@ void Logger_Backtrace(cc_string* trace, void* ctx) {
 	}
 	String_AppendConst(trace, _NL);
 }
-#elif defined CC_BUILD_POSIX
+#elif defined HC_BUILD_POSIX
 /* musl etc - rely on unwind from GCC instead */
-	#define CC_BACKTRACE_UNWIND
+	#define HC_BACKTRACE_UNWIND
 #else
-void Logger_Backtrace(cc_string* trace, void* ctx) { }
+void Logger_Backtrace(hc_string* trace, void* ctx) { }
 #endif
 
 
@@ -514,9 +514,9 @@ String_Format4(str, "r12=%x r13=%x r14=%x r15=%x" _NL, REG_GNUM(12), REG_GNUM(13
 String_Format3(str, "mal=%x mah=%x gbr=%x"        _NL, REG_GET_MACL(), REG_GET_MACH(), REG_GET_GBR()); \
 String_Format2(str, "pc =%x ra =%x"               _NL, REG_GET_PC(), REG_GET_RA());
 
-#if defined CC_BUILD_WIN
+#if defined HC_BUILD_WIN
 /* See CONTEXT in WinNT.h */
-static void PrintRegisters(cc_string* str, void* ctx) {
+static void PrintRegisters(hc_string* str, void* ctx) {
 	CONTEXT* r = (CONTEXT*)ctx;
 #if defined _M_IX86
 	#define REG_GET(reg, ign) &r->E ## reg
@@ -569,9 +569,9 @@ static void PrintRegisters(cc_string* str, void* ctx) {
 	#error "Unknown CPU architecture"
 #endif
 }
-#elif defined CC_BUILD_DARWIN && __DARWIN_UNIX03
+#elif defined HC_BUILD_DARWIN && __DARWIN_UNIX03
 /* See /usr/include/mach/i386/_structs.h (macOS 10.5+) */
-static void PrintRegisters(cc_string* str, void* ctx) {
+static void PrintRegisters(hc_string* str, void* ctx) {
 	mcontext_t r = ((ucontext_t*)ctx)->uc_mcontext;
 #if defined __i386__
 	#define REG_GET(reg, ign) &r->__ss.__e##reg
@@ -604,9 +604,9 @@ static void PrintRegisters(cc_string* str, void* ctx) {
 	#error "Unknown CPU architecture"
 #endif
 }
-#elif defined CC_BUILD_DARWIN
+#elif defined HC_BUILD_DARWIN
 /* See /usr/include/mach/i386/thread_status.h (macOS 10.4) */
-static void PrintRegisters(cc_string* str, void* ctx) {
+static void PrintRegisters(hc_string* str, void* ctx) {
 	mcontext_t r = ((ucontext_t*)ctx)->uc_mcontext;
 #if defined __i386__
 	#define REG_GET(reg, ign) &r->ss.e##reg
@@ -624,7 +624,7 @@ static void PrintRegisters(cc_string* str, void* ctx) {
 	#error "Unknown CPU architecture"
 #endif
 }
-#elif defined CC_BUILD_LINUX || defined CC_BUILD_ANDROID
+#elif defined HC_BUILD_LINUX || defined HC_BUILD_ANDROID
 /* See /usr/include/sys/ucontext.h */
 static void PrintRegisters(cc_string* str, void* ctx) {
 #if __PPC__ && __WORDSIZE == 32
@@ -692,11 +692,11 @@ static void PrintRegisters(cc_string* str, void* ctx) {
 	#error "Unknown CPU architecture"
 #endif
 }
-#elif defined CC_BUILD_SOLARIS
+#elif defined HC_BUILD_SOLARIS
 /* See /usr/include/sys/regset.h */
 /* -> usr/src/uts/[ARCH]/sys/mcontext.h */
 /* -> usr/src/uts/[ARCH]/sys/regset.h */
-static void PrintRegisters(cc_string* str, void* ctx) {
+static void PrintRegisters(hc_string* str, void* ctx) {
 	mcontext_t* r = &((ucontext_t*)ctx)->uc_mcontext;
 
 #if defined __i386__
@@ -712,10 +712,10 @@ static void PrintRegisters(cc_string* str, void* ctx) {
 	#error "Unknown CPU architecture"
 #endif
 }
-#elif defined CC_BUILD_NETBSD
+#elif defined HC_BUILD_NETBSD
 /* See /usr/include/[ARCH]/mcontext.h */
 /* -> src/sys/arch/[ARCH]/include/mcontext.h */
-static void PrintRegisters(cc_string* str, void* ctx) {
+static void PrintRegisters(hc_string* str, void* ctx) {
 	mcontext_t* r = &((ucontext_t*)ctx)->uc_mcontext;
 #if defined __i386__
 	#define REG_GET(ign, reg) &r->__gregs[_REG_E##reg]
@@ -758,10 +758,10 @@ static void PrintRegisters(cc_string* str, void* ctx) {
 	#error "Unknown CPU architecture"
 #endif
 }
-#elif defined CC_BUILD_FREEBSD
+#elif defined HC_BUILD_FREEBSD
 /* See /usr/include/machine/ucontext.h */
 /* -> src/sys/[ARCH]/include/ucontext.h */
-static void PrintRegisters(cc_string* str, void* ctx) {
+static void PrintRegisters(hc_string* str, void* ctx) {
 	mcontext_t* r = &((ucontext_t*)ctx)->uc_mcontext;
 #if defined __i386__
 	#define REG_GET(reg, ign) &r->mc_e##reg
@@ -800,10 +800,10 @@ static void PrintRegisters(cc_string* str, void* ctx) {
 	#error "Unknown CPU architecture"
 #endif
 }
-#elif defined CC_BUILD_OPENBSD
+#elif defined HC_BUILD_OPENBSD
 /* See /usr/include/machine/signal.h */
 /* -> src/sys/arch/[ARCH]/include/signal.h */
-static void PrintRegisters(cc_string* str, void* ctx) {
+static void PrintRegisters(hc_string* str, void* ctx) {
 	ucontext_t* r = (ucontext_t*)ctx;
 #if defined __i386__
 	#define REG_GET(reg, ign) &r->sc_e##reg
@@ -842,9 +842,9 @@ static void PrintRegisters(cc_string* str, void* ctx) {
 	#error "Unknown CPU architecture"
 #endif
 }
-#elif defined CC_BUILD_HAIKU
+#elif defined HC_BUILD_HAIKU
 /* See /headers/posix/arch/[ARCH]/signal.h */
-static void PrintRegisters(cc_string* str, void* ctx) {
+static void PrintRegisters(hc_string* str, void* ctx) {
 	mcontext_t* r = &((ucontext_t*)ctx)->uc_mcontext;
 #if defined __i386__
 	#define REG_GET(reg, ign) &r->e##reg
@@ -875,8 +875,8 @@ static void PrintRegisters(cc_string* str, void* ctx) {
 	#error "Unknown CPU architecture"
 #endif
 }
-#elif defined CC_BUILD_SERENITY
-static void PrintRegisters(cc_string* str, void* ctx) {
+#elif defined HC_BUILD_SERENITY
+static void PrintRegisters(hc_string* str, void* ctx) {
 	mcontext_t* r = &((ucontext_t*)ctx)->uc_mcontext;
 #if defined __i386__
 	#define REG_GET(reg, ign) &r->e##reg
@@ -888,10 +888,10 @@ static void PrintRegisters(cc_string* str, void* ctx) {
 	#error "Unknown CPU architecture"
 #endif
 }
-#elif defined CC_BUILD_IRIX
+#elif defined HC_BUILD_IRIX
 /* See /usr/include/sys/ucontext.h */
 /* https://nixdoc.net/man-pages/IRIX/man5/UCONTEXT.5.html */
-static void PrintRegisters(cc_string* str, void* ctx) {
+static void PrintRegisters(hc_string* str, void* ctx) {
 	mcontext_t* r = &((ucontext_t*)ctx)->uc_mcontext;
 
 	#define REG_GNUM(num) &r->__gregs[CTX_EPC]
@@ -901,13 +901,13 @@ static void PrintRegisters(cc_string* str, void* ctx) {
 	Dump_MIPS()
 }
 #else
-static void PrintRegisters(cc_string* str, void* ctx) {
+static void PrintRegisters(hc_string* str, void* ctx) {
 	/* Register dumping not implemented */
 }
 #endif
 
 static void DumpRegisters(void* ctx) {
-	cc_string str; char strBuffer[768];
+	hc_string str; char strBuffer[768];
 	String_InitArray(str, strBuffer);
 
 	String_AppendConst(&str, "-- registers --" _NL);
@@ -919,11 +919,11 @@ static void DumpRegisters(void* ctx) {
 /*########################################################################################################################*
 *------------------------------------------------Module/Memory map handling-----------------------------------------------*
 *#########################################################################################################################*/
-#if defined CC_BUILD_WIN
+#if defined HC_BUILD_WIN
 static void DumpStack(void) {
-	static const cc_string stack = String_FromConst("-- stack --\r\n");
-	cc_string str; char strBuffer[128];
-	cc_uint8 buffer[0x10];
+	static const hc_string stack = String_FromConst("-- stack --\r\n");
+	hc_string str; char strBuffer[128];
+	hc_uint8 buffer[0x10];
 	SIZE_T numRead;
 	int i, j;
 
@@ -950,8 +950,8 @@ static void DumpStack(void) {
 }
 
 static BOOL CALLBACK DumpModule(const char* name, ULONG_PTR base, ULONG size, void* userCtx) {
-	cc_string str; char strBuffer[256];
-	cc_uintptr beg, end;
+	hc_string str; char strBuffer[256];
+	hc_uintptr beg, end;
 
 	beg = base; end = base + (size - 1);
 	String_InitArray(str, strBuffer);
@@ -962,7 +962,7 @@ static BOOL CALLBACK DumpModule(const char* name, ULONG_PTR base, ULONG size, vo
 }
 static BOOL  (WINAPI *_EnumerateLoadedModules)(HANDLE process, PENUMLOADED_MODULES_CALLBACK callback, PVOID userContext);
 static void DumpMisc(void) {
-	static const cc_string modules = String_FromConst("-- modules --\r\n");
+	static const hc_string modules = String_FromConst("-- modules --\r\n");
 	if (spRegister >= 0xFFFF) DumpStack();
 
 	if (!_EnumerateLoadedModules) return;
@@ -970,13 +970,13 @@ static void DumpMisc(void) {
 	_EnumerateLoadedModules(curProcess, DumpModule, NULL);
 }
 
-#elif defined CC_BUILD_LINUX || defined CC_BUILD_SOLARIS || defined CC_BUILD_ANDROID
+#elif defined HC_BUILD_LINUX || defined HC_BUILD_SOLARIS || defined HC_BUILD_ANDROID
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
 
-#ifdef CC_BUILD_ANDROID
-static int SkipRange(const cc_string* str) {
+#ifdef HC_BUILD_ANDROID
+static int SkipRange(const hc_string* str) {
 	/* Android has a lot of ranges in /maps, which produces 100-120 kb of logs for one single crash! */
 	/* Example of different types of ranges:
 		7a2df000-7a2eb000 r-xp 00000000 fd:01 419        /vendor/lib/libdrm.so
@@ -985,7 +985,7 @@ static int SkipRange(const cc_string* str) {
 		7a3d5000-7a4d1000 rw-p 00000000 00:00 0
 		7a4d1000-7a4d2000 ---p 00000000 00:00 0          [anon:thread stack guard]
 	To cut down crash logs to more relevant information, unnecessary '/' entries are ignored */
-	cc_string path;
+	hc_string path;
 
 	/* Always include ranges without a / */
 	int idx = String_IndexOf(str, '/');
@@ -1013,7 +1013,7 @@ static int SkipRange(const cc_string* str) {
 		|| String_ContainsConst(&path, "/vendor/lib");
 }
 #else
-static int SkipRange(const cc_string* str) { 
+static int SkipRange(const hc_string* str) { 
 	return
 		/* Ignore GPU iris driver i915 GEM buffers (~60,000 entries for one user) */
 		String_ContainsConst(str, "anon_inode:i915.gem");
@@ -1021,8 +1021,8 @@ static int SkipRange(const cc_string* str) {
 #endif
 
 static void DumpMisc(void) {
-	static const cc_string memMap = String_FromConst("-- memory map --\n");
-	cc_string str; char strBuffer[320];
+	static const hc_string memMap = String_FromConst("-- memory map --\n");
+	hc_string str; char strBuffer[320];
 	int n, fd;
 
 	Logger_Log(&memMap);
@@ -1038,15 +1038,15 @@ static void DumpMisc(void) {
 
 	close(fd);
 }
-#elif defined CC_BUILD_DARWIN
+#elif defined HC_BUILD_DARWIN
 #include <mach-o/dyld.h>
 
 static void DumpMisc(void) {
-	static const cc_string modules = String_FromConst("-- modules --\n");
-	static const cc_string newLine = String_FromConst(_NL);
-	cc_uint32 i, count;
+	static const hc_string modules = String_FromConst("-- modules --\n");
+	static const hc_string newLine = String_FromConst(_NL);
+	hc_uint32 i, count;
 	const char* path;
-	cc_string str;
+	hc_string str;
 	
 	/* TODO: Add Logger_LogRaw / Logger_LogConst too */
 	Logger_Log(&modules);
@@ -1070,8 +1070,8 @@ static void DumpMisc(void) { }
 /*########################################################################################################################*
 *--------------------------------------------------Unhandled error logging------------------------------------------------*
 *#########################################################################################################################*/
-#if defined CC_BUILD_WIN
-static const char* ExceptionDescribe(cc_uint32 code) {
+#if defined HC_BUILD_WIN
+static const char* ExceptionDescribe(hc_uint32 code) {
 	switch (code) {
 	case EXCEPTION_ACCESS_VIOLATION:    return "ACCESS_VIOLATION";
 	case EXCEPTION_ILLEGAL_INSTRUCTION: return "ILLEGAL_INSTRUCTION";
@@ -1081,14 +1081,14 @@ static const char* ExceptionDescribe(cc_uint32 code) {
 }
 
 static LONG WINAPI UnhandledFilter(struct _EXCEPTION_POINTERS* info) {
-	cc_string msg; char msgBuffer[128 + 1];
+	hc_string msg; char msgBuffer[128 + 1];
 	const char* desc;
-	cc_uint32 code;
-	cc_uintptr addr;
+	hc_uint32 code;
+	hc_uintptr addr;
 	DWORD i, numArgs;
 
-	code =  (cc_uint32)info->ExceptionRecord->ExceptionCode;
-	addr = (cc_uintptr)info->ExceptionRecord->ExceptionAddress;
+	code =  (hc_uint32)info->ExceptionRecord->ExceptionCode;
+	addr = (hc_uintptr)info->ExceptionRecord->ExceptionAddress;
 	desc = ExceptionDescribe(code);
 
 	String_InitArray_NT(msg, msgBuffer);
@@ -1132,7 +1132,7 @@ void Logger_Hook(void) {
 		{ "SymInitialize",            (void**)&_SymInitialize },
 	#endif
 	};
-	static const cc_string imagehlp = String_FromConst("IMAGEHLP.DLL");
+	static const hc_string imagehlp = String_FromConst("IMAGEHLP.DLL");
 	OSVERSIONINFOA osInfo;
 	void* lib;
 
@@ -1146,10 +1146,10 @@ void Logger_Hook(void) {
 	GetVersionExA(&osInfo);
 
 	if (osInfo.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS) {
-		curProcess = (HANDLE)((cc_uintptr)GetCurrentProcessId());
+		curProcess = (HANDLE)((hc_uintptr)GetCurrentProcessId());
 	}
 }
-#elif defined CC_BUILD_POSIX
+#elif defined HC_BUILD_POSIX
 static const char* SignalDescribe(int type) {
 	switch (type) {
 	case SIGSEGV: return "SIGSEGV";
@@ -1162,10 +1162,10 @@ static const char* SignalDescribe(int type) {
 }
 
 static void SignalHandler(int sig, siginfo_t* info, void* ctx) {
-	cc_string msg; char msgBuffer[128 + 1];
+	hc_string msg; char msgBuffer[128 + 1];
 	const char* desc;
 	int type, code;
-	cc_uintptr addr;
+	hc_uintptr addr;
 
 	/* Uninstall handler to avoid chance of infinite loop */
 	signal(SIGSEGV, SIG_DFL);
@@ -1176,7 +1176,7 @@ static void SignalHandler(int sig, siginfo_t* info, void* ctx) {
 
 	type = info->si_signo;
 	code = info->si_code;
-	addr = (cc_uintptr)info->si_addr;
+	addr = (hc_uintptr)info->si_addr;
 	desc = SignalDescribe(type);
 
 	String_InitArray_NT(msg, msgBuffer);
@@ -1187,7 +1187,7 @@ static void SignalHandler(int sig, siginfo_t* info, void* ctx) {
 	}
 	msg.buffer[msg.length] = '\0';
 
-	#if defined CC_BUILD_ANDROID
+	#if defined HC_BUILD_ANDROID
 	/* deliberate Dalvik VM abort, try to log a nicer error for this */
 	if (type == SIGSEGV && addr == 0xDEADD00D) Platform_TryLogJavaError();
 	#endif
@@ -1216,12 +1216,12 @@ void Logger_Hook(void) {
 /*########################################################################################################################*
 *-------------------------------------------------Deliberate crash logging------------------------------------------------*
 *#########################################################################################################################*/
-#if defined CC_BUILD_WIN
+#if defined HC_BUILD_WIN
 #if __GNUC__
 /* Don't want compiler doing anything fancy with registers */
-void __attribute__((optimize("O0"))) Logger_Abort2(cc_result result, const char* raw_msg) {
+void __attribute__((optimize("O0"))) Logger_Abort2(hc_result result, const char* raw_msg) {
 #else
-void Logger_Abort2(cc_result result, const char* raw_msg) {
+void Logger_Abort2(hc_result result, const char* raw_msg) {
 #endif
 	CONTEXT ctx;
 	#if _M_IX86 && __GNUC__
@@ -1251,7 +1251,7 @@ void Logger_Abort2(cc_result result, const char* raw_msg) {
 	AbortCommon(result, raw_msg, &ctx);
 }
 #else
-void Logger_Abort2(cc_result result, const char* raw_msg) {
+void Logger_Abort2(hc_result result, const char* raw_msg) {
 	AbortCommon(result, raw_msg, NULL);
 }
 #endif
@@ -1260,29 +1260,29 @@ void Logger_Abort2(cc_result result, const char* raw_msg) {
 /*########################################################################################################################*
 *----------------------------------------------------------Common---------------------------------------------------------*
 *#########################################################################################################################*/
-#ifdef CC_BUILD_MINFILES
-void Logger_Log(const cc_string* msg) {
+#ifdef HC_BUILD_MINFILES
+void Logger_Log(const hc_string* msg) {
 	Platform_Log(msg->buffer, msg->length);
 }
 static void LogCrashHeader(void) { }
 static void CloseLogFile(void)   { }
 #else
 static struct Stream logStream;
-static cc_bool logOpen;
+static hc_bool logOpen;
 
-void Logger_Log(const cc_string* msg) {
-	static const cc_string path = String_FromConst("client.log");
+void Logger_Log(const hc_string* msg) {
+	static const hc_string path = String_FromConst("client.log");
 	if (!logOpen) {
 		logOpen = true;
 		Stream_AppendFile(&logStream, &path);
 	}
 
 	if (!logStream.meta.file) return;
-	Stream_Write(&logStream, (const cc_uint8*)msg->buffer, msg->length);
+	Stream_Write(&logStream, (const hc_uint8*)msg->buffer, msg->length);
 }
 
 static void LogCrashHeader(void) {
-	cc_string msg; char msgBuffer[96];
+	hc_string msg; char msgBuffer[96];
 	struct DateTime now;
 
 	String_InitArray(msg, msgBuffer);
@@ -1301,27 +1301,27 @@ static void CloseLogFile(void) {
 }
 #endif
 
-#if CC_GFX_BACKEND == CC_GFX_BACKEND_D3D11
+#if HC_GFX_BACKEND == HC_GFX_BACKEND_D3D11
 	#define GFX_BACKEND " (Direct3D11)"
-#elif CC_GFX_BACKEND == CC_GFX_BACKEND_D3D9
+#elif HC_GFX_BACKEND == HC_GFX_BACKEND_D3D9
 	#define GFX_BACKEND " (Direct3D9)"
-#elif CC_GFX_BACKEND == CC_GFX_BACKEND_GL2
+#elif HC_GFX_BACKEND == HC_GFX_BACKEND_GL2
 	#define GFX_BACKEND " (ModernGL)"
-#elif CC_GFX_BACKEND == CC_GFX_BACKEND_GL1
+#elif HC_GFX_BACKEND == HC_GFX_BACKEND_GL1
 	#define GFX_BACKEND " (OpenGL)"
 #else
 	#define GFX_BACKEND " (Unknown)"
 #endif
 
-static void AbortCommon(cc_result result, const char* raw_msg, void* ctx) {
-	static const cc_string backtrace = String_FromConst("-- backtrace --" _NL);
-	cc_string msg; char msgBuffer[3070 + 1];
+static void AbortCommon(hc_result result, const char* raw_msg, void* ctx) {
+	static const hc_string backtrace = String_FromConst("-- backtrace --" _NL);
+	hc_string msg; char msgBuffer[3070 + 1];
 	String_InitArray_NT(msg, msgBuffer);
 
-	String_AppendConst(&msg, "ClassiCube crashed." _NL);
+	String_AppendConst(&msg, "Harmony Client crashed." _NL);
 	if (raw_msg) String_Format1(&msg, "Reason: %c" _NL, raw_msg);
-	#ifdef CC_COMMIT_SHA
-	String_AppendConst(&msg, "Commit SHA: " CC_COMMIT_SHA GFX_BACKEND _NL);
+	#ifdef HC_COMMIT_SHA
+	String_AppendConst(&msg, "Commit SHA: " HC_COMMIT_SHA GFX_BACKEND _NL);
 	#endif
 
 	if (result) {
@@ -1352,34 +1352,34 @@ static void AbortCommon(cc_result result, const char* raw_msg, void* ctx) {
 void Logger_Abort(const char* raw_msg) { Logger_Abort2(0, raw_msg); }
 
 void Logger_FailToStart(const char* raw_msg) {
-	cc_string msg = String_FromReadonly(raw_msg);
+	hc_string msg = String_FromReadonly(raw_msg);
 
-	Window_ShowDialog("Failed to start ClassiCube", raw_msg);
+	Window_ShowDialog("Failed to start Harmony Client", raw_msg);
 	LogCrashHeader();
 	Logger_Log(&msg);
 	Process_Exit(1);
 }
 
 
-#if defined CC_BACKTRACE_UNWIND
+#if defined HC_BACKTRACE_UNWIND
 #include <unwind.h>
 
 static _Unwind_Reason_Code UnwindFrame(struct _Unwind_Context* ctx, void* arg) {
-	cc_uintptr addr = _Unwind_GetIP(ctx);
+	hc_uintptr addr = _Unwind_GetIP(ctx);
 	if (!addr) return _URC_END_OF_STACK;
 
-	DumpFrame((cc_string*)arg, (void*)addr);
+	DumpFrame((hc_string*)arg, (void*)addr);
 	return _URC_NO_REASON;
 }
 
-void Logger_Backtrace(cc_string* trace, void* ctx) {
+void Logger_Backtrace(hc_string* trace, void* ctx) {
 	_Unwind_Backtrace(UnwindFrame, trace);
 	String_AppendConst(trace, _NL);
 }
 #endif
 
-#if defined CC_BACKTRACE_BUILTIN
-static CC_NOINLINE void* GetReturnAddress(int level) {
+#if defined HC_BACKTRACE_BUILTIN
+static HC_NOINLINE void* GetReturnAddress(int level) {
 	/* "... a value of 0 yields the return address of the current function, a value of 1 yields the return address of the caller of the current function" */
 	switch(level) {
 	case 0:  return __builtin_return_address(1);
@@ -1407,7 +1407,7 @@ static CC_NOINLINE void* GetReturnAddress(int level) {
 	}
 }
 
-static CC_NOINLINE void* GetFrameAddress(int level) {
+static HC_NOINLINE void* GetFrameAddress(int level) {
 	/* "... a value of 0 yields the frame address of the current function, a value of 1 yields the frame address of the caller of the current function, and so forth." */
 	switch(level) {
 	case 0:  return __builtin_frame_address(1);
@@ -1435,7 +1435,7 @@ static CC_NOINLINE void* GetFrameAddress(int level) {
 	}
 }
 
-void Logger_Backtrace(cc_string* trace, void* ctx) {
+void Logger_Backtrace(hc_string* trace, void* ctx) {
 	void* addrs[MAX_BACKTRACE_FRAMES];
 	int i, frames;
 	

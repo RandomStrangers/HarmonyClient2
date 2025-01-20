@@ -1,7 +1,7 @@
-#ifndef CC_INPUT_H
-#define CC_INPUT_H
+#ifndef HC_INPUT_H
+#define HC_INPUT_H
 #include "Core.h"
-CC_BEGIN_HEADER
+HC_BEGIN_HEADER
 
 /* 
 Manages input state and raising input related events
@@ -74,11 +74,11 @@ extern const char* Input_DisplayNames[INPUT_COUNT];
 
 extern struct _InputState {
 	/* Pressed state of each input button. Use Input_Set to change */
-	cc_bool Pressed[INPUT_COUNT];
+	hc_bool Pressed[INPUT_COUNT];
 	/* Whether raw mouse/touch input is currently being listened for */
-	cc_bool RawMode;
+	hc_bool RawMode;
 	/* Sources available for input (Mouse/Keyboard, Gamepad) */
-	cc_uint8 Sources;
+	hc_uint8 Sources;
 	/* Function that overrides all normal input handling (e.g. for virtual keyboard) */
 	void (*DownHook)(int btn, struct InputDevice* device);
 } Input;
@@ -95,7 +95,7 @@ void Input_Clear(void);
 
 struct InputDevice;
 struct BindMapping_;
-typedef cc_bool (*InputDevice_IsPressed)(struct InputDevice* device, int key);
+typedef hc_bool (*InputDevice_IsPressed)(struct InputDevice* device, int key);
 
 struct InputDevice {
 	int type;
@@ -132,10 +132,10 @@ extern struct InputDevice TouchDevice;
 #define Input_IsCtrlPressed()  (Input.Pressed[CCKEY_LCTRL]  || Input.Pressed[CCKEY_RCTRL])
 #define Input_IsShiftPressed() (Input.Pressed[CCKEY_LSHIFT] || Input.Pressed[CCKEY_RSHIFT])
 
-#if defined CC_BUILD_HAIKU
+#if defined HC_BUILD_HAIKU
 	/* Haiku uses ALT instead of CTRL for clipboard and stuff */
 	#define Input_IsActionPressed() Input_IsAltPressed()
-#elif defined CC_BUILD_DARWIN
+#elif defined HC_BUILD_DARWIN
 	/* macOS uses CMD instead of CTRL for clipboard and stuff */
 	#define Input_IsActionPressed() Input_IsWinPressed()
 #else
@@ -145,15 +145,15 @@ void Input_CalcDelta(int btn, struct InputDevice* device, int* horDelta, int* ve
 
 
 
-#ifdef CC_BUILD_TOUCH
+#ifdef HC_BUILD_TOUCH
 #define INPUT_MAX_POINTERS 32
 enum INPUT_MODE { INPUT_MODE_PLACE, INPUT_MODE_DELETE, INPUT_MODE_NONE, INPUT_MODE_COUNT };
 
 extern int Pointers_Count;
 extern int Input_TapMode, Input_HoldMode;
 /* Whether touch input is being used. */
-extern cc_bool Input_TouchMode;
-void Input_SetTouchMode(cc_bool enabled);
+extern hc_bool Input_TouchMode;
+void Input_SetTouchMode(hc_bool enabled);
 
 void Input_AddTouch(long id,    int x, int y);
 void Input_UpdateTouch(long id, int x, int y);
@@ -161,7 +161,7 @@ void Input_RemoveTouch(long id, int x, int y);
 
 struct TouchPointer {
 	long id;
-	cc_uint8 type;
+	hc_uint8 type;
 	int begX, begY;
 	double start;
 }; 
@@ -189,7 +189,7 @@ struct Pointer {
 	/* Function that overrides all normal pointer input release handling */
 	void (*UpHook)  (int index);
 };
-CC_VAR extern struct Pointer Pointers[INPUT_MAX_POINTERS];
+HC_VAR extern struct Pointer Pointers[INPUT_MAX_POINTERS];
 
 /* Raises appropriate events for a mouse vertical scroll */
 void Mouse_ScrollVWheel(float delta);
@@ -223,7 +223,7 @@ struct GamepadDevice {
 	struct InputDevice base;
 	long deviceID;
 	float axisX[2], axisY[2];
-	cc_bool pressed[GAMEPAD_BTN_COUNT];
+	hc_bool pressed[GAMEPAD_BTN_COUNT];
 	float holdtime[GAMEPAD_BTN_COUNT];
 };
 extern struct GamepadDevice Gamepad_Devices[INPUT_MAX_GAMEPADS];
@@ -249,7 +249,7 @@ enum InputBind_ {
 	BIND_COUNT
 };
 typedef int InputBind;
-typedef struct BindMapping_ { cc_uint8 button1, button2; } BindMapping;
+typedef struct BindMapping_ { hc_uint8 button1, button2; } BindMapping;
 #define BindMapping_Set(mapping, btn1, btn2) (mapping)->button1 = btn1; (mapping)->button2 = btn2;
 
 /* The keyboard/mouse buttons that are bound to each input binding */
@@ -260,7 +260,7 @@ extern const BindMapping KeyBind_Defaults[BIND_COUNT];
 extern const BindMapping PadBind_Defaults[BIND_COUNT];
 
 /* Whether the given binding should be triggered in response to given input button being pressed */
-cc_bool InputBind_Claims(InputBind binding, int btn, struct InputDevice* device);
+hc_bool InputBind_Claims(InputBind binding, int btn, struct InputDevice* device);
 
 /* Sets the button that the given input binding is bound to */
 void InputBind_Set(InputBind binding, int btn, const struct InputDevice* device);
@@ -269,5 +269,5 @@ void InputBind_Reset(InputBind binding, const struct InputDevice* device);
 /* Loads the bindings for the given device from either options or its defaults */
 void InputBind_Load(const struct InputDevice* device);
 
-CC_END_HEADER
+HC_END_HEADER
 #endif

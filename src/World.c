@@ -84,7 +84,7 @@ void World_SetNewMap(BlockRaw* blocks, int width, int height, int length) {
 	Event_RaiseVoid(&WorldEvents.MapLoaded);
 }
 
-CC_NOINLINE void World_SetDimensions(int width, int height, int length) {
+HC_NOINLINE void World_SetDimensions(int width, int height, int length) {
 	World.Width  = width; World.Height = height; World.Length = length;
 	World.Volume = width * height * length;
 
@@ -114,7 +114,7 @@ void World_OutOfMemory(void) {
 
 
 #ifdef EXTENDED_BLOCKS
-static CC_NOINLINE void LazyInitUpper(int i, BlockID block) {
+static HC_NOINLINE void LazyInitUpper(int i, BlockID block) {
 	BlockRaw* data = (BlockRaw*)Mem_TryAllocCleared(World.Volume, 1);
 	if (!data) { World_OutOfMemory(); return; }
 
@@ -227,7 +227,7 @@ void Env_SetWeatherFade(float rate) {
 void Env_SetWeather(int weather) {
 	Env_Set(weather, Env.Weather, ENV_VAR_WEATHER);
 }
-void Env_SetExpFog(cc_bool expFog) {
+void Env_SetExpFog(hc_bool expFog) {
 	Env_Set(expFog, Env.ExpFog, ENV_VAR_EXP_FOG);
 }
 void Env_SetSkyboxHorSpeed(float speed) {

@@ -31,10 +31,10 @@ void Commands_Register(struct ChatCommand* cmd) {
 /*########################################################################################################################*
 *------------------------------------------------------Command handling---------------------------------------------------*
 *#########################################################################################################################*/
-static struct ChatCommand* Commands_FindMatch(const cc_string* cmdName) {
+static struct ChatCommand* Commands_FindMatch(const hc_string* cmdName) {
 	struct ChatCommand* match = NULL;
 	struct ChatCommand* cmd;
-	cc_string name;
+	hc_string name;
 
 	for (cmd = cmds_head; cmd; cmd = cmd->next) 
 	{
@@ -62,9 +62,9 @@ static struct ChatCommand* Commands_FindMatch(const cc_string* cmdName) {
 }
 
 static void Commands_PrintDefault(void) {
-	cc_string str; char strBuffer[STRING_SIZE];
+	hc_string str; char strBuffer[STRING_SIZE];
 	struct ChatCommand* cmd;
-	cc_string name;
+	hc_string name;
 
 	Chat_AddRaw("&eList of client commands:");
 	String_InitArray(str, strBuffer);
@@ -84,15 +84,15 @@ static void Commands_PrintDefault(void) {
 	Chat_AddRaw("&eTo see help for a command, type /client help [cmd name]");
 }
 
-cc_bool Commands_Execute(const cc_string* input) {
-	static const cc_string prefixSpace = String_FromConst(COMMANDS_PREFIX_SPACE);
-	static const cc_string prefix      = String_FromConst(COMMANDS_PREFIX);
-	cc_string text;
+hc_bool Commands_Execute(const hc_string* input) {
+	static const hc_string prefixSpace = String_FromConst(COMMANDS_PREFIX_SPACE);
+	static const hc_string prefix      = String_FromConst(COMMANDS_PREFIX);
+	hc_string text;
 
 	struct ChatCommand* cmd;
 	int offset, count;
-	cc_string name, value;
-	cc_string args[50];
+	hc_string name, value;
+	hc_string args[50];
 
 	if (String_CaselessStarts(input, &prefixSpace)) { 
 		/* /client [command] [args] */
@@ -122,10 +122,6 @@ cc_bool Commands_Execute(const cc_string* input) {
 		Chat_Add1("&e/client: \"&f%s&e\" can only be used in singleplayer.", &name);
 		return true;
 	}
-	if ((cmd->flags & COMMAND_FLAG_MULTIPLAYER_ONLY) && Server.IsSinglePlayer) {
-		Chat_Add1("&e/client: \"&f%s&e\" can only be used in multiplayer.", &name);
-		return true;
-	}
 	if (cmd->flags & COMMAND_FLAG_UNSPLIT_ARGS) {
 		/* argsCount = 0 if value.length is 0, 1 otherwise */
 		cmd->Execute(&value, value.length != 0);
@@ -140,7 +136,7 @@ cc_bool Commands_Execute(const cc_string* input) {
 /*########################################################################################################################*
 *------------------------------------------------------Simple commands----------------------------------------------------*
 *#########################################################################################################################*/
-static void HelpCommand_Execute(const cc_string* args, int argsCount) {
+static void HelpCommand_Execute(const hc_string* args, int argsCount) {
 	struct ChatCommand* cmd;
 	int i;
 
@@ -163,9 +159,9 @@ static struct ChatCommand HelpCommand = {
 	}
 };
 
-static void GpuInfoCommand_Execute(const cc_string* args, int argsCount) {
+static void GpuInfoCommand_Execute(const hc_string* args, int argsCount) {
 	char buffer[7 * STRING_SIZE];
-	cc_string str, line;
+	hc_string str, line;
 	String_InitArray(str, buffer);
 	Gfx_GetApiInfo(&str);
 	
@@ -184,7 +180,7 @@ static struct ChatCommand GpuInfoCommand = {
 	}
 };
 
-static void RenderTypeCommand_Execute(const cc_string* args, int argsCount) {
+static void RenderTypeCommand_Execute(const hc_string* args, int argsCount) {
 	int flags;
 	if (!argsCount) {
 		Chat_AddRaw("&e/client: &cYou didn't specify a new render type."); return;
@@ -212,7 +208,7 @@ static struct ChatCommand RenderTypeCommand = {
 	}
 };
 
-static void ResolutionCommand_Execute(const cc_string* args, int argsCount) {
+static void ResolutionCommand_Execute(const hc_string* args, int argsCount) {
 	int width, height;
 	if (argsCount < 2) {
 		Chat_Add4("&e/client: &fCurrent resolution is %i@%f2 x %i@%f2", 
@@ -238,7 +234,7 @@ static struct ChatCommand ResolutionCommand = {
 	}
 };
 
-static void ModelCommand_Execute(const cc_string* args, int argsCount) {
+static void ModelCommand_Execute(const hc_string* args, int argsCount) {
 	if (argsCount) {
 		Entity_SetModel(&Entities.CurPlayer->Base, args);
 	} else {
@@ -256,7 +252,7 @@ static struct ChatCommand ModelCommand = {
 	}
 };
 
-static void SkinCommand_Execute(const cc_string* args, int argsCount) {
+static void SkinCommand_Execute(const hc_string* args, int argsCount) {
 	if (argsCount) {
 		Entity_SetSkin(&Entities.CurPlayer->Base, args);
 	} else {
@@ -275,7 +271,7 @@ static struct ChatCommand SkinCommand = {
 	}
 };
 
-static void ClearDeniedCommand_Execute(const cc_string* args, int argsCount) {
+static void ClearDeniedCommand_Execute(const hc_string* args, int argsCount) {
 	int count = TextureCache_ClearDenied();
 	Chat_Add1("Removed &e%i &fdenied texture pack URLs.", &count);
 }
@@ -289,14 +285,19 @@ static struct ChatCommand ClearDeniedCommand = {
 	}
 };
 
-static void MotdCommand_Execute(const cc_string* args, int argsCount) {
+static void MotdCommand_Execute(const hc_string* args, int argsCount) 
+{
+	if (Server.IsSinglePlayer) {
+		Chat_AddRaw("&eThis command can only be used in multiplayer.");
+		return;
+	}
 	Chat_Add1("&eName: &f%s", &Server.Name);
 	Chat_Add1("&eMOTD: &f%s", &Server.MOTD);
 }
 
 static struct ChatCommand MotdCommand = {
 	"Motd", MotdCommand_Execute,
-	COMMAND_FLAG_UNSPLIT_ARGS | COMMAND_FLAG_MULTIPLAYER_ONLY,
+	COMMAND_FLAG_UNSPLIT_ARGS,
 	{
 		"&a/client motd",
 		"&eDisplays the server's name and MOTD."
@@ -307,10 +308,10 @@ static struct ChatCommand MotdCommand = {
 *-------------------------------------------------------PlaceCommand-----------------------------------------------------*
 *########################################################################################################################*/
 
-static void PlaceCommand_Execute(const cc_string* args, int argsCount) {
+static void PlaceCommand_Execute(const hc_string* args, int argsCount) {
 	int block;
 	IVec3 pos;
-	cc_uint8 off;
+	hc_uint8 off;
 	
 	if (argsCount == 2) {
 		Chat_AddRaw("&eToo few arguments.");
@@ -345,7 +346,7 @@ static void PlaceCommand_Execute(const cc_string* args, int argsCount) {
 	}
 	
 	Game_ChangeBlock(pos.x, pos.y, pos.z, block);
-	cc_string name = Block_UNSAFE_GetName(block);
+	hc_string name = Block_UNSAFE_GetName(block);
 	Chat_Add4("&eSuccessfully placed %s block at (%i, %i, %i).", &name, &pos.x, &pos.y, &pos.z);
 }
 
@@ -365,7 +366,7 @@ static struct ChatCommand PlaceCommand = {
 *-------------------------------------------------------DrawOpCommand-----------------------------------------------------*
 *#########################################################################################################################*/
 static IVec3 drawOp_mark1, drawOp_mark2;
-static cc_bool drawOp_persist, drawOp_hooked, drawOp_hasMark1;
+static hc_bool drawOp_persist, drawOp_hooked, drawOp_hasMark1;
 static const char* drawOp_name;
 static void (*drawOp_Func)(IVec3 min, IVec3 max);
 
@@ -380,7 +381,7 @@ static void DrawOpCommand_ResetState(void) {
 }
 
 static void DrawOpCommand_Begin(void) {
-	cc_string msg; char msgBuffer[STRING_SIZE];
+	hc_string msg; char msgBuffer[STRING_SIZE];
 	String_InitArray(msg, msgBuffer);
 
 	String_Format1(&msg, "&e%c: &fPlace or delete a block.", drawOp_name);
@@ -403,7 +404,7 @@ static void DrawOpCommand_Execute(void) {
 }
 
 static void DrawOpCommand_BlockChanged(void* obj, IVec3 coords, BlockID old, BlockID now) {
-	cc_string msg; char msgBuffer[STRING_SIZE];
+	hc_string msg; char msgBuffer[STRING_SIZE];
 	String_InitArray(msg, msgBuffer);
 	Game_UpdateBlock(coords.x, coords.y, coords.z, old);
 
@@ -428,8 +429,8 @@ static void DrawOpCommand_BlockChanged(void* obj, IVec3 coords, BlockID old, Blo
 	}
 }
 
-static const cc_string yes_string = String_FromConst("yes");
-static void DrawOpCommand_ExtractPersistArg(cc_string* value) {
+static const hc_string yes_string = String_FromConst("yes");
+static void DrawOpCommand_ExtractPersistArg(hc_string* value) {
 	drawOp_persist = false;
 	if (!String_CaselessEnds(value, &yes_string)) return;
 
@@ -438,7 +439,7 @@ static void DrawOpCommand_ExtractPersistArg(cc_string* value) {
 	String_UNSAFE_TrimEnd(value);
 }
 
-static int DrawOpCommand_ParseBlock(const cc_string* arg) {
+static int DrawOpCommand_ParseBlock(const hc_string* arg) {
 	int block = Block_Parse(arg);
 
 	if (block == -1) {
@@ -475,8 +476,8 @@ static void CuboidCommand_Draw(IVec3 min, IVec3 max) {
 	}
 }
 
-static void CuboidCommand_Execute(const cc_string* args, int argsCount) {
-	cc_string value = *args;
+static void CuboidCommand_Execute(const hc_string* args, int argsCount) {
+	hc_string value = *args;
 
 	DrawOpCommand_ResetState();
 	drawOp_name = "Cuboid";
@@ -530,9 +531,9 @@ static void ReplaceCommand_Draw(IVec3 min, IVec3 max) {
 	}
 }
 
-static void ReplaceCommand_Execute(const cc_string* args, int argsCount) {
-	cc_string value = *args;
-	cc_string parts[2];
+static void ReplaceCommand_Execute(const hc_string* args, int argsCount) {
+	hc_string value = *args;
+	hc_string parts[2];
 	int count;
 
 	DrawOpCommand_ResetState();
@@ -574,7 +575,7 @@ static struct ChatCommand ReplaceCommand = {
 /*########################################################################################################################*
 *------------------------------------------------------TeleportCommand----------------------------------------------------*
 *#########################################################################################################################*/
-static void TeleportCommand_Execute(const cc_string* args, int argsCount) {
+static void TeleportCommand_Execute(const hc_string* args, int argsCount) {
 	struct Entity* e = &Entities.CurPlayer->Base;
 	struct LocationUpdate update;
 	Vec3 v;
@@ -606,7 +607,7 @@ static struct ChatCommand TeleportCommand = {
 /*########################################################################################################################*
 *------------------------------------------------------BlockEditCommand----------------------------------------------------*
 *#########################################################################################################################*/
-static cc_bool BlockEditCommand_GetInt(const cc_string* str, const char* name, int* value, int min, int max) {
+static hc_bool BlockEditCommand_GetInt(const hc_string* str, const char* name, int* value, int min, int max) {
 	if (!Convert_ParseInt(str, value)) {
 		Chat_Add1("&eBlockEdit: &e%c must be an integer", name);
 		return false;
@@ -619,12 +620,12 @@ static cc_bool BlockEditCommand_GetInt(const cc_string* str, const char* name, i
 	return true;
 }
 
-static cc_bool BlockEditCommand_GetTexture(const cc_string* str, int* tex) {
+static hc_bool BlockEditCommand_GetTexture(const hc_string* str, int* tex) {
 	return BlockEditCommand_GetInt(str, "Texture", tex, 0, ATLAS1D_MAX_ATLASES - 1);
 }
 
-static cc_bool BlockEditCommand_GetCoords(const cc_string* str, Vec3* coords) {
-	cc_string parts[3];
+static hc_bool BlockEditCommand_GetCoords(const hc_string* str, Vec3* coords) {
+	hc_string parts[3];
 	IVec3 xyz;
 
 	int numParts = String_UNSAFE_Split(str, ' ', parts, 3);
@@ -643,7 +644,7 @@ static cc_bool BlockEditCommand_GetCoords(const cc_string* str, Vec3* coords) {
 	return true;
 }
 
-static cc_bool BlockEditCommand_GetBool(const cc_string* str, const char* name, cc_bool* value) {
+static hc_bool BlockEditCommand_GetBool(const hc_string* str, const char* name, hc_bool* value) {
 	if (String_CaselessEqualsConst(str, "true") || String_CaselessEqualsConst(str, "yes")) {
 		*value = true;
 		return true;
@@ -659,12 +660,12 @@ static cc_bool BlockEditCommand_GetBool(const cc_string* str, const char* name, 
 }
 
 
-static void BlockEditCommand_Execute(const cc_string* args, int argsCount__) {
-	cc_string parts[3];
-	cc_string* prop;
-	cc_string* value;
+static void BlockEditCommand_Execute(const hc_string* args, int argsCount__) {
+	hc_string parts[3];
+	hc_string* prop;
+	hc_string* value;
 	int argsCount, block, v;
-	cc_bool b;
+	hc_bool b;
 	Vec3 coords;
 
 	if (String_CaselessEqualsConst(args, "properties")) {

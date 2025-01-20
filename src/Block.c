@@ -30,10 +30,10 @@ const char* const Sound_Names[SOUND_COUNT] = {
 
 struct SimpleBlockDef {
 	const char* name;
-	cc_uint8 topTexture, sideTexture, bottomTexture, height;
-	PackedCol fogColor; cc_uint8 fogDensity;
-	cc_uint8 brightness, blocksLight; cc_uint8 gravity;
-	cc_uint8 draw, collide, digSound, stepSound;
+	hc_uint8 topTexture, sideTexture, bottomTexture, height;
+	PackedCol fogColor; hc_uint8 fogDensity;
+	hc_uint8 brightness, blocksLight; hc_uint8 gravity;
+	hc_uint8 draw, collide, digSound, stepSound;
 };
 static const struct SimpleBlockDef invalid_blockDef = { 
 	"Invalid", 0,0,0,16, FOG_NONE,0, false,true, 100, DRAW_OPAQUE,COLLIDE_SOLID,0
@@ -120,7 +120,7 @@ static const struct SimpleBlockDef core_blockDefs[] = {
 };
 
 /* Returns a backwards compatible collide type of a block */
-static cc_uint8 DefaultSet_MapOldCollide(BlockID b, cc_uint8 collide) {
+static hc_uint8 DefaultSet_MapOldCollide(BlockID b, hc_uint8 collide) {
 	if (b == BLOCK_ROPE && collide == COLLIDE_NONE)  return COLLIDE_CLIMB;
 	if (b == BLOCK_ICE  && collide == COLLIDE_SOLID) return COLLIDE_ICE;
 
@@ -136,14 +136,14 @@ static cc_uint8 DefaultSet_MapOldCollide(BlockID b, cc_uint8 collide) {
 *---------------------------------------------------Block properties------------------------------------------------------*
 *#########################################################################################################################*/
 static void Block_RecalcIsLiquid(BlockID b) {
-	cc_uint8 collide = Blocks.ExtendedCollide[b];
+	hc_uint8 collide = Blocks.ExtendedCollide[b];
 	Blocks.IsLiquid[b] =
 		(collide == COLLIDE_WATER && Blocks.Draw[b] == DRAW_TRANSLUCENT) ||
 		(collide == COLLIDE_LAVA  && Blocks.Draw[b] == DRAW_TRANSPARENT);
 }
 
 /* Sets the basic and extended collide types of the given block */
-static void Block_SetCollide(BlockID block, cc_uint8 collide) {
+static void Block_SetCollide(BlockID block, hc_uint8 collide) {
 	Blocks.ExtendedCollide[block] = collide;
 	Block_RecalcIsLiquid(block);
 
@@ -157,7 +157,7 @@ static void Block_SetCollide(BlockID block, cc_uint8 collide) {
 }
 
 /* Sets draw type and updates related state (e.g. FullOpaque) for the given block */
-static void Block_SetDrawType(BlockID block, cc_uint8 draw) {
+static void Block_SetDrawType(BlockID block, hc_uint8 draw) {
 	if (draw == DRAW_OPAQUE && Blocks.Collide[block] != COLLIDE_SOLID) draw = DRAW_TRANSPARENT;
 	Blocks.Draw[block] = draw;
 	Block_RecalcIsLiquid(block);
@@ -322,8 +322,8 @@ static void Block_CalcStretch(BlockID block) {
 	}
 }
 
-static cc_bool Block_MightCull(BlockID block, BlockID other) {
-	cc_uint8 bType, oType;
+static hc_bool Block_MightCull(BlockID block, BlockID other) {
+	hc_uint8 bType, oType;
 	/* Sprite blocks can never cull blocks. */
 	if (Blocks.Draw[block] == DRAW_SPRITE) return false;
 
@@ -348,7 +348,7 @@ static cc_bool Block_MightCull(BlockID block, BlockID other) {
 
 static void Block_CalcCulling(BlockID block, BlockID other) {
 	Vec3 bMin, bMax, oMin, oMax;
-	cc_bool occludedX, occludedY, occludedZ, bothLiquid;
+	hc_bool occludedX, occludedY, occludedZ, bothLiquid;
 	int f;
 
 	/* Fast path: Full opaque neighbouring blocks will always have all shared faces hidden */
@@ -417,16 +417,16 @@ static void Block_UpdateCulling(BlockID block) {
 /*########################################################################################################################*
 *---------------------------------------------------------Block-----------------------------------------------------------*
 *#########################################################################################################################*/
-static cc_uint32 definedCustomBlocks[BLOCK_COUNT >> 5];
+static hc_uint32 definedCustomBlocks[BLOCK_COUNT >> 5];
 static char Block_NamesBuffer[STRING_SIZE * BLOCK_COUNT];
 #define Block_NamePtr(i) &Block_NamesBuffer[STRING_SIZE * i]
 
-cc_bool Block_IsCustomDefined(BlockID block) {
+hc_bool Block_IsCustomDefined(BlockID block) {
 	return (definedCustomBlocks[block >> 5] & (1u << (block & 0x1F))) != 0;
 }
 
 /* Sets whether the given block has been changed from default */
-static void Block_SetCustomDefined(BlockID block, cc_bool defined) {
+static void Block_SetCustomDefined(BlockID block, hc_bool defined) {
 	if (defined) {
 		definedCustomBlocks[block >> 5] |=  (1u << (block & 0x1F));
 	} else {
@@ -434,11 +434,11 @@ static void Block_SetCustomDefined(BlockID block, cc_bool defined) {
 	}
 }
 
-void Block_DefineCustom(BlockID block, cc_bool checkSprite) {
+void Block_DefineCustom(BlockID block, hc_bool checkSprite) {
 	PackedCol black  = PackedCol_Make(0, 0, 0, 255);
-	cc_string name   = Block_UNSAFE_GetName(block);
+	hc_string name   = Block_UNSAFE_GetName(block);
 	/* necessary if servers redefined core blocks, before extended collide types were added */
-	cc_uint8 collide = DefaultSet_MapOldCollide(block, Blocks.Collide[block]);
+	hc_uint8 collide = DefaultSet_MapOldCollide(block, Blocks.Collide[block]);
 	Blocks.Tinted[block] = Blocks.FogCol[block] != black && String_IndexOf(&name, '#') >= 0;
 
 	Block_SetCollide(block,  collide);
@@ -472,7 +472,7 @@ void Block_UndefineCustom(BlockID block) {
 
 void Block_ResetProps(BlockID block) {
 	const struct SimpleBlockDef* def = block <= Game_Version.MaxCoreBlock ? &core_blockDefs[block] : &invalid_blockDef;
-	const cc_string name = String_FromReadonly(def->name);
+	const hc_string name = String_FromReadonly(def->name);
 
 	Blocks.BlocksLight[block] = def->blocksLight;
 	Blocks.Brightness[block]  = def->brightness;
@@ -506,16 +506,16 @@ void Block_ResetProps(BlockID block) {
 	Blocks.ParticleGravity[block] = 5.4f * (def->gravity / 100.0f);
 }
 
-STRING_REF cc_string Block_UNSAFE_GetName(BlockID block) {
+STRING_REF hc_string Block_UNSAFE_GetName(BlockID block) {
 	return String_FromRaw(Block_NamePtr(block), STRING_SIZE);
 }
 
-void Block_SetName(BlockID block, const cc_string* name) {
+void Block_SetName(BlockID block, const hc_string* name) {
 	String_CopyToRaw(Block_NamePtr(block), STRING_SIZE, name);
 }
 
-int Block_FindID(const cc_string* name) {
-	cc_string blockName;
+int Block_FindID(const hc_string* name) {
+	hc_string blockName;
 	int block;
 
 	for (block = BLOCK_AIR; block < BLOCK_COUNT; block++) 
@@ -526,7 +526,7 @@ int Block_FindID(const cc_string* name) {
 	return -1;
 }
 
-int Block_Parse(const cc_string* name) {
+int Block_Parse(const hc_string* name) {
 	int b;
 	if (Convert_ParseInt(name, &b) && b < BLOCK_COUNT) return b;
 	return Block_FindID(name);
@@ -541,8 +541,8 @@ int Block_Parse(const cc_string* name) {
 
 /* Reads network format    0b_US--_LLLL where U = uses fancy brightness, S = uses lamp brightness, and L = brightness */
 /* Into CC's native format 0b_SSSS_BBBB where S = lamp brightness and B = lava brightness */
-cc_uint8 Block_ReadBrightness(cc_uint8 fullBright) {
-	cc_bool useSun;
+hc_uint8 Block_ReadBrightness(hc_uint8 fullBright) {
+	hc_bool useSun;
 	/* If the fullBright byte does not use the flag, we should interpret it as either completely dark or casting max block light */
 	if ((fullBright & USE_MODERN_BRIGHTNESS_FLAG) == 0) { return fullBright > 0 ? FANCY_LIGHTING_MAX_LEVEL : 0; }
 
@@ -558,8 +558,8 @@ cc_uint8 Block_ReadBrightness(cc_uint8 fullBright) {
 
 /* Writes CC's native format 0b_SSSS_BBBB where S = lamp brightness and B = lava brightness */
 /* into network format       0b_US--_LLLL where U = uses fancy brightness, S = uses lamp brightness, and L = brightness */
-cc_uint8 Block_WriteFullBright(cc_uint8 brightness) {
-	cc_uint8 lavaBrightness, lampBrightness, fullBright;
+hc_uint8 Block_WriteFullBright(hc_uint8 brightness) {
+	hc_uint8 lavaBrightness, lampBrightness, fullBright;
 	lavaBrightness = brightness & BRIGHTNESS_MASK;
 	lampBrightness = brightness >> FANCY_LIGHTING_LAMP_SHIFT;
 	fullBright     = USE_MODERN_BRIGHTNESS_FLAG;
@@ -579,7 +579,7 @@ cc_uint8 Block_WriteFullBright(cc_uint8 brightness) {
 /*########################################################################################################################*
 *-------------------------------------------------------AutoRotate--------------------------------------------------------*
 *#########################################################################################################################*/
-cc_bool AutoRotate_Enabled;
+hc_bool AutoRotate_Enabled;
 
 #define AR_GROUP_CORNERS 0
 #define AR_GROUP_VERTICAL 1
@@ -588,7 +588,7 @@ cc_bool AutoRotate_Enabled;
 
 #define AR_EQ1(x)    (dir0 == x && dir1 == '\0')
 #define AR_EQ2(x, y) (dir0 == x && dir1 == y)
-static int AR_CalcGroup(const cc_string* dir) {
+static int AR_CalcGroup(const hc_string* dir) {
 	char dir0, dir1;
 	dir0 = dir->length > 1 ? dir->buffer[1] : '\0'; Char_MakeLower(dir0);
 	dir1 = dir->length > 2 ? dir->buffer[2] : '\0'; Char_MakeLower(dir1);
@@ -606,7 +606,7 @@ static int AR_CalcGroup(const cc_string* dir) {
 }
 
 /* replaces a portion of a string, appends otherwise */
-static void AutoRotate_Insert(cc_string* str, int offset, const char* suffix) {
+static void AutoRotate_Insert(hc_string* str, int offset, const char* suffix) {
 	int i = str->length - offset;
 
 	for (; *suffix; suffix++, i++) {
@@ -618,14 +618,14 @@ static void AutoRotate_Insert(cc_string* str, int offset, const char* suffix) {
 	}
 }
 /* finds proper rotated form of a block, based on the given name */
-static int FindRotated(cc_string* name, int offset);
+static int FindRotated(hc_string* name, int offset);
 
-static int GetRotated(cc_string* name, int offset) {
+static int GetRotated(hc_string* name, int offset) {
 	int rotated = FindRotated(name, offset);
 	return rotated == -1 ? Block_FindID(name) : rotated;
 }
 
-static int RotateCorner(cc_string* name, int offset) {
+static int RotateCorner(hc_string* name, int offset) {
 	float x = Game_SelectedPos.intersect.x - (float)Game_SelectedPos.translatedPos.x;
 	float z = Game_SelectedPos.intersect.z - (float)Game_SelectedPos.translatedPos.z;
 
@@ -641,7 +641,7 @@ static int RotateCorner(cc_string* name, int offset) {
 	return GetRotated(name, offset);
 }
 
-static int RotateVertical(cc_string* name, int offset) {
+static int RotateVertical(hc_string* name, int offset) {
 	float y = Game_SelectedPos.intersect.y - (float)Game_SelectedPos.translatedPos.y;
 
 	if (y >= 0.5f) {
@@ -652,7 +652,7 @@ static int RotateVertical(cc_string* name, int offset) {
 	return GetRotated(name, offset);
 }
 
-static int RotateFence(cc_string* name, int offset) {
+static int RotateFence(hc_string* name, int offset) {
 	/* Fence type blocks */
 	float yaw = Math_ClampAngle(Entities.CurPlayer->Base.Yaw);
 
@@ -664,7 +664,7 @@ static int RotateFence(cc_string* name, int offset) {
 	return GetRotated(name, offset);
 }
 
-static int RotatePillar(cc_string* name, int offset) {
+static int RotatePillar(hc_string* name, int offset) {
 	/* Thin pillar type blocks */
 	Face face = Game_SelectedPos.closest;
 
@@ -678,7 +678,7 @@ static int RotatePillar(cc_string* name, int offset) {
 	return GetRotated(name, offset);
 }
 
-static int RotateDirection(cc_string* name, int offset) {
+static int RotateDirection(hc_string* name, int offset) {
 	float yaw = Math_ClampAngle(Entities.CurPlayer->Base.Yaw);
 
 	if (yaw >= 45.0f && yaw < 135.0f) {
@@ -693,8 +693,8 @@ static int RotateDirection(cc_string* name, int offset) {
 	return GetRotated(name, offset);
 }
 
-static int FindRotated(cc_string* name, int offset) {
-	cc_string dir;
+static int FindRotated(hc_string* name, int offset) {
+	hc_string dir;
 	int group;
 	int dirIndex = String_LastIndexOfAt(name, offset, '-');
 	if (dirIndex == -1) return -1; /* not a directional block */
@@ -722,8 +722,8 @@ static int FindRotated(cc_string* name, int offset) {
 }
 
 BlockID AutoRotate_RotateBlock(BlockID block) {
-	cc_string str; char strBuffer[STRING_SIZE * 2];
-	cc_string name;
+	hc_string str; char strBuffer[STRING_SIZE * 2];
+	hc_string name;
 	int rotated;
 	
 	name = Block_UNSAFE_GetName(block);
@@ -735,9 +735,9 @@ BlockID AutoRotate_RotateBlock(BlockID block) {
 	return rotated == -1 ? block : (BlockID)rotated;
 }
 
-static void GetAutoRotateTypes(cc_string* name, int* dirTypes) {
+static void GetAutoRotateTypes(hc_string* name, int* dirTypes) {
 	int dirIndex, i;
-	cc_string dir;
+	hc_string dir;
 	dirTypes[0] = -1;
 	dirTypes[1] = -1;
 
@@ -752,8 +752,8 @@ static void GetAutoRotateTypes(cc_string* name, int* dirTypes) {
 	}
 }
 
-cc_bool AutoRotate_BlocksShareGroup(BlockID block, BlockID other) {
-	cc_string bName, oName;
+hc_bool AutoRotate_BlocksShareGroup(BlockID block, BlockID other) {
+	hc_string bName, oName;
 	int bDirTypes[2], oDirTypes[2];
 
 	bName = Block_UNSAFE_GetName(block);

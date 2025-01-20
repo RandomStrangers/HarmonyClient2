@@ -13,15 +13,15 @@
 #include "Utils.h"
 #include "Options.h"
 #include "Deflate.h"
-#ifdef CC_BUILD_ANDROID
+#ifdef HC_BUILD_ANDROID
 /* TODO: Refactor maybe to not rely on checking WinInfo.Handle != NULL */
 #include "Window.h"
 #endif
 
 int Audio_SoundsVolume, Audio_MusicVolume;
-const cc_string Sounds_ZipPathMC = String_FromConst("audio/default.zip");
-const cc_string Sounds_ZipPathCC = String_FromConst("audio/classicube.zip");
-static const cc_string audio_dir = String_FromConst("audio");
+const hc_string Sounds_ZipPathMC = String_FromConst("audio/default.zip");
+const hc_string Sounds_ZipPathCC = String_FromConst("audio/classicube.zip");
+static const hc_string audio_dir = String_FromConst("audio");
 
 struct Sound {
 	int channels, sampleRate;
@@ -32,7 +32,7 @@ struct Sound {
 /*########################################################################################################################*
 *--------------------------------------------------------Sounds-----------------------------------------------------------*
 *#########################################################################################################################*/
-#ifdef CC_BUILD_NOSOUNDS
+#ifdef HC_BUILD_NOSOUNDS
 /* Can't use mojang's sound assets, so just stub everything out */
 static void Sounds_Init(void) { }
 static void Sounds_Free(void) { }
@@ -56,13 +56,13 @@ struct Soundboard { struct SoundGroup groups[SOUND_COUNT]; };
 static struct Soundboard digBoard, stepBoard;
 static RNGState sounds_rnd;
 
-#define WAV_FourCC(a, b, c, d) (((cc_uint32)a << 24) | ((cc_uint32)b << 16) | ((cc_uint32)c << 8) | (cc_uint32)d)
+#define WAV_FourCC(a, b, c, d) (((hc_uint32)a << 24) | ((hc_uint32)b << 16) | ((hc_uint32)c << 8) | (hc_uint32)d)
 #define WAV_FMT_SIZE 16
 
-static cc_result Sound_ReadWaveData(struct Stream* stream, struct Sound* snd) {
-	cc_uint32 fourCC, size;
-	cc_uint8 tmp[WAV_FMT_SIZE];
-	cc_result res;
+static hc_result Sound_ReadWaveData(struct Stream* stream, struct Sound* snd) {
+	hc_uint32 fourCC, size;
+	hc_uint8 tmp[WAV_FMT_SIZE];
+	hc_result res;
 	int bitsPerSample;
 
 	if ((res = Stream_Read(stream, tmp, 12)))  return res;
@@ -93,10 +93,10 @@ static cc_result Sound_ReadWaveData(struct Stream* stream, struct Sound* snd) {
 			size -= WAV_FMT_SIZE;
 		} else if (fourCC == WAV_FourCC('d','a','t','a')) {
 			if ((res = Audio_AllocChunks(size, &snd->chunk, 1))) return res;
-			res = Stream_Read(stream, (cc_uint8*)snd->chunk.data, size);
+			res = Stream_Read(stream, (hc_uint8*)snd->chunk.data, size);
 
-			#ifdef CC_BUILD_BIGENDIAN
-			Utils_SwapEndian16((cc_int16*)snd->chunk.data, size / 2);
+			#ifdef HC_BUILD_BIGENDIAN
+			Utils_SwapEndian16((hc_int16*)snd->chunk.data, size / 2);
 			#endif
 			return res;
 		}
@@ -106,7 +106,7 @@ static cc_result Sound_ReadWaveData(struct Stream* stream, struct Sound* snd) {
 	}
 }
 
-static struct SoundGroup* Soundboard_FindGroup(struct Soundboard* board, const cc_string* name) {
+static struct SoundGroup* Soundboard_FindGroup(struct Soundboard* board, const hc_string* name) {
 	struct SoundGroup* groups = board->groups;
 	int i;
 
@@ -117,11 +117,11 @@ static struct SoundGroup* Soundboard_FindGroup(struct Soundboard* board, const c
 	return NULL;
 }
 
-static void Soundboard_Load(struct Soundboard* board, const cc_string* boardName, const cc_string* file, struct Stream* stream) {
+static void Soundboard_Load(struct Soundboard* board, const hc_string* boardName, const hc_string* file, struct Stream* stream) {
 	struct SoundGroup* group;
 	struct Sound* snd;
-	cc_string name = *file;
-	cc_result res;
+	hc_string name = *file;
+	hc_result res;
 	int dotIndex;
 	Utils_UNSAFE_TrimFirstDirectory(&name);
 
@@ -153,7 +153,7 @@ static void Soundboard_Load(struct Soundboard* board, const cc_string* boardName
 	} else { group->count++; }
 }
 
-static const struct Sound* Soundboard_PickRandom(struct Soundboard* board, cc_uint8 type) {
+static const struct Sound* Soundboard_PickRandom(struct Soundboard* board, hc_uint8 type) {
 	struct SoundGroup* group;
 	int idx;
 
@@ -168,16 +168,16 @@ static const struct Sound* Soundboard_PickRandom(struct Soundboard* board, cc_ui
 }
 
 
-CC_NOINLINE static void Sounds_Fail(cc_result res) {
+HC_NOINLINE static void Sounds_Fail(hc_result res) {
 	Audio_Warn(res, "playing sounds");
 	Chat_AddRaw("&cDisabling sounds");
 	Audio_SetSounds(0);
 }
 
-static void Sounds_Play(cc_uint8 type, struct Soundboard* board) {
+static void Sounds_Play(hc_uint8 type, struct Soundboard* board) {
 	const struct Sound* snd;
 	struct AudioData data;
-	cc_result res;
+	hc_result res;
 
 	if (type == SOUND_NONE || !Audio_SoundsVolume) return;
 	snd = Soundboard_PickRandom(board, type);
@@ -213,20 +213,20 @@ static void Audio_PlayBlockSound(void* obj, IVec3 coords, BlockID old, BlockID n
 	}
 }
 
-static cc_bool SelectZipEntry(const cc_string* path) { return true; }
-static cc_result ProcessZipEntry(const cc_string* path, struct Stream* stream, struct ZipEntry* source) {
-	static const cc_string dig  = String_FromConst("dig_");
-	static const cc_string step = String_FromConst("step_");
+static hc_bool SelectZipEntry(const hc_string* path) { return true; }
+static hc_result ProcessZipEntry(const hc_string* path, struct Stream* stream, struct ZipEntry* source) {
+	static const hc_string dig  = String_FromConst("dig_");
+	static const hc_string step = String_FromConst("step_");
 	
 	Soundboard_Load(&digBoard,  &dig,  path, stream);
 	Soundboard_Load(&stepBoard, &step, path, stream);
 	return 0;
 }
 
-static cc_result Sounds_ExtractZip(const cc_string* path) {
+static hc_result Sounds_ExtractZip(const hc_string* path) {
 	struct ZipEntry entries[128];
 	struct Stream stream;
-	cc_result res;
+	hc_result res;
 
 	res = Stream_OpenFile(&stream, path);
 	if (res) { Logger_SysWarn2(res, "opening", path); return res; }
@@ -241,7 +241,7 @@ static cc_result Sounds_ExtractZip(const cc_string* path) {
 }
 
 /* TODO this is a pretty terrible solution */
-#ifdef CC_BUILD_WEBAUDIO
+#ifdef HC_BUILD_WEBAUDIO
 static const struct SoundID { int group; const char* name; } sounds_list[] =
 {
 	{ SOUND_CLOTH,  "step_cloth1"  }, { SOUND_CLOTH,  "step_cloth2"  }, { SOUND_CLOTH,  "step_cloth3"  }, { SOUND_CLOTH,  "step_cloth4"  },
@@ -280,9 +280,9 @@ static void InitWebSounds(void) {
 }
 #endif
 
-static cc_bool sounds_loaded;
+static hc_bool sounds_loaded;
 static void Sounds_Start(void) {
-	cc_result res;
+	hc_result res;
 	if (!AudioBackend_Init()) { 
 		AudioBackend_Free(); 
 		Audio_SoundsVolume = 0; 
@@ -291,7 +291,7 @@ static void Sounds_Start(void) {
 
 	if (sounds_loaded) return;
 	sounds_loaded = true;
-#ifdef CC_BUILD_WEBAUDIO
+#ifdef HC_BUILD_WEBAUDIO
 	InitWebSounds();
 #else
 	res = Sounds_ExtractZip(&Sounds_ZipPathMC);
@@ -309,15 +309,15 @@ static void Sounds_Init(void) {
 }
 static void Sounds_Free(void) { Sounds_Stop(); }
 
-void Audio_PlayDigSound(cc_uint8 type)  { Sounds_Play(type, &digBoard); }
-void Audio_PlayStepSound(cc_uint8 type) { Sounds_Play(type, &stepBoard); }
+void Audio_PlayDigSound(hc_uint8 type)  { Sounds_Play(type, &digBoard); }
+void Audio_PlayStepSound(hc_uint8 type) { Sounds_Play(type, &stepBoard); }
 #endif
 
 
 /*########################################################################################################################*
 *--------------------------------------------------------Music------------------------------------------------------------*
 *#########################################################################################################################*/
-#ifdef CC_BUILD_NOMUSIC
+#ifdef HC_BUILD_NOMUSIC
 /* Can't use mojang's music assets, so just stub everything out */
 static void Music_Init(void) { }
 static void Music_Free(void) { }
@@ -329,14 +329,14 @@ static void Music_Start(void) {
 #else
 static void* music_thread;
 static void* music_waitable;
-static volatile cc_bool music_stopping, music_joining;
+static volatile hc_bool music_stopping, music_joining;
 static int music_minDelay, music_maxDelay;
 
-static cc_result Music_Buffer(struct AudioChunk* chunk, int maxSamples, struct VorbisState* ctx) {
+static hc_result Music_Buffer(struct AudioChunk* chunk, int maxSamples, struct VorbisState* ctx) {
 	int samples = 0;
-	cc_int16* cur;
-	cc_result res = 0, res2;
-	cc_int16* data = (cc_int16*)chunk->data;
+	hc_int16* cur;
+	hc_result res = 0, res2;
+	hc_int16* data = (hc_int16*)chunk->data;
 
 	while (samples < maxSamples) {
 		if ((res = Vorbis_DecodeFrame(ctx))) break;
@@ -351,7 +351,7 @@ static cc_result Music_Buffer(struct AudioChunk* chunk, int maxSamples, struct V
 	return res;
 }
 
-static cc_result Music_PlayOgg(struct Stream* source) {
+static hc_result Music_PlayOgg(struct Stream* source) {
 	struct OggState ogg;
 	struct VorbisState vorbis;
 	int channels, sampleRate, volume;
@@ -359,7 +359,7 @@ static cc_result Music_PlayOgg(struct Stream* source) {
 	int chunkSize, samplesPerSecond;
 	struct AudioChunk chunks[AUDIO_MAX_BUFFERS] = { 0 };
 	int inUse, i, cur;
-	cc_result res;
+	hc_result res;
 
 	Ogg_Init(&ogg, source);
 	Vorbis_Init(&vorbis);
@@ -391,7 +391,7 @@ static cc_result Music_PlayOgg(struct Stream* source) {
 	cur  = 0;
 
 	while (!music_stopping) {
-#ifdef CC_BUILD_ANDROID
+#ifdef HC_BUILD_ANDROID
 		/* Don't play music while in the background on Android */
     	/* TODO: Not use such a terrible approach */
     	if (!Window_Main.Handle.ptr) {
@@ -440,9 +440,9 @@ cleanup:
 	return res == ERR_END_OF_STREAM ? 0 : res;
 }
 
-static void Music_AddFile(const cc_string* path, void* obj, int isDirectory) {
+static void Music_AddFile(const hc_string* path, void* obj, int isDirectory) {
 	struct StringsBuffer* files = (struct StringsBuffer*)obj;
-	static const cc_string ogg  = String_FromConst(".ogg");
+	static const hc_string ogg  = String_FromConst(".ogg");
 
 	if (isDirectory) {
 		Directory_Enum(path, obj, Music_AddFile);
@@ -453,11 +453,11 @@ static void Music_AddFile(const cc_string* path, void* obj, int isDirectory) {
 
 static void Music_RunLoop(void) {
 	struct StringsBuffer files;
-	cc_string path;
+	hc_string path;
 	RNGState rnd;
 	struct Stream stream;
 	int idx, delay;
-	cc_result res = 0;
+	hc_result res = 0;
 
 	StringsBuffer_SetLengthBits(&files, STRINGSBUFFER_DEF_LEN_SHIFT);
 	StringsBuffer_Init(&files);

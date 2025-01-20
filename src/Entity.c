@@ -37,7 +37,7 @@ static PackedCol Entity_GetColor(struct Entity* e) {
 }
 
 void Entity_Init(struct Entity* e) {
-	static const cc_string model = String_FromConst("humanoid");
+	static const hc_string model = String_FromConst("humanoid");
 	Vec3_Set(e->ModelScale, 1,1,1);
 	e->Flags      = ENTITY_FLAG_HAS_MODELVB;
 	e->uScale     = 1.0f;
@@ -48,7 +48,7 @@ void Entity_Init(struct Entity* e) {
 	Entity_SetModel(e, &model);
 }
 
-void Entity_SetName(struct Entity* e, const cc_string* name) {
+void Entity_SetName(struct Entity* e, const hc_string* name) {
 	EntityNames_Delete(e);
 	String_CopyToRawArray(e->NameRaw, name);
 }
@@ -91,7 +91,7 @@ void Entity_GetBounds(struct Entity* e, struct AABB* bb) {
 	AABB_Make(bb, &e->Position, &e->Size);
 }
 
-static void Entity_ParseScale(struct Entity* e, const cc_string* scale) {
+static void Entity_ParseScale(struct Entity* e, const hc_string* scale) {
 	float value;
 	if (!Convert_ParseFloat(scale, &value)) return;
 	value = max(value, 0.001f);
@@ -104,8 +104,8 @@ static void Entity_ParseScale(struct Entity* e, const cc_string* scale) {
 	Vec3_Set(e->ModelScale, value,value,value);
 }
 
-static void Entity_SetBlockModel(struct Entity* e, const cc_string* model) {
-	static const cc_string block = String_FromConst("block");
+static void Entity_SetBlockModel(struct Entity* e, const hc_string* model) {
+	static const hc_string block = String_FromConst("block");
 	int raw = Block_Parse(model);
 
 	if (raw == -1) {
@@ -117,8 +117,8 @@ static void Entity_SetBlockModel(struct Entity* e, const cc_string* model) {
 	}
 }
 
-void Entity_SetModel(struct Entity* e, const cc_string* model) {
-	cc_string name, scale;
+void Entity_SetModel(struct Entity* e, const hc_string* model) {
+	hc_string name, scale;
 	Vec3_Set(e->ModelScale, 1,1,1);
 	String_UNSAFE_Separate(model, '|', &name, &scale);
 
@@ -149,7 +149,7 @@ void Entity_UpdateModelBounds(struct Entity* e) {
 	Vec3_Mul3By(&e->ModelAABB.Max, &e->ModelScale);
 }
 
-cc_bool Entity_TouchesAny(struct AABB* bounds, Entity_TouchesCondition condition) {
+hc_bool Entity_TouchesAny(struct AABB* bounds, Entity_TouchesCondition condition) {
 	IVec3 bbMin, bbMax;
 	BlockID block;
 	struct AABB blockBB;
@@ -179,23 +179,23 @@ cc_bool Entity_TouchesAny(struct AABB* bounds, Entity_TouchesCondition condition
 	return false;
 }
 
-static cc_bool IsRopeCollide(BlockID b) { return Blocks.ExtendedCollide[b] == COLLIDE_CLIMB; }
-cc_bool Entity_TouchesAnyRope(struct Entity* e) {
+static hc_bool IsRopeCollide(BlockID b) { return Blocks.ExtendedCollide[b] == COLLIDE_CLIMB; }
+hc_bool Entity_TouchesAnyRope(struct Entity* e) {
 	struct AABB bounds; Entity_GetBounds(e, &bounds);
 	bounds.Max.y += 0.5f / 16.0f;
 	return Entity_TouchesAny(&bounds, IsRopeCollide);
 }
 
 static const Vec3 entity_liqExpand = { 0.25f/16.0f, 0.0f/16.0f, 0.25f/16.0f };
-static cc_bool IsLavaCollide(BlockID b) { return Blocks.ExtendedCollide[b] == COLLIDE_LAVA; }
-cc_bool Entity_TouchesAnyLava(struct Entity* e) {
+static hc_bool IsLavaCollide(BlockID b) { return Blocks.ExtendedCollide[b] == COLLIDE_LAVA; }
+hc_bool Entity_TouchesAnyLava(struct Entity* e) {
 	struct AABB bounds; Entity_GetBounds(e, &bounds);
 	AABB_Offset(&bounds, &bounds, &entity_liqExpand);
 	return Entity_TouchesAny(&bounds, IsLavaCollide);
 }
 
-static cc_bool IsWaterCollide(BlockID b) { return Blocks.ExtendedCollide[b] == COLLIDE_WATER; }
-cc_bool Entity_TouchesAnyWater(struct Entity* e) {
+static hc_bool IsWaterCollide(BlockID b) { return Blocks.ExtendedCollide[b] == COLLIDE_WATER; }
+hc_bool Entity_TouchesAnyWater(struct Entity* e) {
 	struct AABB bounds; Entity_GetBounds(e, &bounds);
 	AABB_Offset(&bounds, &bounds, &entity_liqExpand);
 	return Entity_TouchesAny(&bounds, IsWaterCollide);
@@ -207,7 +207,7 @@ cc_bool Entity_TouchesAnyWater(struct Entity* e) {
 *#########################################################################################################################*/
 static struct Entity* Entity_FirstOtherWithSameSkinAndFetchedSkin(struct Entity* except) {
 	struct Entity* e;
-	cc_string skin, eSkin;
+	hc_string skin, eSkin;
 	int i;
 
 	skin = String_FromRawArray(except->SkinRaw);
@@ -239,9 +239,9 @@ static void Entity_ResetSkin(struct Entity* e) {
 }
 
 /* Copies or resets skin data for all entity with same skin */
-static void Entity_SetSkinAll(struct Entity* source, cc_bool reset) {
+static void Entity_SetSkinAll(struct Entity* source, hc_bool reset) {
 	struct Entity* e;
-	cc_string skin, eSkin;
+	hc_string skin, eSkin;
 	int i;
 
 	skin = String_FromRawArray(source->SkinRaw);
@@ -265,7 +265,7 @@ static void Entity_SetSkinAll(struct Entity* source, cc_bool reset) {
 
 /* Clears hat area from a skin bitmap if it's completely white or black,
    so skins edited with Microsoft Paint or similiar don't have a solid hat */
-static void Entity_ClearHat(struct Bitmap* bmp, cc_uint8 skinType) {
+static void Entity_ClearHat(struct Bitmap* bmp, hc_uint8 skinType) {
 	int sizeX  = (bmp->width / 64) * 32;
 	int yScale = skinType == SKIN_64x32 ? 32 : 64;
 	int sizeY  = (bmp->height / yScale) * 16;
@@ -290,9 +290,9 @@ static void Entity_ClearHat(struct Bitmap* bmp, cc_uint8 skinType) {
 }
 
 /* Ensures skin is a power of two size, resizing if needed. */
-static cc_result EnsurePow2Skin(struct Entity* e, struct Bitmap* bmp) {
+static hc_result EnsurePow2Skin(struct Entity* e, struct Bitmap* bmp) {
 	struct Bitmap scaled;
-	cc_uint32 stride;
+	hc_uint32 stride;
 	int width, height;
 	int y;
 
@@ -318,8 +318,8 @@ static cc_result EnsurePow2Skin(struct Entity* e, struct Bitmap* bmp) {
 	return 0;
 }
 
-static cc_result ApplySkin(struct Entity* e, struct Bitmap* bmp, struct Stream* src, cc_string* skin) {
-	cc_result res;
+static hc_result ApplySkin(struct Entity* e, struct Bitmap* bmp, struct Stream* src, hc_string* skin) {
+	hc_result res;
 	if ((res = Png_Decode(bmp, src))) return res;
 
 	Gfx_DeleteTexture(&e->TextureId);
@@ -339,8 +339,8 @@ static cc_result ApplySkin(struct Entity* e, struct Bitmap* bmp, struct Stream* 
 	return 0;
 }
 
-static void LogInvalidSkin(cc_result res, const cc_string* skin, const cc_uint8* data, int size) {
-	cc_string msg; char msgBuffer[256];
+static void LogInvalidSkin(hc_result res, const hc_string* skin, const hc_uint8* data, int size) {
+	hc_string msg; char msgBuffer[256];
 	String_InitArray(msg, msgBuffer);
 
 	Logger_FormatWarn2(&msg, res, "decoding skin", skin, Platform_DescribeError);
@@ -357,9 +357,9 @@ static void Entity_CheckSkin(struct Entity* e) {
 	struct HttpRequest item;
 	struct Stream mem;
 	struct Bitmap bmp;
-	cc_string skin;
-	cc_uint8 flags;
-	cc_result res;
+	hc_string skin;
+	hc_uint8 flags;
+	hc_result res;
 
 	/* Don't check skin if don't have to */
 	if (!e->Model->usesSkin) return;
@@ -396,7 +396,7 @@ static void Entity_CheckSkin(struct Entity* e) {
 }
 
 /* Returns true if no other entities are sharing this skin texture */
-static cc_bool CanDeleteTexture(struct Entity* except) {
+static hc_bool CanDeleteTexture(struct Entity* except) {
 	int i;
 	if (!except->TextureId) return false;
 
@@ -408,15 +408,15 @@ static cc_bool CanDeleteTexture(struct Entity* except) {
 	return true;
 }
 
-CC_NOINLINE static void DeleteSkin(struct Entity* e) {
+HC_NOINLINE static void DeleteSkin(struct Entity* e) {
 	if (CanDeleteTexture(e)) Gfx_DeleteTexture(&e->TextureId);
 
 	Entity_ResetSkin(e);
 	e->SkinFetchState = 0;
 }
 
-void Entity_SetSkin(struct Entity* e, const cc_string* skin) {
-	cc_string tmp; char tmpBuffer[STRING_SIZE];
+void Entity_SetSkin(struct Entity* e, const hc_string* skin) {
+	hc_string tmp; char tmpBuffer[STRING_SIZE];
 	DeleteSkin(e);
 
 	if (Utils_IsUrlPrefix(skin)) {
@@ -559,14 +559,14 @@ void TabList_Remove(EntityID id) {
 	Event_RaiseInt(&TabListEvents.Removed, id);
 }
 
-void TabList_Set(EntityID id, const cc_string* player_, const cc_string* list, const cc_string* group, cc_uint8 rank) {
-	cc_string oldPlayer, oldList, oldGroup;
-	cc_uint8 oldRank;
+void TabList_Set(EntityID id, const hc_string* player_, const hc_string* list, const hc_string* group, hc_uint8 rank) {
+	hc_string oldPlayer, oldList, oldGroup;
+	hc_uint8 oldRank;
 	struct Event_Int* events;
 
 	/* Player name shouldn't have colour codes */
 	/*  (intended for e.g. tab autocomplete) */
-	cc_string player; char playerBuffer[STRING_SIZE];
+	hc_string player; char playerBuffer[STRING_SIZE];
 	String_InitArray(player, playerBuffer);
 	String_AppendColorless(&player, player_);
 	
@@ -616,7 +616,7 @@ struct IGameComponent TabList_Component = {
 *------------------------------------------------------LocalPlayer--------------------------------------------------------*
 *#########################################################################################################################*/
 struct LocalPlayer LocalPlayer_Instances[MAX_LOCAL_PLAYERS];
-static cc_bool hackPermMsgs;
+static hc_bool hackPermMsgs;
 static struct LocalPlayerInput* sources_head;
 static struct LocalPlayerInput* sources_tail;
 
@@ -670,7 +670,7 @@ static void LocalPlayer_Tick(struct Entity* e, float delta) {
 	struct LocalPlayer* p = (struct LocalPlayer*)e;
 	struct HacksComp* hacks = &p->Hacks;
 	float xMoving = 0, zMoving = 0;
-	cc_bool wasOnGround;
+	hc_bool wasOnGround;
 	Vec3 headingVelocity;
 
 	if (!World.Loaded) return;
@@ -712,7 +712,7 @@ static void LocalPlayer_RenderModel(struct Entity* e, float delta, float t) {
 	Model_Render(e->Model, e);
 }
 
-static cc_bool LocalPlayer_ShouldRenderName(struct Entity* e) {
+static hc_bool LocalPlayer_ShouldRenderName(struct Entity* e) {
 	return Camera.Active->isThirdPerson;
 }
 
@@ -761,7 +761,7 @@ static void LocalPlayer_Init(struct LocalPlayer* p, int index) {
 }
 
 void LocalPlayer_ResetJumpVelocity(struct LocalPlayer* p) {
-	cc_bool higher = HacksComp_CanJumpHigher(&p->Hacks);
+	hc_bool higher = HacksComp_CanJumpHigher(&p->Hacks);
 
 	p->Physics.JumpVel       = higher ? p->Physics.UserJumpVel : 0.42f;
 	p->Physics.ServerJumpVel = p->Physics.JumpVel;
@@ -800,7 +800,7 @@ static void LocalPlayers_OnNewMap(void) {
 	}
 }
 
-static cc_bool LocalPlayer_IsSolidCollide(BlockID b) { return Blocks.Collide[b] == COLLIDE_SOLID; }
+static hc_bool LocalPlayer_IsSolidCollide(BlockID b) { return Blocks.Collide[b] == COLLIDE_SOLID; }
 static void LocalPlayer_DoRespawn(struct LocalPlayer* p) {
 	struct LocationUpdate update;
 	struct AABB bb;
@@ -847,7 +847,7 @@ static void LocalPlayer_DoRespawn(struct LocalPlayer* p) {
 	p->Base.OnGround = Entity_TouchesAny(&bb, LocalPlayer_IsSolidCollide);
 }
 
-static cc_bool LocalPlayer_HandleRespawn(int key, struct InputDevice* device) {
+static hc_bool LocalPlayer_HandleRespawn(int key, struct InputDevice* device) {
 	struct LocalPlayer* p = &LocalPlayer_Instances[device->mappedIndex];
 	if (Gui.InputGrab) return false;
 	
@@ -861,7 +861,7 @@ static cc_bool LocalPlayer_HandleRespawn(int key, struct InputDevice* device) {
 	return false;
 }
 
-static cc_bool LocalPlayer_HandleSetSpawn(int key, struct InputDevice* device) {
+static hc_bool LocalPlayer_HandleSetSpawn(int key, struct InputDevice* device) {
 	struct LocalPlayer* p = &LocalPlayer_Instances[device->mappedIndex];
 	if (Gui.InputGrab) return false;
 	
@@ -889,7 +889,7 @@ static cc_bool LocalPlayer_HandleSetSpawn(int key, struct InputDevice* device) {
 	return LocalPlayer_HandleRespawn(key, device);
 }
 
-static cc_bool LocalPlayer_HandleFly(int key, struct InputDevice* device) {
+static hc_bool LocalPlayer_HandleFly(int key, struct InputDevice* device) {
 	struct LocalPlayer* p = &LocalPlayer_Instances[device->mappedIndex];
 	if (Gui.InputGrab) return false;
 
@@ -903,7 +903,7 @@ static cc_bool LocalPlayer_HandleFly(int key, struct InputDevice* device) {
 	return false;
 }
 
-static cc_bool LocalPlayer_HandleNoclip(int key, struct InputDevice* device) {
+static hc_bool LocalPlayer_HandleNoclip(int key, struct InputDevice* device) {
 	struct LocalPlayer* p = &LocalPlayer_Instances[device->mappedIndex];
 	p->Hacks._noclipping = true;
 	if (Gui.InputGrab) return false;
@@ -921,7 +921,7 @@ static cc_bool LocalPlayer_HandleNoclip(int key, struct InputDevice* device) {
 	return false;
 }
 
-static cc_bool LocalPlayer_HandleJump(int key, struct InputDevice* device) {
+static hc_bool LocalPlayer_HandleJump(int key, struct InputDevice* device) {
 	struct LocalPlayer* p = &LocalPlayer_Instances[device->mappedIndex];
 	struct HacksComp* hacks     = &p->Hacks;
 	struct PhysicsComp* physics = &p->Physics;
@@ -943,18 +943,18 @@ static cc_bool LocalPlayer_HandleJump(int key, struct InputDevice* device) {
 }
 
 
-static cc_bool LocalPlayer_TriggerHalfSpeed(int key, struct InputDevice* device) {
+static hc_bool LocalPlayer_TriggerHalfSpeed(int key, struct InputDevice* device) {
 	struct HacksComp* hacks = &LocalPlayer_Instances[device->mappedIndex].Hacks;
-	cc_bool touch = device->type == INPUT_DEVICE_TOUCH;
+	hc_bool touch = device->type == INPUT_DEVICE_TOUCH;
 	if (Gui.InputGrab) return false;
 
 	hacks->HalfSpeeding = (!touch || !hacks->HalfSpeeding) && hacks->Enabled;
 	return true;
 }
 
-static cc_bool LocalPlayer_TriggerSpeed(int key, struct InputDevice* device) {
+static hc_bool LocalPlayer_TriggerSpeed(int key, struct InputDevice* device) {
 	struct HacksComp* hacks = &LocalPlayer_Instances[device->mappedIndex].Hacks;
-	cc_bool touch = device->type == INPUT_DEVICE_TOUCH;
+	hc_bool touch = device->type == INPUT_DEVICE_TOUCH;
 	if (Gui.InputGrab) return false;
 
 	hacks->Speeding = (!touch || !hacks->Speeding) && hacks->Enabled;
@@ -972,7 +972,7 @@ static void LocalPlayer_ReleaseSpeed(int key, struct InputDevice* device) {
 }
 
 
-static cc_bool LocalPlayer_TriggerFlyUp(int key, struct InputDevice* device) {
+static hc_bool LocalPlayer_TriggerFlyUp(int key, struct InputDevice* device) {
 	struct HacksComp* hacks = &LocalPlayer_Instances[device->mappedIndex].Hacks;
 	if (Gui.InputGrab) return false;
 	
@@ -980,7 +980,7 @@ static cc_bool LocalPlayer_TriggerFlyUp(int key, struct InputDevice* device) {
 	return hacks->CanFly && hacks->Enabled;
 }
 
-static cc_bool LocalPlayer_TriggerFlyDown(int key, struct InputDevice* device) {
+static hc_bool LocalPlayer_TriggerFlyDown(int key, struct InputDevice* device) {
 	struct HacksComp* hacks = &LocalPlayer_Instances[device->mappedIndex].Hacks;
 	if (Gui.InputGrab) return false;
 	
@@ -1025,7 +1025,7 @@ static void LocalPlayer_HookBinds(void) {
 	Bind_OnReleased[BIND_NOCLIP]  = LocalPlayer_ReleaseNoclip;
 }
 
-cc_bool LocalPlayer_CheckCanZoom(struct LocalPlayer* p) {
+hc_bool LocalPlayer_CheckCanZoom(struct LocalPlayer* p) {
 	if (p->Hacks.CanFly) return true;
 
 	if (!p->_warnedZoom) {
@@ -1094,7 +1094,7 @@ static void NetPlayer_RenderModel(struct Entity* e, float delta, float t) {
 	if (e->ShouldRender) Model_Render(e->Model, e);
 }
 
-static cc_bool NetPlayer_ShouldRenderName(struct Entity* e) {
+static hc_bool NetPlayer_ShouldRenderName(struct Entity* e) {
 	float distance;
 	int threshold;
 	if (!e->ShouldRender) return false;

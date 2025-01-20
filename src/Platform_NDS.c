@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_NDS
+#if defined HC_BUILD_NDS
 #include "_PlatformBase.h"
 #include "Stream.h"
 #include "ExtMath.h"
@@ -34,15 +34,15 @@
 #include <dirent.h>
 #include "_PlatformConsole.h"
 
-const cc_result ReturnCode_FileShareViolation = 1000000000; // not used
-const cc_result ReturnCode_FileNotFound     = ENOENT;
-const cc_result ReturnCode_DirectoryExists  = EEXIST;
-const cc_result ReturnCode_SocketInProgess  = EINPROGRESS;
-const cc_result ReturnCode_SocketWouldBlock = EWOULDBLOCK;
-const cc_result ReturnCode_SocketDropped    = EPIPE;
+const hc_result ReturnCode_FileShareViolation = 1000000000; // not used
+const hc_result ReturnCode_FileNotFound     = ENOENT;
+const hc_result ReturnCode_DirectoryExists  = EEXIST;
+const hc_result ReturnCode_SocketInProgess  = EINPROGRESS;
+const hc_result ReturnCode_SocketWouldBlock = EWOULDBLOCK;
+const hc_result ReturnCode_SocketDropped    = EPIPE;
 
-const char* Platform_AppNameSuffix = " NDS";
-cc_bool Platform_ReadonlyFilesystem;
+const char* Platform_AppNameSuffix = " (NDS)";
+hc_bool Platform_ReadonlyFilesystem;
 
 
 /*########################################################################################################################*
@@ -51,13 +51,13 @@ cc_bool Platform_ReadonlyFilesystem;
 static u32 last_raw;
 static u64 base_time;
 
-cc_uint64 Stopwatch_ElapsedMicroseconds(cc_uint64 beg, cc_uint64 end) {
+hc_uint64 Stopwatch_ElapsedMicroseconds(hc_uint64 beg, hc_uint64 end) {
 	if (end < beg) return 0;
 
 	return timerTicks2usec(end - beg);
 }
 
-cc_uint64 Stopwatch_Measure(void) {
+hc_uint64 Stopwatch_Measure(void) {
 	u32 raw = cpuGetTiming();
 	// Since counter is only a 32 bit integer, it overflows after a minute or two
 	if (last_raw > 0xF0000000 && raw < 0x10000000) {
@@ -88,7 +88,7 @@ void Platform_Log(const char* msg, int len) {
 TimeMS DateTime_CurrentUTC(void) {
 	struct timeval cur;
 	gettimeofday(&cur, NULL);
-	return (cc_uint64)cur.tv_sec + UNIX_EPOCH_SECONDS;
+	return (hc_uint64)cur.tv_sec + UNIX_EPOCH_SECONDS;
 }
 
 void DateTime_CurrentLocal(struct DateTime* t) {
@@ -109,24 +109,24 @@ void DateTime_CurrentLocal(struct DateTime* t) {
 /*########################################################################################################################*
 *-----------------------------------------------------Directory/File------------------------------------------------------*
 *#########################################################################################################################*/
-static cc_string root_path = String_FromConst("fat:/"); // may be overriden in InitFilesystem
+static hc_string root_path = String_FromConst("fat:/"); // may be overriden in InitFilesystem
 static bool fat_available;
 
-void Platform_EncodePath(cc_filepath* dst, const cc_string* path) {
+void Platform_EncodePath(hc_filepath* dst, const hc_string* path) {
 	char* str = dst->buffer;
 	Mem_Copy(str, root_path.buffer, root_path.length);
 	str += root_path.length;
 	String_EncodeUtf8(str, path);
 }
 
-cc_result Directory_Create(const cc_filepath* path) {
+hc_result Directory_Create(const hc_filepath* path) {
 	if (!fat_available) return 0;
 
 	Platform_Log1("mkdir %c", path->buffer);
 	return mkdir(path->buffer, 0) == -1 ? errno : 0;
 }
 
-int File_Exists(const cc_filepath* path) {
+int File_Exists(const hc_filepath* path) {
 	if (!fat_available) return false;
 	struct stat sb;
 	
@@ -134,9 +134,9 @@ int File_Exists(const cc_filepath* path) {
 	return stat(path->buffer, &sb) == 0 && S_ISREG(sb.st_mode);
 }
 
-cc_result Directory_Enum(const cc_string* dirPath, void* obj, Directory_EnumCallback callback) {
+hc_result Directory_Enum(const hc_string* dirPath, void* obj, Directory_EnumCallback callback) {
 	cc_string path; char pathBuffer[FILENAME_SIZE];
-	cc_filepath str;
+	hc_filepath str;
 	struct dirent* entry;
 	int res;
 
@@ -171,53 +171,53 @@ cc_result Directory_Enum(const cc_string* dirPath, void* obj, Directory_EnumCall
 	return res;
 }
 
-static cc_result File_Do(cc_file* file, const char* path, int mode, const char* type) {
+static hc_result File_Do(hc_file* file, const char* path, int mode, const char* type) {
 	Platform_Log2("%c %c", type, path);
 
 	*file = open(path, mode, 0);
 	return *file == -1 ? errno : 0;
 }
 
-cc_result File_Open(cc_file* file, const cc_filepath* path) {
+hc_result File_Open(hc_file* file, const hc_filepath* path) {
 	if (!fat_available) return ReturnCode_FileNotFound;
 	return File_Do(file, path->buffer, O_RDONLY, "Open");
 }
 
-cc_result File_Create(cc_file* file, const cc_filepath* path) {
+hc_result File_Create(hc_file* file, const hc_filepath* path) {
 	if (!fat_available) return ENOTSUP;
 	return File_Do(file, path->buffer, O_RDWR | O_CREAT | O_TRUNC, "Create");
 }
 
-cc_result File_OpenOrCreate(cc_file* file, const cc_filepath* path) {
+hc_result File_OpenOrCreate(hc_file* file, const hc_filepath* path) {
 	if (!fat_available) return ENOTSUP;
 	return File_Do(file, path->buffer, O_RDWR | O_CREAT, "Update");
 }
 
-cc_result File_Read(cc_file file, void* data, cc_uint32 count, cc_uint32* bytesRead) {
+hc_result File_Read(hc_file file, void* data, hc_uint32 count, hc_uint32* bytesRead) {
 	*bytesRead = read(file, data, count);
 	return *bytesRead == -1 ? errno : 0;
 }
 
-cc_result File_Write(cc_file file, const void* data, cc_uint32 count, cc_uint32* bytesWrote) {
+hc_result File_Write(hc_file file, const void* data, hc_uint32 count, hc_uint32* bytesWrote) {
 	*bytesWrote = write(file, data, count);
 	return *bytesWrote == -1 ? errno : 0;
 }
 
-cc_result File_Close(cc_file file) {
+hc_result File_Close(hc_file file) {
 	return close(file) == -1 ? errno : 0;
 }
 
-cc_result File_Seek(cc_file file, int offset, int seekType) {
-	static cc_uint8 modes[3] = { SEEK_SET, SEEK_CUR, SEEK_END };
+hc_result File_Seek(hc_file file, int offset, int seekType) {
+	static hc_uint8 modes[3] = { SEEK_SET, SEEK_CUR, SEEK_END };
 	return lseek(file, offset, modes[seekType]) == -1 ? errno : 0;
 }
 
-cc_result File_Position(cc_file file, cc_uint32* pos) {
+hc_result File_Position(hc_file file, hc_uint32* pos) {
 	*pos = lseek(file, 0, SEEK_CUR);
 	return *pos == -1 ? errno : 0;
 }
 
-cc_result File_Length(cc_file file, cc_uint32* len) {
+hc_result File_Length(hc_file file, hc_uint32* len) {
 	struct stat st;
 	if (fstat(file, &st) == -1) { *len = -1; return errno; }
 	*len = st.st_size; return 0;
@@ -261,7 +261,7 @@ static void InitFilesystem(void) {
 *--------------------------------------------------------Threading--------------------------------------------------------*
 *#########################################################################################################################*/
 // !!! NOTE: PSP uses cooperative multithreading (not preemptive multithreading) !!!
-void Thread_Sleep(cc_uint32 milliseconds) { 
+void Thread_Sleep(hc_uint32 milliseconds) { 
 	swiDelay(8378 * milliseconds); // TODO probably wrong
 }
 
@@ -301,16 +301,16 @@ void Waitable_Signal(void* handle) {
 void Waitable_Wait(void* handle) {
 }
 
-void Waitable_WaitFor(void* handle, cc_uint32 milliseconds) {
+void Waitable_WaitFor(void* handle, hc_uint32 milliseconds) {
 }
 
 
 /*########################################################################################################################*
 *---------------------------------------------------------Socket----------------------------------------------------------*
 *#########################################################################################################################*/
-static cc_bool net_supported = true;
+static hc_bool net_supported = true;
 
-static cc_result ParseHost(const char* host, int port, cc_sockaddr* addrs, int* numValidAddrs) {
+static hc_result ParseHost(const char* host, int port, hc_sockaddr* addrs, int* numValidAddrs) {
 	struct hostent* res = gethostbyname(host);
 	struct sockaddr_in* addr4;
 	char* src_addr;
@@ -340,7 +340,7 @@ static cc_result ParseHost(const char* host, int port, cc_sockaddr* addrs, int* 
 	return i == 0 ? ERR_INVALID_ARGUMENT : 0;
 }
 
-cc_result Socket_ParseAddress(const cc_string* address, int port, cc_sockaddr* addrs, int* numValidAddrs) {
+hc_result Socket_ParseAddress(const hc_string* address, int port, hc_sockaddr* addrs, int* numValidAddrs) {
 	struct sockaddr_in* addr4 = (struct sockaddr_in*)addrs[0].data;
 	char str[NATIVE_STR_LEN];
 	String_EncodeUtf8(str, address);
@@ -359,7 +359,7 @@ cc_result Socket_ParseAddress(const cc_string* address, int port, cc_sockaddr* a
 	return ParseHost(str, port, addrs, numValidAddrs);
 }
 
-cc_result Socket_Create(cc_socket* s, cc_sockaddr* addr, cc_bool nonblocking) {
+hc_result Socket_Create(hc_socket* s, hc_sockaddr* addr, hc_bool nonblocking) {
 	struct sockaddr* raw = (struct sockaddr*)addr->data;
 	if (!net_supported) { *s = -1; return ERR_NO_NETWORKING; }
 
@@ -373,34 +373,34 @@ cc_result Socket_Create(cc_socket* s, cc_sockaddr* addr, cc_bool nonblocking) {
 	return 0;
 }
 
-cc_result Socket_Connect(cc_socket s, cc_sockaddr* addr) {
+hc_result Socket_Connect(hc_socket s, hc_sockaddr* addr) {
 	struct sockaddr* raw = (struct sockaddr*)addr->data;
 
 	int res = connect(s, raw, addr->size);
 	return res < 0 ? errno : 0;
 }
 
-cc_result Socket_Read(cc_socket s, cc_uint8* data, cc_uint32 count, cc_uint32* modified) {
+hc_result Socket_Read(hc_socket s, hc_uint8* data, hc_uint32 count, hc_uint32* modified) {
 	int res = recv(s, data, count, 0);
 	if (res < 0) { *modified = 0; return errno; }
 	
 	*modified = res; return 0;
 }
 
-cc_result Socket_Write(cc_socket s, const cc_uint8* data, cc_uint32 count, cc_uint32* modified) {
+hc_result Socket_Write(hc_socket s, const hc_uint8* data, hc_uint32 count, hc_uint32* modified) {
 	int res = send(s, data, count, 0);
 	if (res < 0) { *modified = 0; return errno; }
 	
 	*modified = res; return 0;
 }
 
-void Socket_Close(cc_socket s) {
+void Socket_Close(hc_socket s) {
 	shutdown(s, 2); // SHUT_RDWR = 2
 	closesocket(s);
 }
 
 // libogc only implements net_select for gamecube currently
-static cc_result Socket_Poll(cc_socket s, int mode, cc_bool* success) {
+static hc_result Socket_Poll(hc_socket s, int mode, hc_bool* success) {
 	fd_set set;
 	struct timeval time = { 0 };
 	int res; // number of 'ready' sockets
@@ -415,13 +415,13 @@ static cc_result Socket_Poll(cc_socket s, int mode, cc_bool* success) {
 	*success = FD_ISSET(s, &set) != 0; return 0;
 }
 
-cc_result Socket_CheckReadable(cc_socket s, cc_bool* readable) {
+hc_result Socket_CheckReadable(hc_socket s, hc_bool* readable) {
 	return Socket_Poll(s, SOCKET_POLL_READ, readable);
 }
 
-cc_result Socket_CheckWritable(cc_socket s, cc_bool* writable) {
+hc_result Socket_CheckWritable(hc_socket s, hc_bool* writable) {
 	int resultSize = sizeof(int);
-	cc_result res  = Socket_Poll(s, SOCKET_POLL_WRITE, writable);
+	hc_result res  = Socket_Poll(s, SOCKET_POLL_WRITE, writable);
 	if (res || *writable) return res;
 	
 	/* https://stackoverflow.com/questions/29479953/so-error-value-after-successful-socket-operation */
@@ -456,7 +456,7 @@ static void InitNetworking(void) {
 *--------------------------------------------------------Platform---------------------------------------------------------*
 *#########################################################################################################################*/
 void Platform_Init(void) {
-	cc_bool dsiMode = isDSiMode();
+	hc_bool dsiMode = isDSiMode();
 	Platform_Log1("Running in %c mode", dsiMode ? "DSi" : "DS");
 
 	InitFilesystem();
@@ -465,7 +465,7 @@ void Platform_Init(void) {
 }
 void Platform_Free(void) { }
 
-cc_bool Platform_DescribeError(cc_result res, cc_string* dst) {
+hc_bool Platform_DescribeError(hc_result res, hc_string* dst) {
 	char chars[NATIVE_STR_LEN];
 	int len;
 
@@ -482,8 +482,8 @@ cc_bool Platform_DescribeError(cc_result res, cc_string* dst) {
 	return true;
 }
 
-cc_bool Process_OpenSupported = false;
-cc_result Process_StartOpen(const cc_string* args) {
+hc_bool Process_OpenSupported = false;
+hc_result Process_StartOpen(const hc_string* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
@@ -493,7 +493,7 @@ cc_result Process_StartOpen(const cc_string* args) {
 *#########################################################################################################################*/
 #define MACHINE_KEY "NDS_NDS_NDS_NDS_"
 
-static cc_result GetMachineID(cc_uint32* key) {
+static hc_result GetMachineID(hc_uint32* key) {
 	Mem_Copy(key, MACHINE_KEY, sizeof(MACHINE_KEY) - 1);
 	return 0;
 }

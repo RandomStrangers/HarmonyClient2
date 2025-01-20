@@ -1,7 +1,7 @@
-#ifndef CC_PROTOCOL_H
-#define CC_PROTOCOL_H
+#ifndef HC_PROTOCOL_H
+#define HC_PROTOCOL_H
 #include "Vectors.h"
-CC_BEGIN_HEADER
+HC_BEGIN_HEADER
 
 /* 
 Implements network protocols for original classic, CPE, and WoM textures
@@ -50,12 +50,12 @@ enum PROTOCOL_VERSION_ {
 };
 
 
-typedef void (*Net_Handler)(cc_uint8* data);
+typedef void (*Net_Handler)(hc_uint8* data);
 #define Net_Set(opcode, handler, size) Protocol.Handlers[opcode] = handler; Protocol.Sizes[opcode] = size;
 
-CC_VAR extern struct _ProtocolData {
+HC_VAR extern struct _ProtocolData {
 	/* Size of each packet including opcode */
-	cc_uint16 Sizes[256];
+	hc_uint16 Sizes[256];
 	/* Handlers for processing received packets */
 	Net_Handler Handlers[256];
 } Protocol;
@@ -66,14 +66,14 @@ extern struct IGameComponent Protocol_Component;
 
 void Protocol_Tick(void);
 
-extern cc_bool cpe_needD3Fix;
-void Classic_SendChat(const cc_string* text, cc_bool partial);\
-void Classic_SendSetBlock(int x, int y, int z, cc_bool place, BlockID block);
+extern hc_bool cpe_needD3Fix;
+void Classic_SendChat(const hc_string* text, hc_bool partial);\
+void Classic_SendSetBlock(int x, int y, int z, hc_bool place, BlockID block);
 void Classic_SendLogin(void);
-void CPE_SendPlayerClick(int button, cc_bool pressed, cc_uint8 targetId, struct RayTracer* t);
+void CPE_SendPlayerClick(int button, hc_bool pressed, hc_uint8 targetId, struct RayTracer* t);
 
 /* Send a PluginMessage to the server; data must contain 64 bytes. */
-CC_API void CPE_SendPluginMessage(cc_uint8 channel, cc_uint8* data);
+HC_API void CPE_SendPluginMessage(hc_uint8 channel, hc_uint8* data);
 
-CC_END_HEADER
+HC_END_HEADER
 #endif

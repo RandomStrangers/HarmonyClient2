@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_PS1
+#if defined HC_BUILD_PS1
 #include "Window.h"
 #include "Platform.h"
 #include "Input.h"
@@ -23,9 +23,9 @@
 #define SCREEN_XRES	320
 #define SCREEN_YRES	240
 
-static cc_bool launcherMode;
+static hc_bool launcherMode;
 struct _DisplayData DisplayInfo;
-struct cc_window WindowInfo;
+struct hc_window WindowInfo;
 static DISPENV disp;
 
 void Window_PreInit(void) { }
@@ -65,13 +65,13 @@ void Window_Create3D(int width, int height) {
 
 void Window_Destroy(void) { }
 
-void Window_SetTitle(const cc_string* title) { }
-void Clipboard_GetText(cc_string* value) { }
-void Clipboard_SetText(const cc_string* value) { }
+void Window_SetTitle(const hc_string* title) { }
+void Clipboard_GetText(hc_string* value) { }
+void Clipboard_SetText(const hc_string* value) { }
 
 int Window_GetWindowState(void) { return WINDOW_STATE_FULLSCREEN; }
-cc_result Window_EnterFullscreen(void) { return 0; }
-cc_result Window_ExitFullscreen(void)  { return 0; }
+hc_result Window_EnterFullscreen(void) { return 0; }
+hc_result Window_ExitFullscreen(void)  { return 0; }
 int Window_IsObscured(void)            { return 0; }
 
 void Window_Show(void) { }
@@ -194,7 +194,7 @@ void Window_FreeFramebuffer(struct Bitmap* bmp) {
 *------------------------------------------------------Soft keyboard------------------------------------------------------*
 *#########################################################################################################################*/
 void OnscreenKeyboard_Open(struct OpenKeyboardArgs* args) { /* TODO implement */ }
-void OnscreenKeyboard_SetText(const cc_string* text) { }
+void OnscreenKeyboard_SetText(const hc_string* text) { }
 void OnscreenKeyboard_Close(void) { /* TODO implement */ }
 
 
@@ -207,11 +207,11 @@ void Window_ShowDialog(const char* title, const char* msg) {
 	Platform_LogConst(msg);
 }
 
-cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
+hc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
-cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
+hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 #endif

@@ -1,5 +1,5 @@
 #include "LWeb.h"
-#ifndef CC_BUILD_WEB
+#ifndef HC_BUILD_WEB
 #include "String.h"
 #include "Launcher.h"
 #include "Platform.h"
@@ -24,19 +24,19 @@
 /* Consumes n characters from the JSON stream */
 #define JsonContext_Consume(ctx, n) ctx->cur += n; ctx->left -= n;
 
-static const cc_string strTrue  = String_FromConst("true");
-static const cc_string strFalse = String_FromConst("false");
-static const cc_string strNull  = String_FromConst("null");
+static const hc_string strTrue  = String_FromConst("true");
+static const hc_string strFalse = String_FromConst("false");
+static const hc_string strNull  = String_FromConst("null");
 
-static cc_bool Json_IsWhitespace(char c) {
+static hc_bool Json_IsWhitespace(char c) {
 	return c == '\r' || c == '\n' || c == '\t' || c == ' ';
 }
 
-static cc_bool Json_IsNumber(char c) {
+static hc_bool Json_IsNumber(char c) {
 	return c == '-' || c == '.' || (c >= '0' && c <= '9');
 }
 
-static cc_bool Json_ConsumeConstant(struct JsonContext* ctx, const cc_string* value) {
+static hc_bool Json_ConsumeConstant(struct JsonContext* ctx, const hc_string* value) {
 	int i;
 	if (value->length > ctx->left) return false;
 
@@ -70,13 +70,13 @@ static int Json_ConsumeToken(struct JsonContext* ctx) {
 	return TOKEN_NONE;
 }
 
-static cc_string Json_ConsumeNumber(struct JsonContext* ctx) {
+static hc_string Json_ConsumeNumber(struct JsonContext* ctx) {
 	int len = 0;
 	for (; ctx->left && Json_IsNumber(*ctx->cur); len++) { JsonContext_Consume(ctx, 1); }
 	return String_Init(ctx->cur - len, len, len);
 }
 
-static void Json_ConsumeString(struct JsonContext* ctx, cc_string* str) {
+static void Json_ConsumeString(struct JsonContext* ctx, hc_string* str) {
 	int codepoint, h[4];
 	char c;
 	str->length = 0;
@@ -105,11 +105,11 @@ static void Json_ConsumeString(struct JsonContext* ctx, cc_string* str) {
 
 	ctx->failed = true; str->length = 0;
 }
-static cc_string Json_ConsumeValue(int token, struct JsonContext* ctx);
+static hc_string Json_ConsumeValue(int token, struct JsonContext* ctx);
 
 static void Json_ConsumeObject(struct JsonContext* ctx) {
 	char keyBuffer[STRING_SIZE];
-	cc_string value, oldKey = ctx->curKey;
+	hc_string value, oldKey = ctx->curKey;
 	int token;
 	ctx->depth++;
 	ctx->OnNewObject(ctx);
@@ -137,7 +137,7 @@ static void Json_ConsumeObject(struct JsonContext* ctx) {
 }
 
 static void Json_ConsumeArray(struct JsonContext* ctx) {
-	cc_string value;
+	hc_string value;
 	int token;
 	ctx->depth++;
 	ctx->OnNewArray(ctx);
@@ -154,7 +154,7 @@ static void Json_ConsumeArray(struct JsonContext* ctx) {
 	ctx->depth--;
 }
 
-static cc_string Json_ConsumeValue(int token, struct JsonContext* ctx) {
+static hc_string Json_ConsumeValue(int token, struct JsonContext* ctx) {
 	switch (token) {
 	case '{': Json_ConsumeObject(ctx); break;
 	case '[': Json_ConsumeArray(ctx);  break;
@@ -169,7 +169,7 @@ static cc_string Json_ConsumeValue(int token, struct JsonContext* ctx) {
 }
 
 static void Json_NullOnNew(struct JsonContext* ctx) { }
-static void Json_NullOnValue(struct JsonContext* ctx, const cc_string* v) { }
+static void Json_NullOnValue(struct JsonContext* ctx, const hc_string* v) { }
 void Json_Init(struct JsonContext* ctx, STRING_REF char* str, int len) {
 	ctx->cur    = str;
 	ctx->left   = len;
@@ -183,7 +183,7 @@ void Json_Init(struct JsonContext* ctx, STRING_REF char* str, int len) {
 	String_InitArray(ctx->_tmp, ctx->_tmpBuffer);
 }
 
-cc_bool Json_Parse(struct JsonContext* ctx) {
+hc_bool Json_Parse(struct JsonContext* ctx) {
 	int token;
 	do {
 		token = Json_ConsumeToken(ctx);
@@ -193,7 +193,7 @@ cc_bool Json_Parse(struct JsonContext* ctx) {
 	return !ctx->failed;
 }
 
-static cc_bool Json_Handle(cc_uint8* data, cc_uint32 len, 
+static hc_bool Json_Handle(hc_uint8* data, hc_uint32 len, 
 						JsonOnValue onVal, JsonOnNew newArr, JsonOnNew newObj) {
 	struct JsonContext ctx;
 	/* NOTE: classicube.net uses \u JSON for non ASCII, no need to UTF8 convert characters here */
@@ -210,7 +210,7 @@ static cc_bool Json_Handle(cc_uint8* data, cc_uint32 len,
 *--------------------------------------------------------Web task---------------------------------------------------------*
 *#########################################################################################################################*/
 static char servicesBuffer[FILENAME_SIZE];
-static cc_string servicesServer = String_FromArray(servicesBuffer);
+static hc_string servicesServer = String_FromArray(servicesBuffer);
 static struct StringsBuffer ccCookies;
 
 static void LWebTask_Reset(struct LWebTask* task) {
@@ -257,7 +257,7 @@ void LWebTasks_Init(void) {
 */
 struct GetTokenTaskData GetTokenTask;
 
-static void GetTokenTask_OnValue(struct JsonContext* ctx, const cc_string* str) {
+static void GetTokenTask_OnValue(struct JsonContext* ctx, const hc_string* str) {
 	if (String_CaselessEqualsConst(&ctx->curKey, "token")) {
 		String_Copy(&GetTokenTask.token, str);
 	} else if (String_CaselessEqualsConst(&ctx->curKey, "username")) {
@@ -267,15 +267,15 @@ static void GetTokenTask_OnValue(struct JsonContext* ctx, const cc_string* str) 
 	}
 }
 
-static void GetTokenTask_Handle(cc_uint8* data, cc_uint32 len) {
-	static cc_string err_msg = String_FromConst("Error parsing get login token response JSON");
+static void GetTokenTask_Handle(hc_uint8* data, hc_uint32 len) {
+	static hc_string err_msg = String_FromConst("Error parsing get login token response JSON");
 
-	cc_bool success = Json_Handle(data, len, GetTokenTask_OnValue, NULL, NULL);
+	hc_bool success = Json_Handle(data, len, GetTokenTask_OnValue, NULL, NULL);
 	if (!success) Logger_WarnFunc(&err_msg);
 }
 
 void GetTokenTask_Run(void) {
-	cc_string url; char urlBuffer[URL_MAX_SIZE];
+	hc_string url; char urlBuffer[URL_MAX_SIZE];
 	static char tokenBuffer[STRING_SIZE];
 	static char userBuffer[STRING_SIZE];
 	if (GetTokenTask.Base.working) return;
@@ -309,9 +309,9 @@ void GetTokenTask_Run(void) {
 */
 struct SignInTaskData SignInTask;
 
-static void SignInTask_LogError(const cc_string* str) {
+static void SignInTask_LogError(const hc_string* str) {
 	static char errBuffer[128];
-	cc_string err;
+	hc_string err;
 
 	if (String_CaselessEqualsConst(str, "username") || String_CaselessEqualsConst(str, "password")) {
 		SignInTask.error   = "&cWrong username or password";
@@ -329,7 +329,7 @@ static void SignInTask_LogError(const cc_string* str) {
 	}
 }
 
-static void SignInTask_OnValue(struct JsonContext* ctx, const cc_string* str) {
+static void SignInTask_OnValue(struct JsonContext* ctx, const hc_string* str) {
 	if (String_CaselessEqualsConst(&ctx->curKey, "username")) {
 		String_Copy(&SignInTask.username, str);
 	} else if (String_CaselessEqualsConst(&ctx->curKey, "errors")) {
@@ -337,22 +337,22 @@ static void SignInTask_OnValue(struct JsonContext* ctx, const cc_string* str) {
 	}
 }
 
-static void SignInTask_Handle(cc_uint8* data, cc_uint32 len) {
-	static cc_string err_msg = String_FromConst("Error parsing sign in response JSON");
+static void SignInTask_Handle(hc_uint8* data, hc_uint32 len) {
+	static hc_string err_msg = String_FromConst("Error parsing sign in response JSON");
 
-	cc_bool success = Json_Handle(data, len, SignInTask_OnValue, NULL, NULL);
+	hc_bool success = Json_Handle(data, len, SignInTask_OnValue, NULL, NULL);
 	if (!success) Logger_WarnFunc(&err_msg);
 }
 
-static void SignInTask_Append(cc_string* dst, const char* key, const cc_string* value) {
+static void SignInTask_Append(hc_string* dst, const char* key, const hc_string* value) {
 	String_AppendConst(dst, key);
 	Http_UrlEncodeUtf8(dst, value);
 }
 
-void SignInTask_Run(const cc_string* user, const cc_string* pass, const cc_string* mfaCode) {
-	cc_string url; char urlBuffer[URL_MAX_SIZE];
+void SignInTask_Run(const hc_string* user, const hc_string* pass, const hc_string* mfaCode) {
+	hc_string url; char urlBuffer[URL_MAX_SIZE];
 	static char userBuffer[STRING_SIZE];
-	cc_string args; char argsBuffer[1024];
+	hc_string args; char argsBuffer[1024];
 	if (SignInTask.Base.working) return;
 
 	LWebTask_Reset(&SignInTask.Base);
@@ -403,7 +403,7 @@ static void ServerInfo_Init(struct ServerInfo* info) {
 	info->_order     = -100000;
 }
 
-static void ServerInfo_Parse(struct JsonContext* ctx, const cc_string* val) {
+static void ServerInfo_Parse(struct JsonContext* ctx, const hc_string* val) {
 	struct ServerInfo* info = curServer;
 	if (String_CaselessEqualsConst(&ctx->curKey, "hash")) {
 		String_Copy(&info->hash, val);
@@ -435,13 +435,13 @@ static void ServerInfo_Parse(struct JsonContext* ctx, const cc_string* val) {
 	}
 }
 
-static void FetchServerTask_Handle(cc_uint8* data, cc_uint32 len) {
+static void FetchServerTask_Handle(hc_uint8* data, hc_uint32 len) {
 	curServer = &FetchServerTask.server;
 	Json_Handle(data, len, ServerInfo_Parse, NULL, NULL);
 }
 
-void FetchServerTask_Run(const cc_string* hash) {
-	cc_string url; char urlBuffer[URL_MAX_SIZE];
+void FetchServerTask_Run(const hc_string* hash) {
+	hc_string url; char urlBuffer[URL_MAX_SIZE];
 	if (FetchServerTask.Base.working) return;
 
 	LWebTask_Reset(&FetchServerTask.Base);
@@ -483,11 +483,11 @@ static void FetchServersTask_Next(struct JsonContext* ctx) {
 	ServerInfo_Init(curServer);
 }
 
-static void FetchServersTask_Handle(cc_uint8* data, cc_uint32 len) {
-	static cc_string err_msg = String_FromConst("Error parsing servers list response JSON");
+static void FetchServersTask_Handle(hc_uint8* data, hc_uint32 len) {
+	static hc_string err_msg = String_FromConst("Error parsing servers list response JSON");
 
 	int count;
-	cc_bool success;
+	hc_bool success;
 	Mem_Free(FetchServersTask.servers);
 	Mem_Free(FetchServersTask.orders);
 	Session_Save();
@@ -503,14 +503,14 @@ static void FetchServersTask_Handle(cc_uint8* data, cc_uint32 len) {
 	if (!success) Logger_WarnFunc(&err_msg);
 	if (count <= 0) return;
 	FetchServersTask.servers = (struct ServerInfo*)Mem_Alloc(count, sizeof(struct ServerInfo), "servers list");
-	FetchServersTask.orders  = (cc_uint16*)Mem_Alloc(count, 2, "servers order");
+	FetchServersTask.orders  = (hc_uint16*)Mem_Alloc(count, 2, "servers order");
 
 	curServer = FetchServersTask.servers - 1;
 	Json_Handle(data, len, ServerInfo_Parse, NULL, FetchServersTask_Next);
 }
 
 void FetchServersTask_Run(void) {
-	cc_string url; char urlBuffer[URL_MAX_SIZE];
+	hc_string url; char urlBuffer[URL_MAX_SIZE];
 	if (FetchServersTask.Base.working) return;
 
 	LWebTask_Reset(&FetchServersTask.Base);
@@ -540,9 +540,9 @@ void FetchServersTask_ResetOrder(void) {
 struct CheckUpdateData CheckUpdateTask;
 static char relVersionBuffer[16];
 
-CC_NOINLINE static cc_uint64 CheckUpdateTask_ParseTime(const cc_string* str) {
-	cc_string time, fractional;
-	cc_uint64 secs;
+HC_NOINLINE static hc_uint64 CheckUpdateTask_ParseTime(const hc_string* str) {
+	hc_string time, fractional;
+	hc_uint64 secs;
 	/* timestamp is in form of "seconds.fractional" */
 	/* But only need to care about the seconds here */
 	String_UNSAFE_Separate(str, '.', &time, &fractional);
@@ -551,7 +551,7 @@ CC_NOINLINE static cc_uint64 CheckUpdateTask_ParseTime(const cc_string* str) {
 	return secs;
 }
 
-static void CheckUpdateTask_OnValue(struct JsonContext* ctx, const cc_string* str) {
+static void CheckUpdateTask_OnValue(struct JsonContext* ctx, const hc_string* str) {
 	if (String_CaselessEqualsConst(&ctx->curKey, "release_version")) {
 		String_Copy(&CheckUpdateTask.latestRelease, str);
 	} else if (String_CaselessEqualsConst(&ctx->curKey, "latest_ts")) {
@@ -561,15 +561,15 @@ static void CheckUpdateTask_OnValue(struct JsonContext* ctx, const cc_string* st
 	}
 }
 
-static void CheckUpdateTask_Handle(cc_uint8* data, cc_uint32 len) {
-	static cc_string err_msg = String_FromConst("Error parsing update check response JSON");
+static void CheckUpdateTask_Handle(hc_uint8* data, hc_uint32 len) {
+	static hc_string err_msg = String_FromConst("Error parsing update check response JSON");
 
-	cc_bool success = Json_Handle(data, len, CheckUpdateTask_OnValue, NULL, NULL);
+	hc_bool success = Json_Handle(data, len, CheckUpdateTask_OnValue, NULL, NULL);
 	if (!success) Logger_WarnFunc(&err_msg);
 }
 
 void CheckUpdateTask_Run(void) {
-	static const cc_string url = String_FromConst(UPDATES_SERVER "/builds.json");
+	static const hc_string url = String_FromConst(UPDATES_SERVER "/builds.json");
 	if (CheckUpdateTask.Base.working) return;
 
 	LWebTask_Reset(&CheckUpdateTask.Base);
@@ -584,9 +584,9 @@ void CheckUpdateTask_Run(void) {
 *-----------------------------------------------------FetchUpdateTask-----------------------------------------------------*
 *#########################################################################################################################*/
 struct FetchUpdateData FetchUpdateTask;
-static void FetchUpdateTask_Handle(cc_uint8* data, cc_uint32 len) {
-	static const cc_string path = String_FromConst(UPDATE_FILE);
-	cc_result res;
+static void FetchUpdateTask_Handle(hc_uint8* data, hc_uint32 len) {
+	static const hc_string path = String_FromConst(UPDATE_FILE);
+	hc_result res;
 
 	res = Stream_WriteAllTo(&path, data, len);
 	if (res) { Logger_SysWarn(res, "saving update"); return; }
@@ -597,13 +597,13 @@ static void FetchUpdateTask_Handle(cc_uint8* data, cc_uint32 len) {
 	res = Updater_MarkExecutable();
 	if (res) Logger_SysWarn(res, "making update executable");
 
-#ifdef CC_BUILD_WIN
+#ifdef HC_BUILD_WIN
 	Options_SetBool("update-dirty", true);
 #endif
 }
 
-void FetchUpdateTask_Run(cc_bool release, int buildIndex) {
-	cc_string url; char urlBuffer[URL_MAX_SIZE];
+void FetchUpdateTask_Run(hc_bool release, int buildIndex) {
+	hc_string url; char urlBuffer[URL_MAX_SIZE];
 	String_InitArray(url, urlBuffer);
 
 	String_Format2(&url, UPDATES_SERVER "/%c/%c",
@@ -625,7 +625,7 @@ static int flagsCount, flagsCapacity;
 static struct Flag* flags;
 
 static void FetchFlagsTask_DownloadNext(void);
-static void FetchFlagsTask_Handle(cc_uint8* data, cc_uint32 len) {
+static void FetchFlagsTask_Handle(hc_uint8* data, hc_uint32 len) {
 	struct Flag* flag = &flags[FetchFlagsTask.count];
 	LBackend_DecodeFlag(flag, data, len);
 	
@@ -634,7 +634,7 @@ static void FetchFlagsTask_Handle(cc_uint8* data, cc_uint32 len) {
 }
 
 static void FetchFlagsTask_DownloadNext(void) {
-	cc_string url; char urlBuffer[URL_MAX_SIZE];
+	hc_string url; char urlBuffer[URL_MAX_SIZE];
 	String_InitArray(url, urlBuffer);
 
 	if (FetchFlagsTask.Base.working)        return;
@@ -704,11 +704,11 @@ void Flags_Free(void) {
 /*########################################################################################################################*
 *------------------------------------------------------Session cache------------------------------------------------------*
 *#########################################################################################################################*/
-static cc_string sessionKey = String_FromConst("session");
-static cc_bool loadedSession;
+static hc_string sessionKey = String_FromConst("session");
+static hc_bool loadedSession;
 
 void Session_Load(void) {
-	cc_string session; char buffer[3072];
+	hc_string session; char buffer[3072];
 	if (loadedSession) return;
 	loadedSession = true;
 	/* Increase from max 512 to 2048 per entry */
@@ -721,7 +721,7 @@ void Session_Load(void) {
 }
 
 void Session_Save(void) {
-	cc_string session = EntryList_UNSAFE_Get(&ccCookies, &sessionKey, '=');
+	hc_string session = EntryList_UNSAFE_Get(&ccCookies, &sessionKey, '=');
 	if (!session.length) return;
 	Options_SetSecure(LOPT_SESSION, &session);
 }

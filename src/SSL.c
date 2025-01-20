@@ -1,7 +1,7 @@
 #include "SSL.h"
 #include "Errors.h"
 
-#if CC_SSL_BACKEND == CC_SSL_BACKEND_SCHANNEL
+#if HC_SSL_BACKEND == HC_SSL_BACKEND_SCHANNEL
 #define WIN32_LEAN_AND_MEAN
 #define NOSERVICE
 #define NOMCX
@@ -24,7 +24,7 @@
 
 static void* schannel_lib;
 static INIT_SECURITY_INTERFACE_A _InitSecurityInterfaceA;
-static cc_bool _verifyCerts;
+static hc_bool _verifyCerts;
 
 static ACQUIRE_CREDENTIALS_HANDLE_FN_A  FP_AcquireCredentialsHandleA;
 static FREE_CREDENTIALS_HANDLE_FN       FP_FreeCredentialsHandle;
@@ -37,7 +37,7 @@ static FREE_CONTEXT_BUFFER_FN           FP_FreeContextBuffer;
 static ENCRYPT_MESSAGE_FN               FP_EncryptMessage;
 static DECRYPT_MESSAGE_FN               FP_DecryptMessage;
 
-void SSLBackend_Init(cc_bool verifyCerts) {
+void SSLBackend_Init(hc_bool verifyCerts) {
 	/* secur32.dll is available on Win9x and later */
 	/* Security.dll is available on NT 4 and later */
 
@@ -50,13 +50,13 @@ void SSLBackend_Init(cc_bool verifyCerts) {
 	static const struct DynamicLibSym funcs[] = {
 		DynamicLib_Sym(InitSecurityInterfaceA)
 	};
-	static const cc_string schannel = String_FromConst("schannel.dll");
+	static const hc_string schannel = String_FromConst("schannel.dll");
 	_verifyCerts = verifyCerts;
 	/* TODO: Load later?? it's unsafe to do on a background thread though */
 	DynamicLib_LoadAll(&schannel, funcs, Array_Elems(funcs), &schannel_lib);
 }
 
-cc_bool SSLBackend_DescribeError(cc_result res, cc_string* dst) {
+hc_bool SSLBackend_DescribeError(hc_result res, hc_string* dst) {
 	switch (res) {
 	case SEC_E_UNTRUSTED_ROOT:
 		String_AppendConst(dst, "The website's SSL certificate was issued by an authority that is not trusted");
@@ -78,7 +78,7 @@ cc_bool SSLBackend_DescribeError(cc_result res, cc_string* dst) {
 
 
 struct SSLContext {
-	cc_socket socket;
+	hc_socket socket;
 	CredHandle handle;
 	CtxtHandle context;
 	SecPkgContext_StreamSizes sizes;
@@ -105,9 +105,9 @@ static SECURITY_STATUS SSL_CreateHandle(struct SSLContext* ctx) {
 						&cred, NULL, NULL, &ctx->handle, NULL);
 }
 
-static cc_result SSL_RecvRaw(struct SSLContext* ctx) {
-	cc_uint32 read;
-	cc_result res;
+static hc_result SSL_RecvRaw(struct SSLContext* ctx) {
+	hc_uint32 read;
+	hc_result res;
 	
 	/* server is sending too much garbage data instead of proper TLS packets ?? */
 	if (ctx->bufferLen == sizeof(ctx->incoming)) return ERR_INVALID_ARGUMENT;
@@ -157,9 +157,9 @@ static SECURITY_STATUS SSL_Negotiate(struct SSLContext* ctx) {
 	SecBuffer out_buffers[1];
 	SecBufferDesc in_desc;
 	SecBufferDesc out_desc;
-	cc_uint32 leftover_len;
+	hc_uint32 leftover_len;
 	SECURITY_STATUS sec;
-	cc_result res;
+	hc_result res;
 	DWORD flags;
 
 	for (;;)
@@ -241,11 +241,11 @@ static void SSL_LoadSecurityFunctions(PSecurityFunctionTableA sspiFPs) {
 	if (!FP_DecryptMessage) FP_DecryptMessage = (DECRYPT_MESSAGE_FN)sspiFPs->Reserved4;
 }
 
-cc_result SSL_Init(cc_socket socket, const cc_string* host_, void** out_ctx) {
+hc_result SSL_Init(hc_socket socket, const hc_string* host_, void** out_ctx) {
 	PSecurityFunctionTableA sspiFPs;
 	struct SSLContext* ctx;
 	SECURITY_STATUS res;
-	cc_winstring host;
+	hc_winstring host;
 	if (!_InitSecurityInterfaceA) return HTTP_ERR_NO_SSL;
 
 	if (!FP_InitializeSecurityContextA) {
@@ -271,7 +271,7 @@ cc_result SSL_Init(cc_socket socket, const cc_string* host_, void** out_ctx) {
 }
 
 
-static cc_result SSL_ReadDecrypted(struct SSLContext* ctx, cc_uint8* data, cc_uint32 count, cc_uint32* read) {
+static hc_result SSL_ReadDecrypted(struct SSLContext* ctx, hc_uint8* data, hc_uint32 count, hc_uint32* read) {
 	int len = min(count, ctx->decryptedSize);
 	Mem_Copy(data, ctx->decryptedData, len);
 
@@ -294,12 +294,12 @@ static cc_result SSL_ReadDecrypted(struct SSLContext* ctx, cc_uint8* data, cc_ui
 	return 0;
 }
 
-cc_result SSL_Read(void* ctx_, cc_uint8* data, cc_uint32 count, cc_uint32* read) {
+hc_result SSL_Read(void* ctx_, hc_uint8* data, hc_uint32 count, hc_uint32* read) {
 	struct SSLContext* ctx = ctx_;
 	SecBuffer buffers[4];
 	SecBufferDesc desc;
 	SECURITY_STATUS sec;
-	cc_result res;
+	hc_result res;
 
 	/* decrypted data from previously */
 	if (ctx->decryptedData) return SSL_ReadDecrypted(ctx, data, count, read);
@@ -347,7 +347,7 @@ cc_result SSL_Read(void* ctx_, cc_uint8* data, cc_uint32 count, cc_uint32* read)
 	return 0;
 }
 
-static cc_result SSL_WriteChunk(struct SSLContext* s, const cc_uint8* data, cc_uint32 count) {
+static hc_result SSL_WriteChunk(struct SSLContext* s, const hc_uint8* data, hc_uint32 count) {
 	char buffer[TLS_MAX_PACKET_SIZE];
 	SecBuffer buffers[3];
 	SecBufferDesc desc;
@@ -380,9 +380,9 @@ static cc_result SSL_WriteChunk(struct SSLContext* s, const cc_uint8* data, cc_u
 	return Socket_WriteAll(s->socket, buffer, total);
 }
 
-cc_result SSL_WriteAll(void* ctx, const cc_uint8* data, cc_uint32 count) {
+hc_result SSL_WriteAll(void* ctx, const hc_uint8* data, hc_uint32 count) {
 	struct SSLContext* s = ctx;
-	cc_result res;
+	hc_result res;
 
 	/* TODO: Don't loop here? move to HTTPConnection instead?? */
 	while (count)
@@ -396,7 +396,7 @@ cc_result SSL_WriteAll(void* ctx, const cc_uint8* data, cc_uint32 count) {
 	return 0;
 }
 
-cc_result SSL_Free(void* ctx_) {
+hc_result SSL_Free(void* ctx_) {
 	/* TODO send TLS close */
 	struct SSLContext* ctx = (struct SSLContext*)ctx_;
 	FP_DeleteSecurityContext(&ctx->context);
@@ -404,7 +404,7 @@ cc_result SSL_Free(void* ctx_) {
 	Mem_Free(ctx);
 	return 0; 
 }
-#elif CC_SSL_BACKEND == CC_SSL_BACKEND_BEARSSL
+#elif HC_SSL_BACKEND == HC_SSL_BACKEND_BEARSSL
 #include "String.h"
 #include "bearssl.h"
 #include "../misc/certs/certs.h"
@@ -423,18 +423,18 @@ typedef struct SSLContext {
 	br_x509_minimal_context xc;
 	unsigned char iobuf[BR_SSL_BUFSIZE_BIDI];
 	br_sslio_context ioc;
-	cc_result readError, writeError;
-	cc_socket socket;
+	hc_result readError, writeError;
+	hc_socket socket;
 } SSLContext;
 
-static cc_bool _verifyCerts;
+static hc_bool _verifyCerts;
 
 
-void SSLBackend_Init(cc_bool verifyCerts) {
+void SSLBackend_Init(hc_bool verifyCerts) {
 	_verifyCerts = verifyCerts; // TODO support
 }
 
-cc_bool SSLBackend_DescribeError(cc_result res, cc_string* dst) {
+hc_bool SSLBackend_DescribeError(hc_result res, hc_string* dst) {
 	switch (res) {
 	case SSL_ERROR_SHIFT | BR_ERR_X509_EXPIRED:
 		String_AppendConst(dst, "The website's SSL certificate is expired or not yet valid");
@@ -446,7 +446,7 @@ cc_bool SSLBackend_DescribeError(cc_result res, cc_string* dst) {
 	return false; // TODO: error codes 
 }
 
-#if defined CC_BUILD_3DS
+#if defined HC_BUILD_3DS
 #include <3ds.h>
 static void InjectEntropy(SSLContext* ctx) {
 	char buf[32];
@@ -466,7 +466,7 @@ static void InjectEntropy(SSLContext* ctx) {
 #endif
 
 static void SetCurrentTime(SSLContext* ctx) {
-	cc_uint64 cur = DateTime_CurrentUTC();
+	hc_uint64 cur = DateTime_CurrentUTC();
 	uint32_t days = (uint32_t)(cur / 86400) + 366;
 	uint32_t secs = (uint32_t)(cur % 86400);
 	
@@ -484,8 +484,8 @@ static void SetCurrentTime(SSLContext* ctx) {
 
 static int sock_read(void* ctx_, unsigned char* buf, size_t len) {
 	SSLContext* ctx = (SSLContext*)ctx_;
-	cc_uint32 read;
-	cc_result res = Socket_Read(ctx->socket, buf, len, &read);
+	hc_uint32 read;
+	hc_result res = Socket_Read(ctx->socket, buf, len, &read);
 	
 	if (res) { ctx->readError = res; return -1; }
 	return read;
@@ -493,14 +493,14 @@ static int sock_read(void* ctx_, unsigned char* buf, size_t len) {
 
 static int sock_write(void* ctx_, const unsigned char* buf, size_t len) {
 	SSLContext* ctx = (SSLContext*)ctx_;
-	cc_uint32 wrote;
-	cc_result res = Socket_Write(ctx->socket, buf, len, &wrote);
+	hc_uint32 wrote;
+	hc_result res = Socket_Write(ctx->socket, buf, len, &wrote);
 	
 	if (res) { ctx->writeError = res; return -1; }
 	return wrote;
 }
 
-cc_result SSL_Init(cc_socket socket, const cc_string* host_, void** out_ctx) {
+hc_result SSL_Init(hc_socket socket, const hc_string* host_, void** out_ctx) {
 	SSLContext* ctx;
 	char host[NATIVE_STR_LEN];
 	String_EncodeUtf8(host, host_);
@@ -540,7 +540,7 @@ cc_result SSL_Init(cc_socket socket, const cc_string* host_, void** out_ctx) {
 	return 0;
 }
 
-cc_result SSL_Read(void* ctx_, cc_uint8* data, cc_uint32 count, cc_uint32* read) { 
+hc_result SSL_Read(void* ctx_, hc_uint8* data, hc_uint32 count, hc_uint32* read) { 
 	SSLContext* ctx = (SSLContext*)ctx_;
 	// TODO: just br_sslio_write ??
 	int res = br_sslio_read(&ctx->ioc, data, count);
@@ -561,7 +561,7 @@ cc_result SSL_Read(void* ctx_, cc_uint8* data, cc_uint32 count, cc_uint32* read)
 	return 0;
 }
 
-cc_result SSL_WriteAll(void* ctx_, const cc_uint8* data, cc_uint32 count) {
+hc_result SSL_WriteAll(void* ctx_, const hc_uint8* data, hc_uint32 count) {
 	SSLContext* ctx = (SSLContext*)ctx_;
 	// TODO: just br_sslio_write ??
 	int res = br_sslio_write_all(&ctx->ioc, data, count);
@@ -575,7 +575,7 @@ cc_result SSL_WriteAll(void* ctx_, const cc_uint8* data, cc_uint32 count) {
 	return 0;
 }
 
-cc_result SSL_Free(void* ctx_) {
+hc_result SSL_Free(void* ctx_) {
 	SSLContext* ctx = (SSLContext*)ctx_;
 	if (ctx) br_sslio_close(&ctx->ioc);
 	
@@ -583,20 +583,20 @@ cc_result SSL_Free(void* ctx_) {
 	return 0;
 }
 #else
-void SSLBackend_Init(cc_bool verifyCerts) { }
-cc_bool SSLBackend_DescribeError(cc_result res, cc_string* dst) { return false; }
+void SSLBackend_Init(hc_bool verifyCerts) { }
+hc_bool SSLBackend_DescribeError(hc_result res, hc_string* dst) { return false; }
 
-cc_result SSL_Init(cc_socket socket, const cc_string* host, void** ctx) {
+hc_result SSL_Init(hc_socket socket, const hc_string* host, void** ctx) {
 	return HTTP_ERR_NO_SSL;
 }
 
-cc_result SSL_Read(void* ctx, cc_uint8* data, cc_uint32 count, cc_uint32* read) { 
+hc_result SSL_Read(void* ctx, hc_uint8* data, hc_uint32 count, hc_uint32* read) { 
 	return ERR_NOT_SUPPORTED; 
 }
 
-cc_result SSL_WriteAll(void* ctx, const cc_uint8* data, cc_uint32 count) { 
+hc_result SSL_WriteAll(void* ctx, const hc_uint8* data, hc_uint32 count) { 
 	return ERR_NOT_SUPPORTED; 
 }
 
-cc_result SSL_Free(void* ctx) { return 0; }
+hc_result SSL_Free(void* ctx) { return 0; }
 #endif

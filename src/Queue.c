@@ -4,7 +4,7 @@
 #include "Platform.h"
 #include "Queue.h"
 
-void Queue_Init(struct Queue* queue, cc_uint32 structSize) {
+void Queue_Init(struct Queue* queue, hc_uint32 structSize) {
 	queue->entries = NULL;
 	queue->structSize = structSize;
 	queue->capacity = 0;
@@ -21,7 +21,7 @@ void Queue_Clear(struct Queue* queue) {
 }
 
 static void Queue_Resize(struct Queue* queue) {
-	cc_uint8* entries;
+	hc_uint8* entries;
 	int capacity, headToEndSize, byteOffsetToHead;
 
 	if (queue->capacity >= (Int32_MaxValue / 4)) {
@@ -31,7 +31,7 @@ static void Queue_Resize(struct Queue* queue) {
 	}
 	capacity = queue->capacity * 2;
 	if (capacity < 32) capacity = 32;
-	entries = (cc_uint8*)Mem_Alloc(capacity, queue->structSize, "Generic queue");
+	entries = (hc_uint8*)Mem_Alloc(capacity, queue->structSize, "Generic queue");
 
 	/* Elements must be readjusted to avoid index wrapping issues */
 	headToEndSize = (queue->capacity - queue->head) * queue->structSize;

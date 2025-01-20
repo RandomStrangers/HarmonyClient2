@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_WIIU
+#if defined HC_BUILD_WIIU
 #include "Window.h"
 #include "Platform.h"
 #include "Input.h"
@@ -29,11 +29,11 @@
 #include <coreinit/filesystem.h>
 #include <coreinit/memdefaultheap.h>
 
-static cc_bool launcherMode;
+static hc_bool launcherMode;
 struct _DisplayData DisplayInfo;
-struct cc_window WindowInfo;
-struct cc_window Window_Alt;
-cc_bool launcherTop;
+struct hc_window WindowInfo;
+struct hc_window Window_Alt;
+hc_bool launcherTop;
 
 static void LoadTVDimensions(void) {
 	switch(GX2GetSystemTVScanMode())
@@ -420,13 +420,13 @@ void Window_FreeFramebuffer(struct Bitmap* bmp) {
 /*########################################################################################################################*
 *-------------------------------------------------------Misc/Other--------------------------------------------------------*
 *#########################################################################################################################*/
-void Window_SetTitle(const cc_string* title)   { }
-void Clipboard_GetText(cc_string* value)       { }
-void Clipboard_SetText(const cc_string* value) { }
+void Window_SetTitle(const hc_string* title)   { }
+void Clipboard_GetText(hc_string* value)       { }
+void Clipboard_SetText(const hc_string* value) { }
 
 int Window_GetWindowState(void) { return WINDOW_STATE_FULLSCREEN; }
-cc_result Window_EnterFullscreen(void) { return 0; }
-cc_result Window_ExitFullscreen(void)  { return 0; }
+hc_result Window_EnterFullscreen(void) { return 0; }
+hc_result Window_ExitFullscreen(void)  { return 0; }
 int Window_IsObscured(void)            { return 0; }
 
 void Window_Show(void) { }
@@ -438,11 +438,11 @@ void Window_ShowDialog(const char* title, const char* msg) {
 	Platform_LogConst(msg);
 }
 
-cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
+hc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
-cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
+hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
@@ -455,7 +455,7 @@ void OnscreenKeyboard_Open(struct OpenKeyboardArgs* args) {
 	VirtualKeyboard_Open(args, launcherMode);
 }
 
-void OnscreenKeyboard_SetText(const cc_string* text) {
+void OnscreenKeyboard_SetText(const hc_string* text) {
 	VirtualKeyboard_SetText(text);
 }
 

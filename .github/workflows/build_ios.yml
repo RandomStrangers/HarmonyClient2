@@ -23,8 +23,8 @@ jobs:
           xcodebuild -sdk iphoneos -configuration Release CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
           cd build/Release-iphoneos
           mkdir Payload
-          mv ClassiCube.app Payload/ClassiCube.app
-          zip -r cc.ipa Payload
+          mv HarmonyClient.app Payload/HarmonyClient.app
+          zip -r hc.ipa Payload
 
       - uses: ./.github/actions/notify_failure
         if: ${{ always() && steps.compile.outcome == 'failure' }}
@@ -35,7 +35,7 @@ jobs:
       - uses: ./.github/actions/upload_build
         if: ${{ always() && steps.compile.outcome == 'success' }}
         with:
-          SOURCE_FILE: 'ios/build/Release-iphoneos/cc.ipa'
+          SOURCE_FILE: 'ios/build/Release-iphoneos/hc.ipa'
           DEST_NAME: 'HarmonyClient.ipa'
           
           

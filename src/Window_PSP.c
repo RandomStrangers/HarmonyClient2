@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_PSP
+#if defined HC_BUILD_PSP
 #include "Window.h"
 #include "Platform.h"
 #include "Input.h"
@@ -19,10 +19,10 @@
 #define BUFFER_WIDTH  512
 #define SCREEN_WIDTH  480
 #define SCREEN_HEIGHT 272
-static cc_bool launcherMode;
+static hc_bool launcherMode;
 
 struct _DisplayData DisplayInfo;
-struct cc_window WindowInfo;
+struct hc_window WindowInfo;
 
 void Window_PreInit(void) {
 }
@@ -52,13 +52,13 @@ void Window_Create3D(int width, int height) { launcherMode = false; }
 
 void Window_Destroy(void) { }
 
-void Window_SetTitle(const cc_string* title) { }
-void Clipboard_GetText(cc_string* value) { }
-void Clipboard_SetText(const cc_string* value) { }
+void Window_SetTitle(const hc_string* title) { }
+void Clipboard_GetText(hc_string* value) { }
+void Clipboard_SetText(const hc_string* value) { }
 
 int Window_GetWindowState(void) { return WINDOW_STATE_FULLSCREEN; }
-cc_result Window_EnterFullscreen(void) { return 0; }
-cc_result Window_ExitFullscreen(void)  { return 0; }
+hc_result Window_EnterFullscreen(void) { return 0; }
+hc_result Window_ExitFullscreen(void)  { return 0; }
 int Window_IsObscured(void)            { return 0; }
 
 void Window_Show(void) { }
@@ -154,8 +154,8 @@ void Window_DrawFramebuffer(Rect2D r, struct Bitmap* bmp) {
 	sceDisplayWaitVblankStart();
 	sceDisplaySetFrameBuf(fb, BUFFER_WIDTH, PSP_DISPLAY_PIXEL_FORMAT_8888, PSP_DISPLAY_SETBUF_NEXTFRAME);
 
-	cc_uint32* src = (cc_uint32*)bmp->scan0 + r.x;
-	cc_uint32* dst = (cc_uint32*)fb         + r.x;
+	hc_uint32* src = (hc_uint32*)bmp->scan0 + r.x;
+	hc_uint32* dst = (hc_uint32*)fb         + r.x;
 
 	for (int y = r.y; y < r.y + r.height; y++) 
 	{
@@ -177,7 +177,7 @@ void OnscreenKeyboard_Open(struct OpenKeyboardArgs* args) {
 	VirtualKeyboard_Open(args, launcherMode);
 }
 
-void OnscreenKeyboard_SetText(const cc_string* text) {
+void OnscreenKeyboard_SetText(const hc_string* text) {
 	VirtualKeyboard_SetText(text);
 }
 
@@ -195,11 +195,11 @@ void Window_ShowDialog(const char* title, const char* msg) {
 	Platform_LogConst(msg);
 }
 
-cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
+hc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
-cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
+hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 #endif

@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_PS2
+#if defined HC_BUILD_PS2
 #include "Window.h"
 #include "Platform.h"
 #include "Input.h"
@@ -24,10 +24,10 @@
 #include <libkbd.h>
 #include <libmouse.h>
 
-static cc_bool launcherMode, mouseSupported, kbdSupported;
+static hc_bool launcherMode, mouseSupported, kbdSupported;
 #include "VirtualCursor.h"
 struct _DisplayData DisplayInfo;
-struct cc_window WindowInfo;
+struct hc_window WindowInfo;
 
 framebuffer_t fb_colors[2];
 zbuffer_t     fb_depth;
@@ -120,13 +120,13 @@ void Window_Create3D(int width, int height) {
 
 void Window_Destroy(void) { }
 
-void Window_SetTitle(const cc_string* title) { }
-void Clipboard_GetText(cc_string* value) { }
-void Clipboard_SetText(const cc_string* value) { }
+void Window_SetTitle(const hc_string* title) { }
+void Clipboard_GetText(hc_string* value) { }
+void Clipboard_SetText(const hc_string* value) { }
 
 int Window_GetWindowState(void) { return WINDOW_STATE_FULLSCREEN; }
-cc_result Window_EnterFullscreen(void) { return 0; }
-cc_result Window_ExitFullscreen(void)  { return 0; }
+hc_result Window_EnterFullscreen(void) { return 0; }
+hc_result Window_ExitFullscreen(void)  { return 0; }
 int Window_IsObscured(void)            { return 0; }
 
 void Window_Show(void) { }
@@ -246,7 +246,7 @@ static void ProcessPadInput(int port, float delta, struct padButtonStatus* pad) 
 	HandleJoystick(port, PAD_AXIS_RIGHT, pad->rjoy_h - 0x80, pad->rjoy_v - 0x80, delta);
 }
 
-static cc_bool setMode[2];
+static hc_bool setMode[2];
 static void ProcessPad(int i, float delta) {
 	struct padButtonStatus pad;
 	int state = padGetState(i, 0);
@@ -322,7 +322,7 @@ void OnscreenKeyboard_Open(struct OpenKeyboardArgs* args) {
 	VirtualKeyboard_Open(args, launcherMode);
 }
 
-void OnscreenKeyboard_SetText(const cc_string* text) {
+void OnscreenKeyboard_SetText(const hc_string* text) {
 	VirtualKeyboard_SetText(text);
 }
 
@@ -340,11 +340,11 @@ void Window_ShowDialog(const char* title, const char* msg) {
 	Platform_LogConst(msg);
 }
 
-cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
+hc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
-cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
+hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 #endif

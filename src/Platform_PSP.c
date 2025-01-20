@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_PSP
+#if defined HC_BUILD_PSP
 #include "_PlatformBase.h"
 #include "Stream.h"
 #include "ExtMath.h"
@@ -22,17 +22,17 @@
 #include <psprtc.h>
 #include "_PlatformConsole.h"
 
-const cc_result ReturnCode_FileShareViolation = 1000000000; // not used
-const cc_result ReturnCode_FileNotFound     = ENOENT;
-const cc_result ReturnCode_DirectoryExists  = EEXIST;
-const cc_result ReturnCode_SocketInProgess  = EINPROGRESS;
-const cc_result ReturnCode_SocketWouldBlock = EWOULDBLOCK;
-const cc_result ReturnCode_SocketDropped    = EPIPE;
+const hc_result ReturnCode_FileShareViolation = 1000000000; // not used
+const hc_result ReturnCode_FileNotFound     = ENOENT;
+const hc_result ReturnCode_DirectoryExists  = EEXIST;
+const hc_result ReturnCode_SocketInProgess  = EINPROGRESS;
+const hc_result ReturnCode_SocketWouldBlock = EWOULDBLOCK;
+const hc_result ReturnCode_SocketDropped    = EPIPE;
 
-const char* Platform_AppNameSuffix = " PSP";
-cc_bool Platform_ReadonlyFilesystem;
+const char* Platform_AppNameSuffix = " (PSP)";
+hc_bool Platform_ReadonlyFilesystem;
 
-PSP_MODULE_INFO("ClassiCube", PSP_MODULE_USER, 1, 0);
+PSP_MODULE_INFO("HarmonyClient", PSP_MODULE_USER, 1, 0);
 PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER);
 
 PSP_DISABLE_AUTOSTART_PTHREAD() // reduces .elf size by 140 kb
@@ -41,7 +41,7 @@ PSP_DISABLE_AUTOSTART_PTHREAD() // reduces .elf size by 140 kb
 /*########################################################################################################################*
 *------------------------------------------------------Logging/Time-------------------------------------------------------*
 *#########################################################################################################################*/
-cc_uint64 Stopwatch_ElapsedMicroseconds(cc_uint64 beg, cc_uint64 end) {
+hc_uint64 Stopwatch_ElapsedMicroseconds(hc_uint64 beg, hc_uint64 end) {
 	if (end < beg) return 0;
 	return end - beg;
 }
@@ -51,8 +51,8 @@ void Platform_Log(const char* msg, int len) {
 	sceIoWrite(fd, msg, len);
 	
 	//sceIoDevctl("emulator:", 2, msg, len, NULL, 0);
-	//cc_string str = String_Init(msg, len, len);
-	//cc_file file = 0;
+	//hc_string str = String_Init(msg, len, len);
+	//hc_file file = 0;
 	//File_Open(&file, &str);
 	//File_Close(file);	
 }
@@ -60,7 +60,7 @@ void Platform_Log(const char* msg, int len) {
 TimeMS DateTime_CurrentUTC(void) {
 	struct SceKernelTimeval cur;
 	sceKernelLibcGettimeofday(&cur, NULL);
-	return (cc_uint64)cur.tv_sec + UNIX_EPOCH_SECONDS;
+	return (hc_uint64)cur.tv_sec + UNIX_EPOCH_SECONDS;
 }
 
 void DateTime_CurrentLocal(struct DateTime* t) {
@@ -76,20 +76,20 @@ void DateTime_CurrentLocal(struct DateTime* t) {
 }
 
 #define US_PER_SEC 1000000ULL
-cc_uint64 Stopwatch_Measure(void) {
+hc_uint64 Stopwatch_Measure(void) {
 	// TODO: sceKernelGetSystemTimeWide
 	struct SceKernelTimeval cur;
 	sceKernelLibcGettimeofday(&cur, NULL);
-	return (cc_uint64)cur.tv_sec * US_PER_SEC + cur.tv_usec;
+	return (hc_uint64)cur.tv_sec * US_PER_SEC + cur.tv_usec;
 }
 
 
 /*########################################################################################################################*
 *-----------------------------------------------------Directory/File------------------------------------------------------*
 *#########################################################################################################################*/
-static const cc_string root_path = String_FromConst("ms0:/PSP/GAME/ClassiCube/");
+static const hc_string root_path = String_FromConst("ms0:/PSP/GAME/HarmonyClient/");
 
-void Platform_EncodePath(cc_filepath* dst, const cc_string* path) {
+void Platform_EncodePath(hc_filepath* dst, const hc_string* path) {
 	char* str = dst->buffer;
 	Mem_Copy(str, root_path.buffer, root_path.length);
 	str += root_path.length;
@@ -98,19 +98,19 @@ void Platform_EncodePath(cc_filepath* dst, const cc_string* path) {
 
 #define GetSCEResult(result) (result >= 0 ? 0 : result & 0xFFFF)
 
-cc_result Directory_Create(const cc_filepath* path) {
+hc_result Directory_Create(const hc_filepath* path) {
 	int result = sceIoMkdir(path->buffer, 0777);
 	return GetSCEResult(result);
 }
 
-int File_Exists(const cc_filepath* path) {
+int File_Exists(const hc_filepath* path) {
 	SceIoStat sb;
 	return sceIoGetstat(path->buffer, &sb) == 0 && (sb.st_attr & FIO_SO_IFREG) != 0;
 }
 
-cc_result Directory_Enum(const cc_string* dirPath, void* obj, Directory_EnumCallback callback) {
-	cc_string path; char pathBuffer[FILENAME_SIZE];
-	cc_filepath str;
+hc_result Directory_Enum(const hc_string* dirPath, void* obj, Directory_EnumCallback callback) {
+	hc_string path; char pathBuffer[FILENAME_SIZE];
+	hc_filepath str;
 	int res;
 
 	Platform_EncodePath(&str, dirPath);
@@ -140,53 +140,53 @@ cc_result Directory_Enum(const cc_string* dirPath, void* obj, Directory_EnumCall
 	return GetSCEResult(res);
 }
 
-static cc_result File_Do(cc_file* file, const char* path, int mode) {
+static hc_result File_Do(hc_file* file, const char* path, int mode) {
 	int result = sceIoOpen(path, mode, 0777);
 	*file      = result;
 	return GetSCEResult(result);
 }
 
-cc_result File_Open(cc_file* file, const cc_filepath* path) {
+hc_result File_Open(hc_file* file, const hc_filepath* path) {
 	return File_Do(file, path->buffer, PSP_O_RDONLY);
 }
-cc_result File_Create(cc_file* file, const cc_filepath* path) {
+hc_result File_Create(hc_file* file, const hc_filepath* path) {
 	return File_Do(file, path->buffer, PSP_O_RDWR | PSP_O_CREAT | PSP_O_TRUNC);
 }
-cc_result File_OpenOrCreate(cc_file* file, const cc_filepath* path) {
+hc_result File_OpenOrCreate(hc_file* file, const hc_filepath* path) {
 	return File_Do(file, path->buffer, PSP_O_RDWR | PSP_O_CREAT);
 }
 
-cc_result File_Read(cc_file file, void* data, cc_uint32 count, cc_uint32* bytesRead) {
+hc_result File_Read(hc_file file, void* data, hc_uint32 count, hc_uint32* bytesRead) {
 	int result = sceIoRead(file, data, count);
 	*bytesRead = result;
 	return GetSCEResult(result);
 }
 
-cc_result File_Write(cc_file file, const void* data, cc_uint32 count, cc_uint32* bytesWrote) {
+hc_result File_Write(hc_file file, const void* data, hc_uint32 count, hc_uint32* bytesWrote) {
 	int result  = sceIoWrite(file, data, count);
 	*bytesWrote = result;
 	return GetSCEResult(result);
 }
 
-cc_result File_Close(cc_file file) {
+hc_result File_Close(hc_file file) {
 	int result = sceIoClose(file);
 	return GetSCEResult(result);
 }
 
-cc_result File_Seek(cc_file file, int offset, int seekType) {
-	static cc_uint8 modes[3] = { PSP_SEEK_SET, PSP_SEEK_CUR, PSP_SEEK_END };
+hc_result File_Seek(hc_file file, int offset, int seekType) {
+	static hc_uint8 modes[3] = { PSP_SEEK_SET, PSP_SEEK_CUR, PSP_SEEK_END };
 	
 	int result = sceIoLseek32(file, offset, modes[seekType]);
 	return GetSCEResult(result);
 }
 
-cc_result File_Position(cc_file file, cc_uint32* pos) {
+hc_result File_Position(hc_file file, hc_uint32* pos) {
 	int result = sceIoLseek32(file, 0, PSP_SEEK_CUR);
 	*pos       = result;
 	return GetSCEResult(result);
 }
 
-cc_result File_Length(cc_file file, cc_uint32* len) {
+hc_result File_Length(hc_file file, hc_uint32* len) {
 	int curPos = sceIoLseek32(file, 0, PSP_SEEK_CUR);
 	if (curPos < 0) { *len = -1; return GetSCEResult(curPos); }
 	
@@ -200,7 +200,7 @@ cc_result File_Length(cc_file file, cc_uint32* len) {
 *--------------------------------------------------------Threading--------------------------------------------------------*
 *#########################################################################################################################*/
 // !!! NOTE: PSP uses cooperative multithreading (not preemptive multithreading) !!!
-void Thread_Sleep(cc_uint32 milliseconds) { 
+void Thread_Sleep(hc_uint32 milliseconds) { 
 	sceKernelDelayThread(milliseconds * 1000); 
 }
 
@@ -211,12 +211,12 @@ static int ExecThread(unsigned int argc, void *argv) {
 }
 
 void Thread_Run(void** handle, Thread_StartFunc func, int stackSize, const char* name) {
-	#define CC_THREAD_PRIORITY 17 // TODO: 18?
-	#define CC_THREAD_ATTRS 0 // TODO PSP_THREAD_ATTR_VFPU?
+	#define HC_THREAD_PRIORITY 17 // TODO: 18?
+	#define HC_THREAD_ATTRS 0 // TODO PSP_THREAD_ATTR_VFPU?
 	Thread_StartFunc func_ = func;
 	
-	int threadID = sceKernelCreateThread(name, ExecThread, CC_THREAD_PRIORITY, 
-										stackSize, CC_THREAD_ATTRS, NULL);
+	int threadID = sceKernelCreateThread(name, ExecThread, HC_THREAD_PRIORITY, 
+										stackSize, HC_THREAD_ATTRS, NULL);
 										
 	*handle = (void*)threadID;
 	sceKernelStartThread(threadID, sizeof(func_), (void*)&func_);
@@ -275,7 +275,7 @@ void Waitable_Wait(void* handle) {
 	if (res < 0) Logger_Abort2(res, "Event wait");
 }
 
-void Waitable_WaitFor(void* handle, cc_uint32 milliseconds) {
+void Waitable_WaitFor(void* handle, hc_uint32 milliseconds) {
 	SceUInt timeout = milliseconds * 1000;
 	u32 match;
 	int res = sceKernelWaitEventFlag((int)handle, 0x1, PSP_EVENT_WAITAND | PSP_EVENT_WAITCLEAR, &match, &timeout);
@@ -286,7 +286,7 @@ void Waitable_WaitFor(void* handle, cc_uint32 milliseconds) {
 /*########################################################################################################################*
 *---------------------------------------------------------Socket----------------------------------------------------------*
 *#########################################################################################################################*/
-cc_result Socket_ParseAddress(const cc_string* address, int port, cc_sockaddr* addrs, int* numValidAddrs) {
+hc_result Socket_ParseAddress(const hc_string* address, int port, hc_sockaddr* addrs, int* numValidAddrs) {
 	struct sockaddr_in* addr4 = (struct sockaddr_in*)addrs[0].data;
 	char str[NATIVE_STR_LEN];
 	char buf[1024];
@@ -312,7 +312,7 @@ cc_result Socket_ParseAddress(const cc_string* address, int port, cc_sockaddr* a
 	return 0;
 }
 
-cc_result Socket_Create(cc_socket* s, cc_sockaddr* addr, cc_bool nonblocking) {
+hc_result Socket_Create(hc_socket* s, hc_sockaddr* addr, hc_bool nonblocking) {
 	struct sockaddr* raw = (struct sockaddr*)addr->data;
 
 	*s = sceNetInetSocket(raw->sa_family, SOCK_STREAM, IPPROTO_TCP);
@@ -325,14 +325,14 @@ cc_result Socket_Create(cc_socket* s, cc_sockaddr* addr, cc_bool nonblocking) {
 	return 0;
 }
 
-cc_result Socket_Connect(cc_socket s, cc_sockaddr* addr) {
+hc_result Socket_Connect(hc_socket s, hc_sockaddr* addr) {
 	struct sockaddr* raw = (struct sockaddr*)addr->data;
 	
 	int res = sceNetInetConnect(s, raw, addr->size);
 	return res < 0 ? sceNetInetGetErrno() : 0;
 }
 
-cc_result Socket_Read(cc_socket s, cc_uint8* data, cc_uint32 count, cc_uint32* modified) {
+hc_result Socket_Read(hc_socket s, hc_uint8* data, hc_uint32 count, hc_uint32* modified) {
 	int recvCount = sceNetInetRecv(s, data, count, 0);
 	if (recvCount >= 0) { *modified = recvCount; return 0; }
 	
@@ -340,7 +340,7 @@ cc_result Socket_Read(cc_socket s, cc_uint8* data, cc_uint32 count, cc_uint32* m
 	return sceNetInetGetErrno();
 }
 
-cc_result Socket_Write(cc_socket s, const cc_uint8* data, cc_uint32 count, cc_uint32* modified) {
+hc_result Socket_Write(hc_socket s, const hc_uint8* data, hc_uint32 count, hc_uint32* modified) {
 	int sentCount = sceNetInetSend(s, data, count, 0);
 	if (sentCount >= 0) { *modified = sentCount; return 0; }
 	
@@ -348,12 +348,12 @@ cc_result Socket_Write(cc_socket s, const cc_uint8* data, cc_uint32 count, cc_ui
 	return sceNetInetGetErrno();
 }
 
-void Socket_Close(cc_socket s) {
+void Socket_Close(hc_socket s) {
 	sceNetInetShutdown(s, SHUT_RDWR);
 	sceNetInetClose(s);
 }
 
-static cc_result Socket_Poll(cc_socket s, int mode, cc_bool* success) {
+static hc_result Socket_Poll(hc_socket s, int mode, hc_bool* success) {
 	fd_set set;
 	struct SceNetInetTimeval time = { 0 };
 	int selectCount;
@@ -376,13 +376,13 @@ static cc_result Socket_Poll(cc_socket s, int mode, cc_bool* success) {
 	return 0;
 }
 
-cc_result Socket_CheckReadable(cc_socket s, cc_bool* readable) {
+hc_result Socket_CheckReadable(hc_socket s, hc_bool* readable) {
 	return Socket_Poll(s, SOCKET_POLL_READ, readable);
 }
 
-cc_result Socket_CheckWritable(cc_socket s, cc_bool* writable) {
+hc_result Socket_CheckWritable(hc_socket s, hc_bool* writable) {
 	socklen_t resultSize = sizeof(socklen_t);
-	cc_result res = Socket_Poll(s, SOCKET_POLL_WRITE, writable);
+	hc_result res = Socket_Poll(s, SOCKET_POLL_WRITE, writable);
 	if (res || *writable) return res;
 
 	// https://stackoverflow.com/questions/29479953/so-error-value-after-successful-socket-operation
@@ -435,12 +435,12 @@ void Platform_Init(void) {
 	// TODO: work out why this error is actually happening (inexact or underflow?) and properly fix it
 	pspSdkDisableFPUExceptions();
 	
-	cc_filepath* root = FILEPATH_RAW(root_path.buffer);
+	hc_filepath* root = FILEPATH_RAW(root_path.buffer);
 	Directory_Create(root);
 }
 void Platform_Free(void) { }
 
-cc_bool Platform_DescribeError(cc_result res, cc_string* dst) {
+hc_bool Platform_DescribeError(hc_result res, hc_string* dst) {
 	char chars[NATIVE_STR_LEN];
 	int len;
 
@@ -457,8 +457,8 @@ cc_bool Platform_DescribeError(cc_result res, cc_string* dst) {
 	return true;
 }
 
-cc_bool Process_OpenSupported = false;
-cc_result Process_StartOpen(const cc_string* args) {
+hc_bool Process_OpenSupported = false;
+hc_result Process_StartOpen(const hc_string* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
@@ -468,7 +468,7 @@ cc_result Process_StartOpen(const cc_string* args) {
 *#########################################################################################################################*/
 #define MACHINE_KEY "PSP_PSP_PSP_PSP_"
 
-static cc_result GetMachineID(cc_uint32* key) {
+static hc_result GetMachineID(hc_uint32* key) {
 	Mem_Copy(key, MACHINE_KEY, sizeof(MACHINE_KEY) - 1);
 	return 0;
 }

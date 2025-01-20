@@ -1,8 +1,8 @@
-#ifndef CC_ENTITY_COMPONENTS_H
-#define CC_ENTITY_COMPONENTS_H
+#ifndef HC_ENTITY_COMPONENTS_H
+#define HC_ENTITY_COMPONENTS_H
 #include "Vectors.h"
 #include "Constants.h"
-CC_BEGIN_HEADER
+HC_BEGIN_HEADER
 
 /* Various components for entities.
    Copyright 2014-2023 ClassiCube | Licensed under BSD-3
@@ -38,48 +38,48 @@ void TiltComp_GetCurrent(struct LocalPlayer* p, struct TiltComp* anim, float t);
 
 /* Entity component that performs management of hack states */
 struct HacksComp {
-	cc_bool IsOp;
-	cc_bool Floating; /* true if NoClip or Flying */
-	cc_bool _noclipping;
+	hc_bool IsOp;
+	hc_bool Floating; /* true if NoClip or Flying */
+	hc_bool _noclipping;
 	/* Speed player move at, relative to normal speed, when the 'speeding' input binding is active */
 	float SpeedMultiplier;
 	/* Whether blocks that the player places that intersect themselves, should cause the player to
 	be pushed back in the opposite direction of the placed block */
-	cc_bool PushbackPlacing;
+	hc_bool PushbackPlacing;
 	/* Whether the player should be able to step up whole blocks, instead of just slabs */
-	cc_bool FullBlockStep;
+	hc_bool FullBlockStep;
 	/* Whether user has allowed hacks as an option. Note 'can use X' set by the server override this */
-	cc_bool Enabled;
+	hc_bool Enabled;
 
-	cc_bool CanAnyHacks, CanUseThirdPerson, CanSpeed, CanFly;
-	cc_bool CanRespawn, CanNoclip, CanPushbackBlocks,CanSeeAllNames;
-	cc_bool CanDoubleJump, CanBePushed;
+	hc_bool CanAnyHacks, CanUseThirdPerson, CanSpeed, CanFly;
+	hc_bool CanRespawn, CanNoclip, CanPushbackBlocks,CanSeeAllNames;
+	hc_bool CanDoubleJump, CanBePushed;
 	float BaseHorSpeed;
 	/* Max amount of jumps the player can perform */
 	int MaxJumps;
 
 	/* Whether the player should slide after letting go of movement buttons in noclip */
-	cc_bool NoclipSlide;
+	hc_bool NoclipSlide;
 	/* Whether the player has allowed the usage of fast double jumping abilities */
-	cc_bool WOMStyleHacks; 
+	hc_bool WOMStyleHacks; 
 
-	cc_bool Noclip, Flying, FlyingUp, FlyingDown, Speeding, HalfSpeeding;
+	hc_bool Noclip, Flying, FlyingUp, FlyingDown, Speeding, HalfSpeeding;
 	float MaxHorSpeed;
-	cc_string HacksFlags;
+	hc_string HacksFlags;
 	char __HacksFlagsBuffer[STRING_SIZE * 2];	
 };
 
 void HacksComp_Init(struct HacksComp* hacks);
-cc_bool HacksComp_CanJumpHigher(struct HacksComp* hacks);
+hc_bool HacksComp_CanJumpHigher(struct HacksComp* hacks);
 /* Determines hacks permissions based on flags, then calls HacksComp_Update */
 /* e.g. +ophax allows all hacks if op, -push disables entity pushing */
 void HacksComp_RecheckFlags(struct HacksComp* hacks);
 /* Updates state based on permissions (e.g. Flying set to false if CanFly is false) */
 /* Raises UserEvents.HackPermsChanged */
 void HacksComp_Update(struct HacksComp* hacks);
-void HacksComp_SetFlying(struct HacksComp* hacks, cc_bool flying);
-void HacksComp_SetNoclip(struct HacksComp* hacks, cc_bool noclip);
-float HacksComp_CalcSpeedFactor(struct HacksComp* hacks, cc_bool canSpeed);
+void HacksComp_SetFlying(struct HacksComp* hacks, hc_bool flying);
+void HacksComp_SetNoclip(struct HacksComp* hacks, hc_bool noclip);
+float HacksComp_CalcSpeedFactor(struct HacksComp* hacks, hc_bool canSpeed);
 
 #define InterpComp_Layout int RotYCount; float RotYStates[15];
 /* Base entity component that performs interpolation of position and orientation */
@@ -107,16 +107,16 @@ void NetInterpComp_AdvanceState(struct NetInterpComp* interp, struct Entity* e);
 /* Entity component that performs collision detection */
 struct CollisionsComp {
 	struct Entity* Entity;
-	cc_bool HitXMin, HitYMin, HitZMin, HitXMax, HitYMax, HitZMax, WasOn;
+	hc_bool HitXMin, HitYMin, HitZMin, HitXMax, HitYMax, HitZMax, WasOn;
 	float StepSize;
 };
-cc_bool Collisions_HitHorizontal(struct CollisionsComp* comp);
+hc_bool Collisions_HitHorizontal(struct CollisionsComp* comp);
 void Collisions_MoveAndWallSlide(struct CollisionsComp* comp);
 
 /* Entity component that performs collisions */
 struct PhysicsComp {
-	cc_bool UseLiquidGravity; /* used by BlockDefinitions */
-	cc_bool CanLiquidJump, Jumping;
+	hc_bool UseLiquidGravity; /* used by BlockDefinitions */
+	hc_bool CanLiquidJump, Jumping;
 	int MultiJumps;
 	struct Entity* Entity;
 
@@ -134,7 +134,7 @@ double PhysicsComp_CalcMaxHeight(float u);
 void PhysicsComp_DoEntityPush(struct Entity* entity);
 
 /* Entity component that plays block step sounds */
-void SoundComp_Tick(struct LocalPlayer* p, cc_bool wasOnGround);
+void SoundComp_Tick(struct LocalPlayer* p, hc_bool wasOnGround);
 
-CC_END_HEADER
+HC_END_HEADER
 #endif

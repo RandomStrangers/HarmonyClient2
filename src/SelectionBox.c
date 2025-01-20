@@ -6,7 +6,7 @@
 #include "Game.h"
 #include "Camera.h"
 
-#ifdef CC_BUILD_NETWORKING
+#ifdef HC_BUILD_NETWORKING
 /* Data for a selection box. */
 struct SelectionBox {
 	Vec3 p0, p1;
@@ -26,7 +26,7 @@ struct SelectionBox {
 #define SelectionBox_X(x) x |Y0|Z0, x |Y1|Z0, x |Y1|Z1, x |Y0|Z1,
 
 static void BuildFaces(struct SelectionBox* box, struct VertexColoured* v) {
-	static const cc_uint8 faceIndices[24] = {
+	static const hc_uint8 faceIndices[24] = {
 		SelectionBox_Y(Y0) SelectionBox_Y(Y1) /* YMin, YMax */
 		SelectionBox_Z(Z0) SelectionBox_Z(Z1) /* ZMin, ZMax */
 		SelectionBox_X(X0) SelectionBox_X(X1) /* XMin, XMax */
@@ -50,7 +50,7 @@ static void BuildFaces(struct SelectionBox* box, struct VertexColoured* v) {
 }
 
 static void BuildEdges(struct SelectionBox* box, struct VertexColoured* v) {
-	static const cc_uint8 edgeIndices[24] = {
+	static const hc_uint8 edgeIndices[24] = {
 		X0|Y0|Z0, X1|Y0|Z0,  X1|Y0|Z0, X1|Y0|Z1,  X1|Y0|Z1, X0|Y0|Z1,  X0|Y0|Z1, X0|Y0|Z0, /* YMin */
 		X0|Y1|Z0, X1|Y1|Z0,  X1|Y1|Z0, X1|Y1|Z1,  X1|Y1|Z1, X0|Y1|Z1,  X0|Y1|Z1, X0|Y1|Z0, /* YMax */
 		X0|Y0|Z0, X0|Y1|Z0,  X1|Y0|Z0, X1|Y1|Z0,  X1|Y0|Z1, X1|Y1|Z1,  X0|Y0|Z1, X0|Y1|Z1, /* X/Z  */
@@ -107,10 +107,10 @@ static void CalcDists(struct SelectionBox* box, Vec3 P) {
 
 static int selections_count;
 static struct SelectionBox selections_list[SELECTIONS_MAX];
-static cc_uint8 selections_ids[SELECTIONS_MAX];
+static hc_uint8 selections_ids[SELECTIONS_MAX];
 static GfxResourceID selections_VB, selections_LineVB;
 
-void Selections_Add(cc_uint8 id, const IVec3* p1, const IVec3* p2, PackedCol color) {
+void Selections_Add(hc_uint8 id, const IVec3* p1, const IVec3* p2, PackedCol color) {
 	struct SelectionBox sel;
 	IVec3_ToVec3(&sel.p0, p1);
 	IVec3_ToVec3(&sel.p1, p2);
@@ -122,7 +122,7 @@ void Selections_Add(cc_uint8 id, const IVec3* p1, const IVec3* p2, PackedCol col
 	selections_count++;
 }
 
-void Selections_Remove(cc_uint8 id) {
+void Selections_Remove(hc_uint8 id) {
 	int i;
 	for (i = 0; i < selections_count; i++) {
 		if (selections_ids[i] != id) continue;
@@ -148,7 +148,7 @@ static void AllocateVertexBuffers(void) {
 }
 
 static void Selections_QuickSort(int left, int right) {
-	cc_uint8* values = selections_ids; cc_uint8 value;
+	hc_uint8* values = selections_ids; hc_uint8 value;
 	struct SelectionBox* keys = selections_list; struct SelectionBox key;
 
 	while (left < right) {

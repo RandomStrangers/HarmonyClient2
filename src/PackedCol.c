@@ -3,30 +3,30 @@
 #include "ExtMath.h"
 
 PackedCol PackedCol_Scale(PackedCol a, float t) {
-	cc_uint8 R = (cc_uint8)(PackedCol_R(a) * t);
-	cc_uint8 G = (cc_uint8)(PackedCol_G(a) * t);
-	cc_uint8 B = (cc_uint8)(PackedCol_B(a) * t);
+	hc_uint8 R = (hc_uint8)(PackedCol_R(a) * t);
+	hc_uint8 G = (hc_uint8)(PackedCol_G(a) * t);
+	hc_uint8 B = (hc_uint8)(PackedCol_B(a) * t);
 	return (a & PACKEDCOL_A_MASK) | PackedCol_R_Bits(R) | PackedCol_G_Bits(G) | PackedCol_B_Bits(B);
 }
 
 PackedCol PackedCol_Lerp(PackedCol a, PackedCol b, float t) {
-	cc_uint8 R = (cc_uint8)Math_Lerp(PackedCol_R(a), PackedCol_R(b), t);
-	cc_uint8 G = (cc_uint8)Math_Lerp(PackedCol_G(a), PackedCol_G(b), t);
-	cc_uint8 B = (cc_uint8)Math_Lerp(PackedCol_B(a), PackedCol_B(b), t);
+	hc_uint8 R = (hc_uint8)Math_Lerp(PackedCol_R(a), PackedCol_R(b), t);
+	hc_uint8 G = (hc_uint8)Math_Lerp(PackedCol_G(a), PackedCol_G(b), t);
+	hc_uint8 B = (hc_uint8)Math_Lerp(PackedCol_B(a), PackedCol_B(b), t);
 	return (a & PACKEDCOL_A_MASK) | PackedCol_R_Bits(R) | PackedCol_G_Bits(G) | PackedCol_B_Bits(B);
 }
 
 PackedCol PackedCol_Tint(PackedCol a, PackedCol b) {
-	cc_uint32 R = PackedCol_R(a) * PackedCol_R(b) / 255;
-	cc_uint32 G = PackedCol_G(a) * PackedCol_G(b) / 255;
-	cc_uint32 B = PackedCol_B(a) * PackedCol_B(b) / 255;
+	hc_uint32 R = PackedCol_R(a) * PackedCol_R(b) / 255;
+	hc_uint32 G = PackedCol_G(a) * PackedCol_G(b) / 255;
+	hc_uint32 B = PackedCol_B(a) * PackedCol_B(b) / 255;
 	/* TODO: don't shift when multiplying */
 	return (a & PACKEDCOL_A_MASK) | (R << PACKEDCOL_R_SHIFT) | (G << PACKEDCOL_G_SHIFT) | (B << PACKEDCOL_B_SHIFT);
 }
 
 PackedCol PackedCol_ScreenBlend(PackedCol a, PackedCol b) {
 	PackedCol finalColor, aInverted, bInverted;
-	cc_uint8 R, G, B;
+	hc_uint8 R, G, B;
 	/* With Screen blend mode, the values of the pixels in the two layers are inverted, multiplied, and then inverted again. */
 	R = 255 - PackedCol_R(a);
 	G = 255 - PackedCol_G(a);
@@ -62,7 +62,7 @@ int PackedCol_DeHex(char hex) {
 	return -1;
 }
 
-cc_bool PackedCol_Unhex(const char* src, int* dst, int count) {
+hc_bool PackedCol_Unhex(const char* src, int* dst, int count) {
 	int i;
 	for (i = 0; i < count; i++) {
 		dst[i] = PackedCol_DeHex(src[i]);
@@ -71,13 +71,13 @@ cc_bool PackedCol_Unhex(const char* src, int* dst, int count) {
 	return true;
 }
 
-void PackedCol_ToHex(cc_string* str, PackedCol value) {
+void PackedCol_ToHex(hc_string* str, PackedCol value) {
 	String_AppendHex(str, PackedCol_R(value));
 	String_AppendHex(str, PackedCol_G(value));
 	String_AppendHex(str, PackedCol_B(value));
 }
 
-cc_bool PackedCol_TryParseHex(const cc_string* str, cc_uint8* rgb) {
+hc_bool PackedCol_TryParseHex(const hc_string* str, hc_uint8* rgb) {
 	int bits[6];
 	char* buffer = str->buffer;
 
@@ -88,8 +88,8 @@ cc_bool PackedCol_TryParseHex(const cc_string* str, cc_uint8* rgb) {
 	if (buffer[0] == '#') buffer++;
 	if (!PackedCol_Unhex(buffer, bits, 6)) return false;
 
-	rgb[0] = (cc_uint8)((bits[0] << 4) | bits[1]);
-	rgb[1] = (cc_uint8)((bits[2] << 4) | bits[3]);
-	rgb[2] = (cc_uint8)((bits[4] << 4) | bits[5]);
+	rgb[0] = (hc_uint8)((bits[0] << 4) | bits[1]);
+	rgb[1] = (hc_uint8)((bits[2] << 4) | bits[3]);
+	rgb[2] = (hc_uint8)((bits[4] << 4) | bits[5]);
 	return true;
 }

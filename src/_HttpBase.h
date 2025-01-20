@@ -8,9 +8,9 @@
 #include "Utils.h"
 #include "Options.h"
 
-static cc_bool httpsOnly, httpOnly, httpsVerify;
+static hc_bool httpsOnly, httpOnly, httpsVerify;
 static char skinServer_buffer[128];
-static cc_string skinServer = String_FromArray(skinServer_buffer);
+static hc_string skinServer = String_FromArray(skinServer_buffer);
 
 void HttpRequest_Free(struct HttpRequest* request) {
 	Mem_Free(request->data);
@@ -25,7 +25,7 @@ void HttpRequest_Free(struct HttpRequest* request) {
 /*########################################################################################################################*
 *----------------------------------------------------Http requests list---------------------------------------------------*
 *#########################################################################################################################*/
-#ifdef CC_BUILD_NETWORKING
+#ifdef HC_BUILD_NETWORKING
 	#define HTTP_DEF_ELEMS 10
 #else
 	#define HTTP_DEF_ELEMS 1 /* TODO better unused code removal */
@@ -45,7 +45,7 @@ static void RequestList_EnsureSpace(struct RequestList* list) {
 }
 
 /* Adds a request to the list */
-static void RequestList_Append(struct RequestList* list, struct HttpRequest* item, cc_uint8 flags) {
+static void RequestList_Append(struct RequestList* list, struct HttpRequest* item, hc_uint8 flags) {
 	int i;
 	RequestList_EnsureSpace(list);
 
@@ -116,13 +116,13 @@ static void RequestList_Free(struct RequestList* list) {
 static void* processedMutex;
 static struct RequestList processedReqs;
 static int nextReqID;
-static void HttpBackend_Add(struct HttpRequest* req, cc_uint8 flags);
+static void HttpBackend_Add(struct HttpRequest* req, hc_uint8 flags);
 
 /* Adds a req to the list of pending requests, waking up worker thread if needed. */
-static int Http_Add(const cc_string* url, cc_uint8 flags, cc_uint8 type, const cc_string* lastModified,
-					const cc_string* etag, const void* data, cc_uint32 size, struct StringsBuffer* cookies) {
-	static const cc_string https = String_FromConst("https://");
-	static const cc_string http  = String_FromConst("http://");
+static int Http_Add(const hc_string* url, hc_uint8 flags, hc_uint8 type, const hc_string* lastModified,
+					const hc_string* etag, const void* data, hc_uint32 size, struct StringsBuffer* cookies) {
+	static const hc_string https = String_FromConst("https://");
+	static const hc_string http  = String_FromConst("http://");
 	struct HttpRequest req = { 0 };
 
 	String_CopyToRawArray(req.url, url);
@@ -133,12 +133,12 @@ static int Http_Add(const cc_string* url, cc_uint8 flags, cc_uint8 type, const c
 
 	/* Change http:// to https:// if required */
 	if (httpsOnly) {
-		cc_string url_ = String_FromRawArray(req.url);
+		hc_string url_ = String_FromRawArray(req.url);
 		if (String_CaselessStarts(&url_, &http)) String_InsertAt(&url_, 4, 's');
 	}
 	/* Change https:// to http:// if required */
 	if (httpOnly) {
-		cc_string url_ = String_FromRawArray(req.url);
+		hc_string url_ = String_FromRawArray(req.url);
 		if (String_CaselessStarts(&url_, &https)) String_DeleteAt(&url_, 4);
 	}
 	
@@ -150,7 +150,7 @@ static int Http_Add(const cc_string* url, cc_uint8 flags, cc_uint8 type, const c
 	}
 
 	if (data) {
-		req.data = (cc_uint8*)Mem_Alloc(size, 1, "Http_PostData");
+		req.data = (hc_uint8*)Mem_Alloc(size, 1, "Http_PostData");
 		Mem_Copy(req.data, data, size);
 		req.size = size;
 	}
@@ -161,16 +161,16 @@ static int Http_Add(const cc_string* url, cc_uint8 flags, cc_uint8 type, const c
 	return req.id;
 }
 
-static const cc_string urlRewrites[] = {
+static const hc_string urlRewrites[] = {
 	String_FromConst("http://dl.dropbox.com/"),  String_FromConst("https://dl.dropboxusercontent.com/"),
 	String_FromConst("https://dl.dropbox.com/"), String_FromConst("https://dl.dropboxusercontent.com/"),
 	String_FromConst("https://www.imgur.com/"),  String_FromConst("https://i.imgur.com/"),
 	String_FromConst("https://imgur.com/"),      String_FromConst("https://i.imgur.com/"),
 };
 /* Converts say dl.dropbox.com/xyZ into dl.dropboxusercontent.com/xyz */
-static void Http_GetUrl(struct HttpRequest* req, cc_string* dst) {
-	cc_string url = String_FromRawArray(req->url);
-	cc_string part;
+static void Http_GetUrl(struct HttpRequest* req, hc_string* dst) {
+	hc_string url = String_FromRawArray(req->url);
+	hc_string part;
 	int i;
 
 	for (i = 0; i < Array_Elems(urlRewrites); i += 2) {
@@ -210,7 +210,7 @@ static void Http_CleanCacheTask(struct ScheduledTask* task) {
 
 	Mutex_Lock(processedMutex);
 	{
-		cc_uint64 now = Stopwatch_Measure();
+		hc_uint64 now = Stopwatch_Measure();
 		for (i = processedReqs.count - 1; i >= 0; i--) 
 		{
 			item = &processedReqs.entries[i];
@@ -228,8 +228,8 @@ static void Http_CleanCacheTask(struct ScheduledTask* task) {
 /*########################################################################################################################*
 *----------------------------------------------------Http public api------------------------------------------------------*
 *#########################################################################################################################*/
-int Http_AsyncGetSkin(const cc_string* skinName, cc_uint8 flags) {
-	cc_string url; char urlBuffer[URL_MAX_SIZE];
+int Http_AsyncGetSkin(const hc_string* skinName, hc_uint8 flags) {
+	hc_string url; char urlBuffer[URL_MAX_SIZE];
 	String_InitArray(url, urlBuffer);
 
 	if (Utils_IsUrlPrefix(skinName)) {
@@ -240,28 +240,28 @@ int Http_AsyncGetSkin(const cc_string* skinName, cc_uint8 flags) {
 	return Http_AsyncGetData(&url, flags);
 }
 
-int Http_AsyncGetData(const cc_string* url, cc_uint8 flags) {
+int Http_AsyncGetData(const hc_string* url, hc_uint8 flags) {
 	return Http_Add(url, flags, REQUEST_TYPE_GET, NULL, NULL, NULL, 0, NULL);
 }
-int Http_AsyncGetHeaders(const cc_string* url, cc_uint8 flags) {
+int Http_AsyncGetHeaders(const hc_string* url, hc_uint8 flags) {
 	return Http_Add(url, flags, REQUEST_TYPE_HEAD, NULL, NULL, NULL, 0, NULL);
 }
-int Http_AsyncPostData(const cc_string* url, cc_uint8 flags, const void* data, cc_uint32 size, struct StringsBuffer* cookies) {
+int Http_AsyncPostData(const hc_string* url, hc_uint8 flags, const void* data, hc_uint32 size, struct StringsBuffer* cookies) {
 	return Http_Add(url, flags, REQUEST_TYPE_POST, NULL, NULL, data, size, cookies);
 }
-int Http_AsyncGetDataEx(const cc_string* url, cc_uint8 flags, const cc_string* lastModified, const cc_string* etag, struct StringsBuffer* cookies) {
+int Http_AsyncGetDataEx(const hc_string* url, hc_uint8 flags, const hc_string* lastModified, const hc_string* etag, struct StringsBuffer* cookies) {
 	return Http_Add(url, flags, REQUEST_TYPE_GET, lastModified, etag, NULL, 0, cookies);
 }
 
-static cc_bool Http_UrlDirect(cc_uint8 c) {
+static hc_bool Http_UrlDirect(hc_uint8 c) {
 	return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')
 		|| c == '-' || c == '_' || c == '.' || c == '~';
 }
 
-void Http_UrlEncode(cc_string* dst, const cc_uint8* data, int len) {
+void Http_UrlEncode(hc_string* dst, const hc_uint8* data, int len) {
 	int i;
 	for (i = 0; i < len; i++) {
-		cc_uint8 c = data[i];
+		hc_uint8 c = data[i];
 
 		if (Http_UrlDirect(c)) {
 			String_Append(dst, c);
@@ -272,8 +272,8 @@ void Http_UrlEncode(cc_string* dst, const cc_uint8* data, int len) {
 	}
 }
 
-void Http_UrlEncodeUtf8(cc_string* dst, const cc_string* src) {
-	cc_uint8 data[4];
+void Http_UrlEncodeUtf8(hc_string* dst, const hc_string* src) {
+	hc_uint8 data[4];
 	int i, len;
 
 	for (i = 0; i < src->length; i++) {
@@ -283,10 +283,10 @@ void Http_UrlEncodeUtf8(cc_string* dst, const cc_string* src) {
 }
 
 /* Outputs more detailed information about errors with http requests */
-static cc_bool HttpBackend_DescribeError(cc_result res, cc_string* dst);
+static hc_bool HttpBackend_DescribeError(hc_result res, hc_string* dst);
 
 void Http_LogError(const char* action, const struct HttpRequest* item) {
-	cc_string msg; char msgBuffer[512];
+	hc_string msg; char msgBuffer[512];
 	String_InitArray(msg, msgBuffer);
 	
 	Logger_FormatWarn(&msg, item->result, action, HttpBackend_DescribeError);
@@ -301,7 +301,7 @@ void Http_LogError(const char* action, const struct HttpRequest* item) {
 *-----------------------------------------------------Http component------------------------------------------------------*
 *#########################################################################################################################*/
 static void Http_InitCommon(void) {
-#if defined CC_BUILD_NDS
+#if defined HC_BUILD_NDS
 	httpOnly    = Options_GetBool(OPT_HTTP_ONLY, true);
 #else
 	httpOnly    = Options_GetBool(OPT_HTTP_ONLY, false);

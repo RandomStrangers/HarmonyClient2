@@ -14,7 +14,7 @@ int Gen_Seed;
 
 volatile float Gen_CurrentProgress;
 volatile const char* Gen_CurrentState;
-volatile cc_bool gen_done;
+volatile hc_bool gen_done;
 
 /* There are two main types of multitasking: */
 /*  - Pre-emptive multitasking (system automatically switches between threads) */
@@ -27,12 +27,12 @@ volatile cc_bool gen_done;
 /*   To avoid that, on these systems, map generation may be divided into */
 /*     a series of steps so that ClassiCube can periodically switch back */
 /*     to the game thread to ensure that the game itself still (slowly) runs. */
-#ifdef CC_BUILD_COOPTHREADED
+#ifdef HC_BUILD_COOPTHREADED
 static int gen_step;
-static cc_uint64 lastRender;
+static hc_uint64 lastRender;
 
 #define GEN_COOP_BEGIN \
-	cc_uint64 curTime; \
+	hc_uint64 curTime; \
 	switch (gen_step) {
 
 #define GEN_COOP_STEP(index, step) \
@@ -52,7 +52,7 @@ static void Gen_Run(void) {
 	Gen_Active->Generate();
 }
 
-cc_bool Gen_IsDone(void) {
+hc_bool Gen_IsDone(void) {
 	/* Resume map generation if incomplete */
 	if (!gen_done) Gen_Active->Generate();
 	return gen_done;
@@ -74,7 +74,7 @@ static void Gen_Run(void) {
 	Thread_Detach(thread);
 }
 
-cc_bool Gen_IsDone(void) { return gen_done; }
+hc_bool Gen_IsDone(void) { return gen_done; }
 #endif
 
 static void Gen_Reset(void) {
@@ -100,7 +100,7 @@ void Gen_Start(void) {
 *-----------------------------------------------------Flatgrass gen-------------------------------------------------------*
 *#########################################################################################################################*/
 static void FlatgrassGen_MapSet(int yBeg, int yEnd, BlockRaw block) {
-	cc_uint32 oneY = (cc_uint32)World.OneY;
+	hc_uint32 oneY = (hc_uint32)World.OneY;
 	BlockRaw* ptr = Gen_Blocks;
 	int y, yHeight;
 
@@ -114,7 +114,7 @@ static void FlatgrassGen_MapSet(int yBeg, int yEnd, BlockRaw block) {
 	}
 }
 
-static cc_bool FlatgrassGen_Prepare(void) {
+static hc_bool FlatgrassGen_Prepare(void) {
 	return true;
 }
 
@@ -141,8 +141,8 @@ const struct MapGenerator FlatgrassGen = {
 *---------------------------------------------------Noise generation------------------------------------------------------*
 *#########################################################################################################################*/
 #define NOISE_TABLE_SIZE 512
-static void ImprovedNoise_Init(cc_uint8* p, RNGState* rnd) {
-	cc_uint8 tmp;
+static void ImprovedNoise_Init(hc_uint8* p, RNGState* rnd) {
+	hc_uint8 tmp;
 	int i, j;
 	for (i = 0; i < 256; i++) { p[i] = i; }
 
@@ -157,7 +157,7 @@ static void ImprovedNoise_Init(cc_uint8* p, RNGState* rnd) {
 	}
 }
 
-static float ImprovedNoise_Calc(const cc_uint8* p, float x, float y) {
+static float ImprovedNoise_Calc(const hc_uint8* p, float x, float y) {
 	int xFloor, yFloor, X, Y;
 	float u, v;
 	int A, B, hash;
@@ -195,7 +195,7 @@ static float ImprovedNoise_Calc(const cc_uint8* p, float x, float y) {
 }
 
 
-struct OctaveNoise { cc_uint8 p[8][NOISE_TABLE_SIZE]; int octaves; };
+struct OctaveNoise { hc_uint8 p[8][NOISE_TABLE_SIZE]; int octaves; };
 static void OctaveNoise_Init(struct OctaveNoise* n, RNGState* rnd, int octaves) {
 	int i;
 	n->octaves = octaves;
@@ -235,7 +235,7 @@ static float CombinedNoise_Calc(const struct CombinedNoise* n, float x, float y)
 *----------------------------------------------------Notchy map gen-------------------------------------------------------*
 *#########################################################################################################################*/
 static int waterLevel, minHeight;
-static cc_int16* heightmap;
+static hc_int16* heightmap;
 static RNGState rnd;
 
 static void NotchyGen_FillOblateSpheroid(int x, int y, int z, float radius, BlockRaw block) {
@@ -335,7 +335,7 @@ static void NotchyGen_CreateHeightmap(void) {
 }
 
 static int NotchyGen_CreateStrataFast(void) {
-	cc_uint32 oneY = (cc_uint32)World.OneY;
+	hc_uint32 oneY = (hc_uint32)World.OneY;
 	int stoneHeight, airHeight;
 	int y;
 
@@ -692,12 +692,12 @@ static void NotchyGen_PlantTrees(void) {
 	}
 }
 
-static cc_bool NotchyGen_Prepare(void) {
+static hc_bool NotchyGen_Prepare(void) {
 	Random_Seed(&rnd, Gen_Seed);
 	waterLevel = World.Height / 2;	
 	minHeight  = World.Height;
 
-	heightmap  = (cc_int16*)Mem_TryAlloc(World.Width * World.Length, 2);
+	heightmap  = (hc_int16*)Mem_TryAlloc(World.Width * World.Length, 2);
 	return heightmap != NULL;
 }
 
@@ -737,7 +737,7 @@ const struct MapGenerator NotchyGen = {
 BlockRaw* Tree_Blocks;
 RNGState* Tree_Rnd;
 
-cc_bool TreeGen_CanGrow(int treeX, int treeY, int treeZ, int treeHeight) {
+hc_bool TreeGen_CanGrow(int treeX, int treeY, int treeZ, int treeHeight) {
 	int baseHeight = treeHeight - 4;
 	int index;
 	int x, y, z;

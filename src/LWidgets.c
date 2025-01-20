@@ -1,5 +1,5 @@
 #include "LWidgets.h"
-#ifndef CC_BUILD_WEB
+#ifndef HC_BUILD_WEB
 #include "String.h"
 #include "Gui.h"
 #include "Drawer2D.h"
@@ -68,7 +68,7 @@ void LWidget_DrawBorder(struct Context2D* ctx, BitmapCol color, int borderX, int
 /*########################################################################################################################*
 *------------------------------------------------------ButtonWidget-------------------------------------------------------*
 *#########################################################################################################################*/
-static void LButton_DrawBase(struct Context2D* ctx, int x, int y, int width, int height, cc_bool active) {
+static void LButton_DrawBase(struct Context2D* ctx, int x, int y, int width, int height, hc_bool active) {
 	BitmapCol color = active ? Launcher_Theme.ButtonForeActiveColor 
 							 : Launcher_Theme.ButtonForeColor;
 
@@ -85,14 +85,14 @@ static void LButton_DrawBase(struct Context2D* ctx, int x, int y, int width, int
 
 static void LButton_DrawBorder(struct Context2D* ctx, int x, int y, int width, int height) {
 	BitmapCol backColor = Launcher_Theme.ButtonBorderColor;
-#ifdef CC_BUILD_IOS
+#ifdef HC_BUILD_IOS
 	LWidget_DrawBorder(ctx,      backColor, oneX, oneY, x, y, width, height);
 #else
 	LWidget_DrawInsetBorder(ctx, backColor, oneX, oneY, x, y, width, height);
 #endif
 }
 
-static void LButton_DrawHighlight(struct Context2D* ctx, int x, int y, int width, int height, cc_bool active) {
+static void LButton_DrawHighlight(struct Context2D* ctx, int x, int y, int width, int height, hc_bool active) {
 	BitmapCol activeColor = BitmapColor_RGB(189, 198, 255);
 	BitmapCol color       = Launcher_Theme.ButtonHighlightColor;
 
@@ -112,7 +112,7 @@ static void LButton_DrawHighlight(struct Context2D* ctx, int x, int y, int width
 	}
 }
 
-void LButton_DrawBackground(struct Context2D* ctx, int x, int y, int width, int height, cc_bool active) {
+void LButton_DrawBackground(struct Context2D* ctx, int x, int y, int width, int height, hc_bool active) {
 	LButton_DrawBase(     ctx, x, y, width, height, active);
 	LButton_DrawBorder(   ctx, x, y, width, height);
 	LButton_DrawHighlight(ctx, x, y, width, height, active);
@@ -123,13 +123,13 @@ static void LButton_Draw(void* widget) {
 	LBackend_ButtonDraw(w);
 }
 
-static void LButton_Hover(void* w, int idx, cc_bool wasOver) {
+static void LButton_Hover(void* w, int idx, hc_bool wasOver) {
 	/* only need to redraw when changing from unhovered to active */
 	if (!wasOver) LBackend_NeedsRedraw(w);
 }
 
 static void LButton_Unhover(void* w) { LBackend_NeedsRedraw(w); }
-static void LButton_OnSelect(void* w,   int idx, cc_bool wasSelected) { LBackend_NeedsRedraw(w); }
+static void LButton_OnSelect(void* w,   int idx, hc_bool wasSelected) { LBackend_NeedsRedraw(w); }
 static void LButton_OnUnselect(void* w, int idx) { LBackend_NeedsRedraw(w); }
 
 static const struct LWidgetVTABLE lbutton_VTABLE = {
@@ -184,7 +184,7 @@ void LCheckbox_Add(void* screen, struct LCheckbox* w, const char* text,
 	LScreen_AddWidget(screen, w);
 }
 
-void LCheckbox_Set(struct LCheckbox* w, cc_bool value) {
+void LCheckbox_Set(struct LCheckbox* w, hc_bool value) {
 	w->value = value;
 	LBackend_CheckboxUpdate(w);
 }
@@ -193,7 +193,7 @@ void LCheckbox_Set(struct LCheckbox* w, cc_bool value) {
 /*########################################################################################################################*
 *------------------------------------------------------InputWidget--------------------------------------------------------*
 *#########################################################################################################################*/
-void LInput_UNSAFE_GetText(struct LInput* w, cc_string* text) {
+void LInput_UNSAFE_GetText(struct LInput* w, hc_string* text) {
 	int i;
 	if (w->inputType != KEYBOARD_TYPE_PASSWORD) { *text = w->text; return; }
 
@@ -212,7 +212,7 @@ static void LInput_TickCaret(void* widget) {
 	LBackend_InputTick(w);
 }
 
-static void LInput_Select(void* widget, int idx, cc_bool wasSelected) {
+static void LInput_Select(void* widget, int idx, hc_bool wasSelected) {
 	struct LInput* w = (struct LInput*)widget;
 	LBackend_InputSelect(w, idx, wasSelected);
 }
@@ -222,7 +222,7 @@ static void LInput_Unselect(void* widget, int idx) {
 	LBackend_InputUnselect(w);
 }
 
-static void LInput_AdvanceCaretPos(struct LInput* w, cc_bool forwards) {
+static void LInput_AdvanceCaretPos(struct LInput* w, hc_bool forwards) {
 	if (forwards && w->caretPos == -1) return;
 	if (!forwards && w->caretPos == 0) return;
 	if (w->caretPos == -1 && !forwards) /* caret after text */
@@ -234,7 +234,7 @@ static void LInput_AdvanceCaretPos(struct LInput* w, cc_bool forwards) {
 }
 
 static void LInput_CopyFromClipboard(struct LInput* w) {
-	cc_string text; char textBuffer[2048];
+	hc_string text; char textBuffer[2048];
 	String_InitArray(text, textBuffer);
 
 	Clipboard_GetText(&text);
@@ -246,7 +246,7 @@ static void LInput_CopyFromClipboard(struct LInput* w) {
 }
 
 /* If caret position is now beyond end of text, resets to -1 */
-static CC_INLINE void LInput_ClampCaret(struct LInput* w) {
+static HC_INLINE void LInput_ClampCaret(struct LInput* w) {
 	if (w->caretPos >= w->text.length) w->caretPos = -1;
 }
 
@@ -279,7 +279,7 @@ static void LInput_Delete(struct LInput* w) {
 	LBackend_InputUpdate(w);
 }
 
-static cc_bool LInput_KeyDown(void* widget, int key, cc_bool was, struct InputDevice* device) {
+static hc_bool LInput_KeyDown(void* widget, int key, hc_bool was, struct InputDevice* device) {
 	struct LInput* w = (struct LInput*)widget;
 	if (key == CCKEY_BACKSPACE) {
 		LInput_Backspace(w);
@@ -300,7 +300,7 @@ static cc_bool LInput_KeyDown(void* widget, int key, cc_bool was, struct InputDe
 	return true;
 }
 
-static cc_bool LInput_CanAppend(struct LInput* w, char c) {
+static hc_bool LInput_CanAppend(struct LInput* w, char c) {
 	switch (w->inputType) {
 	case KEYBOARD_TYPE_PASSWORD:
 		return true; /* keyboard accepts all characters */
@@ -311,7 +311,7 @@ static cc_bool LInput_CanAppend(struct LInput* w, char c) {
 }
 
 /* Appends a character to the currently entered text */
-static CC_NOINLINE cc_bool LInput_Append(struct LInput* w, char c) {
+static HC_NOINLINE hc_bool LInput_Append(struct LInput* w, char c) {
 	if (LInput_CanAppend(w, c) && w->text.length < w->text.capacity) {
 		if (w->caretPos == -1) {
 			String_Append(&w->text, c);
@@ -326,13 +326,13 @@ static CC_NOINLINE cc_bool LInput_Append(struct LInput* w, char c) {
 
 static void LInput_KeyChar(void* widget, char c) {
 	struct LInput* w = (struct LInput*)widget;
-	cc_bool appended = LInput_Append(w, c);
+	hc_bool appended = LInput_Append(w, c);
 
 	if (appended && w->TextChanged) w->TextChanged(w);
 	if (appended) LBackend_InputUpdate(w);
 }
 
-static void LInput_TextChanged(void* widget, const cc_string* str) {
+static void LInput_TextChanged(void* widget, const hc_string* str) {
 	struct LInput* w = (struct LInput*)widget;
 	LInput_SetText(w, str);
 	if (w->TextChanged) w->TextChanged(w);
@@ -365,7 +365,7 @@ void LInput_Add(void* screen, struct LInput* w, int width, const char* hintText,
 	LScreen_AddWidget(screen, w);
 }
 
-void LInput_SetText(struct LInput* w, const cc_string* text) {
+void LInput_SetText(struct LInput* w, const hc_string* text) {
 	String_Copy(&w->text, text);
 	LInput_ClampCaret(w);
 	LBackend_InputUpdate(w);
@@ -377,7 +377,7 @@ void LInput_ClearText(struct LInput* w) {
 	LBackend_InputUpdate(w);
 }
 
-void LInput_AppendString(struct LInput* w, const cc_string* str) {
+void LInput_AppendString(struct LInput* w, const hc_string* str) {
 	int i, appended = 0;
 	for (i = 0; i < str->length; i++) {
 		if (LInput_Append(w, str->buffer[i])) appended++;
@@ -387,7 +387,7 @@ void LInput_AppendString(struct LInput* w, const cc_string* str) {
 	if (appended) LBackend_InputUpdate(w);
 }
 
-void LInput_SetString(struct LInput* w, const cc_string* str) {
+void LInput_SetString(struct LInput* w, const hc_string* str) {
 	LInput_SetText(w, str);
 	if (w->TextChanged) w->TextChanged(w);
 }
@@ -419,14 +419,14 @@ void LLabel_Add(void* screen, struct LLabel* w, const char* text,
 	LScreen_AddWidget(screen, w);
 }
 
-void LLabel_SetText(struct LLabel* w, const cc_string* text) {
+void LLabel_SetText(struct LLabel* w, const hc_string* text) {
 	String_Copy(&w->text, text);
 	LBackend_LabelUpdate(w);
 	LBackend_LayoutWidget((struct LWidget*)w);
 }
 
 void LLabel_SetConst(struct LLabel* w, const char* text) {
-	cc_string str = String_FromReadonly(text);
+	hc_string str = String_FromReadonly(text);
 	LLabel_SetText(w, &str);
 }
 
@@ -543,7 +543,7 @@ static struct LTableColumn tableColumns[] = {
 };
 
 
-void LTable_FormatUptime(cc_string* dst, int uptime) {
+void LTable_FormatUptime(hc_string* dst, int uptime) {
 	char unit = 's';
 
 	if (uptime >= SECS_PER_DAY * 7) {
@@ -595,7 +595,7 @@ void LTable_SetSelectedTo(struct LTable* w, int index) {
 }
 
 void LTable_RowClick(struct LTable* w, int row) {
-	cc_uint64 now;
+	hc_uint64 now;
 	LTable_SetSelectedTo(w, row);
 	now = Stopwatch_Measure();
 
@@ -608,12 +608,12 @@ void LTable_RowClick(struct LTable* w, int row) {
 	w->_lastClick = now;
 }
 
-cc_bool LTable_HandlesKey(int key, struct InputDevice* device) {
+hc_bool LTable_HandlesKey(int key, struct InputDevice* device) {
 	return key == device->upButton   || key == device->pageUpButton ||
 		   key == device->downButton || key == device->pageDownButton;
 }
 
-static cc_bool LTable_KeyDown(void* widget, int key, cc_bool was, struct InputDevice* device) {
+static hc_bool LTable_KeyDown(void* widget, int key, hc_bool was, struct InputDevice* device) {
 	struct LTable* w = (struct LTable*)widget;
 	int index = LTable_GetSelectedIndex(w);
 
@@ -632,12 +632,12 @@ static cc_bool LTable_KeyDown(void* widget, int key, cc_bool was, struct InputDe
 	return true;
 }
 
-static void LTable_MouseDown(void* widget, int idx, cc_bool wasOver) {
+static void LTable_MouseDown(void* widget, int idx, hc_bool wasOver) {
 	struct LTable* w = (struct LTable*)widget;
 	LBackend_TableMouseDown(w, idx);
 }
 
-static void LTable_MouseMove(void* widget, int idx, cc_bool wasOver) {
+static void LTable_MouseMove(void* widget, int idx, hc_bool wasOver) {
 	struct LTable* w = (struct LTable*)widget;
 	LBackend_TableMouseMove(w, idx);
 }
@@ -734,7 +734,7 @@ static int LTable_SortOrder(const struct ServerInfo* a, const struct ServerInfo*
 }
 
 static void LTable_QuickSort(int left, int right) {
-	cc_uint16* keys = FetchServersTask.orders; cc_uint16 key;
+	hc_uint16* keys = FetchServersTask.orders; hc_uint16 key;
 
 	while (left < right) {
 		int i = left, j = right;
@@ -773,7 +773,7 @@ void LTable_ShowSelected(struct LTable* w) {
 	LTable_ClampTopRow(w);
 }
 
-BitmapCol LTable_RowColor(int row, cc_bool selected, cc_bool featured) {
+BitmapCol LTable_RowColor(int row, hc_bool selected, hc_bool featured) {
 	BitmapCol featSelColor  = BitmapColor_RGB( 50,  53,  0);
 	BitmapCol featuredColor = BitmapColor_RGB(101, 107,  0);
 	BitmapCol selectedColor = BitmapColor_RGB( 40,  40, 40);

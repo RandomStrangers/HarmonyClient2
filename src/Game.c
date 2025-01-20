@@ -43,8 +43,8 @@
 #include "EntityRenderers.h"
 
 struct _GameData Game;
-static cc_uint64 frameStart;
-cc_bool Game_UseCPEBlocks;
+static hc_uint64 frameStart;
+hc_bool Game_UseCPEBlocks;
 
 struct RayTracer Game_SelectedPos;
 int Game_ViewDistance     = DEFAULT_VIEWDIST;
@@ -52,24 +52,24 @@ int Game_UserViewDistance = DEFAULT_VIEWDIST;
 int Game_MaxViewDistance  = DEFAULT_MAX_VIEWDIST;
 
 int     Game_FpsLimit, Game_Vertices;
-cc_bool Game_SimpleArmsAnim;
-static cc_bool gameRunning;
+hc_bool Game_SimpleArmsAnim;
+static hc_bool gameRunning;
 static float gfx_minFrameMs;
 
-cc_bool Game_ClassicMode, Game_ClassicHacks;
-cc_bool Game_AllowCustomBlocks;
-cc_bool Game_AllowServerTextures;
-cc_bool Game_Anaglyph3D;
+hc_bool Game_ClassicMode, Game_ClassicHacks;
+hc_bool Game_AllowCustomBlocks;
+hc_bool Game_AllowServerTextures;
+hc_bool Game_Anaglyph3D;
 
-cc_bool Game_ViewBobbing, Game_HideGui;
-cc_bool Game_BreakableLiquids, Game_ScreenshotRequested;
+hc_bool Game_ViewBobbing, Game_HideGui;
+hc_bool Game_BreakableLiquids, Game_ScreenshotRequested;
 struct GameVersion Game_Version;
 
 static char usernameBuffer[STRING_SIZE];
 static char mppassBuffer[STRING_SIZE];
-cc_string Game_Username  = String_FromArray(usernameBuffer);
-cc_string Game_Mppass    = String_FromArray(mppassBuffer);
-#ifdef CC_BUILD_SPLITSCREEN
+hc_string Game_Username  = String_FromArray(usernameBuffer);
+hc_string Game_Mppass    = String_FromArray(mppassBuffer);
+#ifdef HC_BUILD_SPLITSCREEN
 int Game_NumStates = 1;
 #endif
 
@@ -106,7 +106,7 @@ int ScheduledTask_Add(double interval, ScheduledTaskCallback callback) {
 
 void Game_ToggleFullscreen(void) {
 	int state = Window_GetWindowState();
-	cc_result res;
+	hc_result res;
 
 	if (state == WINDOW_STATE_FULLSCREEN) {
 		res = Window_ExitFullscreen();
@@ -154,7 +154,7 @@ void Game_CycleViewDistance(void) {
 	}
 }
 
-cc_bool Game_ReduceVRAM(void) {
+hc_bool Game_ReduceVRAM(void) {
 	if (Game_UserViewDistance <= 16) return false;
 	Game_UserViewDistance /= 2;
 	Game_UserViewDistance = max(16, Game_UserViewDistance);
@@ -181,7 +181,7 @@ void Game_UserSetViewDistance(int distance) {
 	Game_SetViewDistance(distance);
 }
 
-void Game_Disconnect(const cc_string* title, const cc_string* reason) {
+void Game_Disconnect(const hc_string* title, const hc_string* reason) {
 	Event_RaiseVoid(&NetEvents.Disconnected);
 	Game_Reset();
 	DisconnectScreen_Show(title, reason);
@@ -213,17 +213,17 @@ void Game_ChangeBlock(int x, int y, int z, BlockID block) {
 	Server.SendBlock(x, y, z, old, block);
 }
 
-cc_bool Game_CanPick(BlockID block) {
+hc_bool Game_CanPick(BlockID block) {
 	if (Blocks.Draw[block] == DRAW_GAS)    return false;
 	if (Blocks.Draw[block] == DRAW_SPRITE) return true;
 	return Blocks.Collide[block] != COLLIDE_LIQUID || Game_BreakableLiquids;
 }
 
-cc_bool Game_UpdateTexture(GfxResourceID* texId, struct Stream* src, const cc_string* file, 
-							cc_uint8* skinType, int* heightDivisor) {
+hc_bool Game_UpdateTexture(GfxResourceID* texId, struct Stream* src, const hc_string* file, 
+							hc_uint8* skinType, int* heightDivisor) {
 	struct Bitmap bmp;
-	cc_bool success;
-	cc_result res;
+	hc_bool success;
+	hc_result res;
 	
 	res = Png_Decode(&bmp, src);
 	if (res) { Logger_SysWarn2(res, "decoding", file); }
@@ -242,7 +242,7 @@ cc_bool Game_UpdateTexture(GfxResourceID* texId, struct Stream* src, const cc_st
 	return success;
 }
 
-cc_bool Game_ValidateBitmap(const cc_string* file, struct Bitmap* bmp) {
+hc_bool Game_ValidateBitmap(const hc_string* file, struct Bitmap* bmp) {
 	int maxWidth = Gfx.MaxTexWidth, maxHeight = Gfx.MaxTexHeight;
 	float texSize, maxSize;
 
@@ -272,7 +272,7 @@ cc_bool Game_ValidateBitmap(const cc_string* file, struct Bitmap* bmp) {
 	return Game_ValidateBitmapPow2(file, bmp);
 }
 
-cc_bool Game_ValidateBitmapPow2(const cc_string* file, struct Bitmap* bmp) {
+hc_bool Game_ValidateBitmapPow2(const hc_string* file, struct Bitmap* bmp) {
 	if (!Math_IsPowOf2(bmp->width) || !Math_IsPowOf2(bmp->height)) {
 		Chat_Add1("&cUnable to use %s from the texture pack.", file);
 
@@ -322,14 +322,14 @@ static void HandleInactiveChanged(void* obj) {
 		Gfx.ReducedPerfModeCooldown = 2;
 	}
 
-#ifdef CC_BUILD_WEB
+#ifdef HC_BUILD_WEB
 	extern void emscripten_resume_main_loop(void);
 	emscripten_resume_main_loop();
 #endif
 }
 
-static void Game_WarnFunc(const cc_string* msg) {
-	cc_string str = *msg, line;
+static void Game_WarnFunc(const hc_string* msg) {
+	hc_string str = *msg, line;
 	while (str.length) {
 		String_UNSAFE_SplitBy(&str, '\n', &line);
 		Chat_Add1("&c%s", &line);
@@ -340,7 +340,7 @@ static void LoadOptions(void) {
 	Game_ClassicMode  = Options_GetBool(OPT_CLASSIC_MODE,  false);
 	Game_ClassicHacks = Options_GetBool(OPT_CLASSIC_HACKS, false);
 	Game_Anaglyph3D   = Options_GetBool(OPT_ANAGLYPH3D,    false);
-#if defined CC_BUILD_PS1 || defined CC_BUILD_SATURN
+#if defined HC_BUILD_PS1 || defined HC_BUILD_SATURN
 	/* View bobbing requires per-frame matrix multiplications - costly on FPU less systems */
 	Game_ViewBobbing  = Options_GetBool(OPT_VIEW_BOBBING,  false);
 #else
@@ -355,15 +355,15 @@ static void LoadOptions(void) {
 	Game_ViewDistance     = Options_GetInt(OPT_VIEW_DISTANCE, 8, 4096, DEFAULT_VIEWDIST);
 	Game_UserViewDistance = Game_ViewDistance;
 	/* TODO: Do we need to support option to skip SSL */
-	/*cc_bool skipSsl = Options_GetBool("skip-ssl-check", false);
+	/*hc_bool skipSsl = Options_GetBool("skip-ssl-check", false);
 	if (skipSsl) {
 		ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
 		Options.Set("skip-ssl-check", false);
 	}*/
 }
 
-#ifdef CC_BUILD_PLUGINS
-static void LoadPlugin(const cc_string* path, void* obj, int isDirectory) {
+#ifdef HC_BUILD_PLUGINS
+static void LoadPlugin(const hc_string* path, void* obj, int isDirectory) {
 	void* lib;
 	void* verSym;  /* EXPORT int Plugin_ApiVersion = GAME_API_VER; */
 	void* compSym; /* EXPORT struct IGameComponent Plugin_Component = { (whatever) } */
@@ -397,8 +397,8 @@ static void LoadPlugin(const cc_string* path, void* obj, int isDirectory) {
 }
 
 static void LoadPlugins(void) {
-	static const cc_string dir = String_FromConst("plugins");
-	cc_result res;
+	static const hc_string dir = String_FromConst("plugins");
+	hc_result res;
 
 	Utils_EnsureDirectory("plugins");
 	res = Directory_Enum(&dir, NULL, LoadPlugin);
@@ -493,7 +493,7 @@ void Game_SetFpsLimit(int method) {
 	Game_SetMinFrameTime(minFrameTime);
 }
 
-#ifdef CC_BUILD_WEB
+#ifdef HC_BUILD_WEB
 extern void Window_SetMinFrameTime(float timeMS);
 
 void Game_SetMinFrameTime(float frameTimeMS) {
@@ -584,12 +584,12 @@ static void PerformScheduledTasks(double time) {
 }
 
 void Game_TakeScreenshot(void) {
-	cc_string filename; char fileBuffer[STRING_SIZE];
-	cc_string path;     char pathBuffer[FILENAME_SIZE];
+	hc_string filename; char fileBuffer[STRING_SIZE];
+	hc_string path;     char pathBuffer[FILENAME_SIZE];
 	struct DateTime now;
-	cc_result res;
-#ifdef CC_BUILD_WEB
-	cc_filepath str;
+	hc_result res;
+#ifdef HC_BUILD_WEB
+	hc_filepath str;
 #else
 	struct Stream stream;
 #endif
@@ -600,7 +600,7 @@ void Game_TakeScreenshot(void) {
 	String_Format3(&filename, "screenshot_%p4-%p2-%p2", &now.year, &now.month, &now.day);
 	String_Format3(&filename, "-%p2-%p2-%p2.png", &now.hour, &now.minute, &now.second);
 
-#ifdef CC_BUILD_WEB
+#ifdef HC_BUILD_WEB
 	extern void interop_TakeScreenshot(const char* path);
 	Platform_EncodePath(&str, &filename);
 	interop_TakeScreenshot(&str);
@@ -621,14 +621,14 @@ void Game_TakeScreenshot(void) {
 	if (res) { Logger_SysWarn2(res, "closing", &path); return; }
 	Chat_Add1("&eTaken screenshot as: %s", &filename);
 
-#ifdef CC_BUILD_MOBILE
+#ifdef HC_BUILD_MOBILE
 	Platform_ShareScreenshot(&filename);
 #endif
 #endif
 }
 
 
-#ifdef CC_BUILD_WEB
+#ifdef HC_BUILD_WEB
 static void LimitFPS(void) {
 	/* Can't use Thread_Sleep on the web. (spinwaits instead of sleeping) */
 	/* Instead the web browser manages the frame timing */
@@ -636,8 +636,8 @@ static void LimitFPS(void) {
 #else
 static float gfx_targetTime, gfx_actualTime;
 
-static CC_INLINE float ElapsedMilliseconds(cc_uint64 beg, cc_uint64 end) {
-	cc_uint64 elapsed = Stopwatch_ElapsedMicroseconds(beg, end);
+static HC_INLINE float ElapsedMilliseconds(hc_uint64 beg, hc_uint64 end) {
+	hc_uint64 elapsed = Stopwatch_ElapsedMicroseconds(beg, end);
 	if (elapsed > 5000000) elapsed = 5000000;
 	
 	return (int)elapsed / 1000.0f;
@@ -646,7 +646,7 @@ static CC_INLINE float ElapsedMilliseconds(cc_uint64 beg, cc_uint64 end) {
 /* Examines difference between expected and actual frame times, */
 /*  then sleeps if actual frame time is too fast */
 static void LimitFPS(void) {
-	cc_uint64 frameEnd, sleepEnd;
+	hc_uint64 frameEnd, sleepEnd;
 	
 	frameEnd = Stopwatch_Measure();
 	gfx_actualTime += ElapsedMilliseconds(frameStart, frameEnd);
@@ -669,7 +669,7 @@ static void LimitFPS(void) {
 }
 #endif
 
-static CC_INLINE void Game_DrawFrame(float delta, float t) {
+static HC_INLINE void Game_DrawFrame(float delta, float t) {
 	int i;
 
 	if (!Gui_GetBlocksWorld()) {
@@ -694,7 +694,7 @@ static CC_INLINE void Game_DrawFrame(float delta, float t) {
 	}
 
 /* TODO find a better solution than this */
-#ifdef CC_BUILD_3DS
+#ifdef HC_BUILD_3DS
 	if (Game_Anaglyph3D) {
 		extern void Gfx_SetTopRight(void);
 		Gfx_SetTopRight();
@@ -704,7 +704,7 @@ static CC_INLINE void Game_DrawFrame(float delta, float t) {
 	Gfx_End2D();
 }
 
-#ifdef CC_BUILD_SPLITSCREEN
+#ifdef HC_BUILD_SPLITSCREEN
 static void DrawSplitscreen(float delta, float t, int i, int x, int y, int w, int h) {
 	Gfx_SetViewport(x, y, w, h);
 	Gfx_SetScissor( x, y, w, h);
@@ -726,12 +726,12 @@ int Game_MapState(int deviceIndex) {
 }
 #endif
 
-static CC_INLINE void Game_RenderFrame(void) {
+static HC_INLINE void Game_RenderFrame(void) {
 	struct ScheduledTask entTask;
 	float t;
 
-	cc_uint64 render  = Stopwatch_Measure();
-	cc_uint64 elapsed = Stopwatch_ElapsedMicroseconds(frameStart, render);
+	hc_uint64 render  = Stopwatch_Measure();
+	hc_uint64 elapsed = Stopwatch_ElapsedMicroseconds(frameStart, render);
 	/* avoid large delta with suspended process */
 	if (elapsed > 5000000) elapsed = 5000000; 
 	
@@ -764,7 +764,7 @@ static CC_INLINE void Game_RenderFrame(void) {
 
 	if (Input.Sources & INPUT_SOURCE_GAMEPAD) Gamepad_Tick(delta);
 
-#ifdef CC_BUILD_SPLITSCREEN
+#ifdef HC_BUILD_SPLITSCREEN
 	/* TODO: find a better solution */
 	for (int i = 0; i < Game_NumStates; i++)
 	{
@@ -798,7 +798,7 @@ static CC_INLINE void Game_RenderFrame(void) {
 	if (Window_Main.Inactive) return;
 	Gfx_ClearBuffers(GFX_BUFFER_COLOR | GFX_BUFFER_DEPTH);
 	
-#ifdef CC_BUILD_SPLITSCREEN
+#ifdef HC_BUILD_SPLITSCREEN
 	switch (Game_NumStates) {
 		case 1:
 			Game_DrawFrame(delta, t); break;
@@ -848,7 +848,7 @@ static void Game_Free(void) {
 	Window_DisableRawMouse();
 }
 
-#ifdef CC_BUILD_WEB
+#ifdef HC_BUILD_WEB
 void Game_DoFrame(void) {
 	if (gameRunning) {
 		Game_RenderFrame();
@@ -863,7 +863,7 @@ static void Game_RunLoop(void) {
 	/* (i.e. web browser is in charge of calling Game_DoFrame, not us) */
 }
 
-cc_bool Game_ShouldClose(void) {
+hc_bool Game_ShouldClose(void) {
 	if (!gameRunning) return true;
 
 	if (Server.IsSinglePlayer) {
@@ -886,7 +886,7 @@ static void Game_RunLoop(void) {
 }
 #endif
 
-void Game_Run(int width, int height, const cc_string* title) {
+void Game_Run(int width, int height, const hc_string* title) {
 	Window_Create3D(width, height);
 	Window_SetTitle(title);
 	Window_Show();

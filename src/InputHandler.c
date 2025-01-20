@@ -15,7 +15,6 @@
 #include "Camera.h"
 #include "Inventory.h"
 #include "World.h"
-#include "Event.h"
 #include "Window.h"
 #include "Entity.h"
 #include "Screens.h"
@@ -26,12 +25,12 @@
 #include "AxisLinesRenderer.h"
 #include "Picking.h"
 
-static cc_bool input_buttonsDown[3];
+static hc_bool input_buttonsDown[3];
 static int input_pickingId = -1;
 static double input_lastClick;
 static float input_fovIndex = -1.0f;
-#ifdef CC_BUILD_WEB
-static cc_bool suppressEscape;
+#ifdef HC_BUILD_WEB
+static hc_bool suppressEscape;
 #endif
 enum MouseButton_ { MOUSE_LEFT, MOUSE_RIGHT, MOUSE_MIDDLE };
 
@@ -70,7 +69,7 @@ static struct LocalPlayerInput gamepadInput = { PlayerInputGamepad };
 /*########################################################################################################################*
 *---------------------------------------------------------Hotkeys---------------------------------------------------------*
 *#########################################################################################################################*/
-const cc_uint8 Hotkeys_LWJGL[256] = {
+const hc_uint8 Hotkeys_LWJGL[256] = {
 	0, CCKEY_ESCAPE, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', CCKEY_MINUS, CCKEY_EQUALS, CCKEY_BACKSPACE, CCKEY_TAB,
 	'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', CCKEY_LBRACKET, CCKEY_RBRACKET, CCKEY_ENTER, CCKEY_LCTRL, 'A', 'S',
 	'D', 'F', 'G', 'H', 'J', 'K', 'L', CCKEY_SEMICOLON, CCKEY_QUOTE, CCKEY_TILDE, CCKEY_LSHIFT, CCKEY_BACKSLASH, 'Z', 'X', 'C', 'V',
@@ -96,7 +95,7 @@ static void Hotkeys_QuickSort(int left, int right) {
 
 	while (left < right) {
 		int i = left, j = right;
-		cc_uint8 pivot = keys[(i + j) >> 1].mods;
+		hc_uint8 pivot = keys[(i + j) >> 1].mods;
 
 		/* partition the list */
 		while (i <= j) {
@@ -109,7 +108,7 @@ static void Hotkeys_QuickSort(int left, int right) {
 	}
 }
 
-static void Hotkeys_AddNewHotkey(int trigger, cc_uint8 modifiers, const cc_string* text, cc_uint8 flags) {
+static void Hotkeys_AddNewHotkey(int trigger, hc_uint8 modifiers, const hc_string* text, hc_uint8 flags) {
 	struct HotkeyData hKey;
 	hKey.trigger = trigger;
 	hKey.mods    = modifiers;
@@ -138,7 +137,7 @@ static void Hotkeys_RemoveText(int index) {
 }
 
 
-void Hotkeys_Add(int trigger, cc_uint8 modifiers, const cc_string* text, cc_uint8 flags) {
+void Hotkeys_Add(int trigger, hc_uint8 modifiers, const hc_string* text, hc_uint8 flags) {
 	struct HotkeyData* hk = HotkeysList;
 	int i;
 
@@ -154,7 +153,7 @@ void Hotkeys_Add(int trigger, cc_uint8 modifiers, const cc_string* text, cc_uint
 	Hotkeys_AddNewHotkey(trigger, modifiers, text, flags);
 }
 
-cc_bool Hotkeys_Remove(int trigger, cc_uint8 modifiers) {
+hc_bool Hotkeys_Remove(int trigger, hc_uint8 modifiers) {
 	struct HotkeyData* hk = HotkeysList;
 	int i, j;
 
@@ -186,12 +185,12 @@ int Hotkeys_FindPartial(int key) {
 	return -1;
 }
 
-static const cc_string prefix = String_FromConst("hotkey-");
-static void StoredHotkey_Parse(cc_string* key, cc_string* value) {
-	cc_string strKey, strMods, strMore, strText;
+static const hc_string prefix = String_FromConst("hotkey-");
+static void StoredHotkey_Parse(hc_string* key, hc_string* value) {
+	hc_string strKey, strMods, strMore, strText;
 	int trigger;
-	cc_uint8 modifiers;
-	cc_bool more;
+	hc_uint8 modifiers;
+	hc_bool more;
 
 	/* Format is: key&modifiers = more-input&text */
 	key->length -= prefix.length; key->buffer += prefix.length;
@@ -208,7 +207,7 @@ static void StoredHotkey_Parse(cc_string* key, cc_string* value) {
 }
 
 static void StoredHotkeys_LoadAll(void) {
-	cc_string entry, key, value;
+	hc_string entry, key, value;
 	int i;
 
 	for (i = 0; i < Options.count; i++) {
@@ -220,8 +219,8 @@ static void StoredHotkeys_LoadAll(void) {
 	}
 }
 
-void StoredHotkeys_Load(int trigger, cc_uint8 modifiers) {
-	cc_string key, value; char keyBuffer[STRING_SIZE];
+void StoredHotkeys_Load(int trigger, hc_uint8 modifiers) {
+	hc_string key, value; char keyBuffer[STRING_SIZE];
 	String_InitArray(key, keyBuffer);
 
 	String_Format2(&key, "hotkey-%c&%b", Input_StorageNames[trigger], &modifiers);
@@ -231,17 +230,17 @@ void StoredHotkeys_Load(int trigger, cc_uint8 modifiers) {
 	StoredHotkey_Parse(&key, &value);
 }
 
-void StoredHotkeys_Remove(int trigger, cc_uint8 modifiers) {
-	cc_string key; char keyBuffer[STRING_SIZE];
+void StoredHotkeys_Remove(int trigger, hc_uint8 modifiers) {
+	hc_string key; char keyBuffer[STRING_SIZE];
 	String_InitArray(key, keyBuffer);
 
 	String_Format2(&key, "hotkey-%c&%b", Input_StorageNames[trigger], &modifiers);
 	Options_SetString(&key, NULL);
 }
 
-void StoredHotkeys_Add(int trigger, cc_uint8 modifiers, cc_bool moreInput, const cc_string* text) {
-	cc_string key;   char keyBuffer[STRING_SIZE];
-	cc_string value; char valueBuffer[STRING_SIZE * 2];
+void StoredHotkeys_Add(int trigger, hc_uint8 modifiers, hc_bool moreInput, const hc_string* text) {
+	hc_string key;   char keyBuffer[STRING_SIZE];
+	hc_string value; char valueBuffer[STRING_SIZE * 2];
 	String_InitArray(key, keyBuffer);
 	String_InitArray(value, valueBuffer);
 
@@ -254,7 +253,7 @@ void StoredHotkeys_Add(int trigger, cc_uint8 modifiers, cc_bool moreInput, const
 /*########################################################################################################################*
 *-----------------------------------------------------Mouse helpers-------------------------------------------------------*
 *#########################################################################################################################*/
-static void MouseStateUpdate(int button, cc_bool pressed) {
+static void MouseStateUpdate(int button, hc_bool pressed) {
 	struct Entity* p;
 	input_buttonsDown[button] = pressed;
 	if (!Server.SupportsPlayerClick) return;
@@ -296,12 +295,12 @@ void InputHandler_OnScreensChanged(void) {
 	MouseStateRelease(MOUSE_MIDDLE);
 }
 
-static cc_bool TouchesSolid(BlockID b) { return Blocks.Collide[b] == COLLIDE_SOLID; }
-static cc_bool PushbackPlace(struct AABB* blockBB) {
+static hc_bool TouchesSolid(BlockID b) { return Blocks.Collide[b] == COLLIDE_SOLID; }
+static hc_bool PushbackPlace(struct AABB* blockBB) {
 	struct Entity* p        = &Entities.CurPlayer->Base;
 	struct HacksComp* hacks = &Entities.CurPlayer->Hacks;
 	Face closestFace;
-	cc_bool insideMap;
+	hc_bool insideMap;
 
 	Vec3 pos = p->Position;
 	struct AABB playerBB;
@@ -342,7 +341,7 @@ static cc_bool PushbackPlace(struct AABB* blockBB) {
 	return true;
 }
 
-static cc_bool IntersectsOthers(Vec3 pos, BlockID block) {
+static hc_bool IntersectsOthers(Vec3 pos, BlockID block) {
 	struct AABB blockBB, entityBB;
 	struct Entity* e;
 	int id;
@@ -362,7 +361,7 @@ static cc_bool IntersectsOthers(Vec3 pos, BlockID block) {
 	return false;
 }
 
-static cc_bool CheckIsFree(BlockID block) {
+static hc_bool CheckIsFree(BlockID block) {
 	struct Entity* p        = &Entities.CurPlayer->Base;
 	struct HacksComp* hacks = &Entities.CurPlayer->Hacks;
 
@@ -453,11 +452,11 @@ static void InputHandler_PickBlock(void) {
 	Inventory_PickBlock(cur);
 }
 
-#ifdef CC_BUILD_TOUCH
-static cc_bool AnyBlockTouches(void);
+#ifdef HC_BUILD_TOUCH
+static hc_bool AnyBlockTouches(void);
 #endif
 void InputHandler_Tick(void) {
-	cc_bool left, middle, right;
+	hc_bool left, middle, right;
 	double now, delta;
 	
 	if (Gui.InputGrab) return;
@@ -474,7 +473,7 @@ void InputHandler_Tick(void) {
 	middle = input_buttonsDown[MOUSE_MIDDLE];
 	right  = input_buttonsDown[MOUSE_RIGHT];
 	
-#ifdef CC_BUILD_TOUCH
+#ifdef HC_BUILD_TOUCH
 	if (Input_TouchMode) {
 		left   = (Input_HoldMode == INPUT_MODE_DELETE) && AnyBlockTouches();
 		right  = (Input_HoldMode == INPUT_MODE_PLACE)  && AnyBlockTouches();
@@ -502,8 +501,8 @@ void InputHandler_Tick(void) {
 /*########################################################################################################################*
 *------------------------------------------------------Touch support------------------------------------------------------*
 *#########################################################################################################################*/
-#ifdef CC_BUILD_TOUCH
-static cc_bool AnyBlockTouches(void) {
+#ifdef HC_BUILD_TOUCH
+static hc_bool AnyBlockTouches(void) {
 	int i;
 	for (i = 0; i < Pointers_Count; i++) {
 		if (!(touches[i].type & TOUCH_TYPE_BLOCKS)) continue;
@@ -543,18 +542,18 @@ static void CheckBlockTap(int i) {
 /*########################################################################################################################*
 *-----------------------------------------------------Input helpers-------------------------------------------------------*
 *#########################################################################################################################*/
-static cc_bool InputHandler_IsShutdown(int key) {
+static hc_bool InputHandler_IsShutdown(int key) {
 	if (key == CCKEY_F4 && Input_IsAltPressed()) return true;
 
 	/* On macOS, Cmd+Q should also end the process */
-#ifdef CC_BUILD_DARWIN
+#ifdef HC_BUILD_DARWIN
 	return key == 'Q' && Input_IsWinPressed();
 #else
 	return false;
 #endif
 }
 
-static void InputHandler_Toggle(int key, cc_bool* target, const char* enableMsg, const char* disableMsg) {
+static void InputHandler_Toggle(int key, hc_bool* target, const char* enableMsg, const char* disableMsg) {
 	*target = !(*target);
 	if (*target) {
 		Chat_Add2("%c. &ePress &a%c &eto disable.",   enableMsg,  Input_DisplayNames[key]);
@@ -563,7 +562,7 @@ static void InputHandler_Toggle(int key, cc_bool* target, const char* enableMsg,
 	}
 }
 
-cc_bool InputHandler_SetFOV(int fov) {
+hc_bool InputHandler_SetFOV(int fov) {
 	struct HacksComp* h = &Entities.CurPlayer->Hacks;
 	if (!h->Enabled || !h->CanUseThirdPerson) return false;
 
@@ -572,9 +571,9 @@ cc_bool InputHandler_SetFOV(int fov) {
 	return true;
 }
 
-cc_bool Input_HandleMouseWheel(float delta) {
+hc_bool Input_HandleMouseWheel(float delta) {
 	struct HacksComp* h;
-	cc_bool hotbar;
+	hc_bool hotbar;
 
 	hotbar = Input_IsAltPressed() || Input_IsCtrlPressed() || Input_IsShiftPressed();
 	if (!hotbar && Camera.Active->Zoom(delta))   return true;
@@ -596,7 +595,7 @@ static void InputHandler_CheckZoomFov(void* obj) {
 }
 
 
-static cc_bool BindTriggered_DeleteBlock(int key, struct InputDevice* device) {
+static hc_bool BindTriggered_DeleteBlock(int key, struct InputDevice* device) {
 	if (Gui.InputGrab) return false;
 	
 	MouseStatePress(MOUSE_LEFT);
@@ -604,7 +603,7 @@ static cc_bool BindTriggered_DeleteBlock(int key, struct InputDevice* device) {
 	return true;
 }
 
-static cc_bool BindTriggered_PlaceBlock(int key, struct InputDevice* device) {
+static hc_bool BindTriggered_PlaceBlock(int key, struct InputDevice* device) {
 	if (Gui.InputGrab) return false;
 	
 	MouseStatePress(MOUSE_RIGHT);
@@ -612,7 +611,7 @@ static cc_bool BindTriggered_PlaceBlock(int key, struct InputDevice* device) {
 	return true;
 }
 
-static cc_bool BindTriggered_PickBlock(int key, struct InputDevice* device) {
+static hc_bool BindTriggered_PickBlock(int key, struct InputDevice* device) {
 	if (Gui.InputGrab) return false;
 	
 	MouseStatePress(MOUSE_MIDDLE);
@@ -633,21 +632,21 @@ static void BindReleased_PickBlock(int key, struct InputDevice* device) {
 }
 
 
-static cc_bool BindTriggered_HideFPS(int key, struct InputDevice* device) {
+static hc_bool BindTriggered_HideFPS(int key, struct InputDevice* device) {
 	if (Gui.InputGrab) return false;
 	
 	Gui.ShowFPS = !Gui.ShowFPS;
 	return true;
 }
 
-static cc_bool BindTriggered_Fullscreen(int key, struct InputDevice* device) {
+static hc_bool BindTriggered_Fullscreen(int key, struct InputDevice* device) {
 	if (Gui.InputGrab) return false;
 	
 	Game_ToggleFullscreen();
 	return true;
 }
 
-static cc_bool BindTriggered_Fog(int key, struct InputDevice* device) {
+static hc_bool BindTriggered_Fog(int key, struct InputDevice* device) {
 	if (Gui.InputGrab) return false;
 	
 	Game_CycleViewDistance();
@@ -655,14 +654,14 @@ static cc_bool BindTriggered_Fog(int key, struct InputDevice* device) {
 }
 
 
-static cc_bool BindTriggered_HideGUI(int key, struct InputDevice* device) {
+static hc_bool BindTriggered_HideGUI(int key, struct InputDevice* device) {
 	if (Gui.InputGrab) return false;
 	
 	Game_HideGui = !Game_HideGui;
 	return true;
 }
 
-static cc_bool BindTriggered_SmoothCamera(int key, struct InputDevice* device) {
+static hc_bool BindTriggered_SmoothCamera(int key, struct InputDevice* device) {
 	if (Gui.InputGrab) return false;
 	
 	InputHandler_Toggle(key, &Camera.Smooth,
@@ -671,7 +670,7 @@ static cc_bool BindTriggered_SmoothCamera(int key, struct InputDevice* device) {
 	return true;
 }
 
-static cc_bool BindTriggered_AxisLines(int key, struct InputDevice* device) {
+static hc_bool BindTriggered_AxisLines(int key, struct InputDevice* device) {
 	if (Gui.InputGrab) return false;
 	
 	InputHandler_Toggle(key, &AxisLinesRenderer_Enabled,
@@ -680,7 +679,7 @@ static cc_bool BindTriggered_AxisLines(int key, struct InputDevice* device) {
 	return true;
 } 
 
-static cc_bool BindTriggered_AutoRotate(int key, struct InputDevice* device) {
+static hc_bool BindTriggered_AutoRotate(int key, struct InputDevice* device) {
 	if (Gui.InputGrab) return false;
 	
 	InputHandler_Toggle(key, &AutoRotate_Enabled,
@@ -689,14 +688,14 @@ static cc_bool BindTriggered_AutoRotate(int key, struct InputDevice* device) {
 	return true;
 }
 
-static cc_bool BindTriggered_ThirdPerson(int key, struct InputDevice* device) {
+static hc_bool BindTriggered_ThirdPerson(int key, struct InputDevice* device) {
 	if (Gui.InputGrab) return false;
 	
 	Camera_CycleActive();
 	return true;
 }
 
-static cc_bool BindTriggered_DropBlock(int key, struct InputDevice* device) {
+static hc_bool BindTriggered_DropBlock(int key, struct InputDevice* device) {
 	if (Gui.InputGrab) return false;
 	
 	if (Inventory_CheckChangeSelected() && Inventory_SelectedBlock != BLOCK_AIR) {
@@ -708,7 +707,7 @@ static cc_bool BindTriggered_DropBlock(int key, struct InputDevice* device) {
 	return true;
 }
 
-static cc_bool BindTriggered_IDOverlay(int key, struct InputDevice* device) {
+static hc_bool BindTriggered_IDOverlay(int key, struct InputDevice* device) {
 	struct Screen* s = Gui_GetScreen(GUI_PRIORITY_TEXIDS);
 	if (s) {
 		Gui_Remove(s);
@@ -718,7 +717,7 @@ static cc_bool BindTriggered_IDOverlay(int key, struct InputDevice* device) {
 	return true;
 }
 
-static cc_bool BindTriggered_BreakLiquids(int key, struct InputDevice* device) {
+static hc_bool BindTriggered_BreakLiquids(int key, struct InputDevice* device) {
 	if (Gui.InputGrab) return false;
 	
 	InputHandler_Toggle(key, &Game_BreakableLiquids,
@@ -729,7 +728,7 @@ static cc_bool BindTriggered_BreakLiquids(int key, struct InputDevice* device) {
 
 static void HandleHotkeyDown(int key) {
 	struct HotkeyData* hkey;
-	cc_string text;
+	hc_string text;
 	int i = Hotkeys_FindPartial(key);
 
 	if (i == -1) return;
@@ -773,9 +772,9 @@ static void HookInputBinds(void) {
 *#########################################################################################################################*/
 BindTriggered Bind_OnTriggered[BIND_COUNT];
 BindReleased  Bind_OnReleased[BIND_COUNT];
-cc_uint8 Bind_IsTriggered[BIND_COUNT];
+hc_uint8 Bind_IsTriggered[BIND_COUNT];
 
-cc_bool KeyBind_IsPressed(InputBind binding) { return Bind_IsTriggered[binding]; }
+hc_bool KeyBind_IsPressed(InputBind binding) { return Bind_IsTriggered[binding]; }
 
 
 /*########################################################################################################################*
@@ -791,7 +790,7 @@ static void OnPointerDown(void* obj, int idx) {
 	/* and then another 'delete' in CheckBlockTap. */
 	input_lastClick = Game.Time;
 
-#ifdef CC_BUILD_TOUCH
+#ifdef HC_BUILD_TOUCH
 	if (Input_TouchMode && !(touches[idx].type & TOUCH_TYPE_GUI)) return;
 #endif
 	x = Pointers[idx].x; y = Pointers[idx].y;
@@ -801,7 +800,7 @@ static void OnPointerDown(void* obj, int idx) {
 		s->dirty = true;
 		mask = s->VTABLE->HandlesPointerDown(s, 1 << idx, x, y);
 
-#ifdef CC_BUILD_TOUCH
+#ifdef HC_BUILD_TOUCH
 		if (mask) {
 			/* Using &= mask instead of = mask is to handle one specific case */
 			/*  - when clicking 'Quit game' in android version, it will call  */
@@ -824,7 +823,7 @@ static void OnPointerUp(void* obj, int idx) {
 	int i, x, y;
 	if (Pointers[idx].UpHook) { Pointers[idx].UpHook(idx); return; }
 
-#ifdef CC_BUILD_TOUCH
+#ifdef HC_BUILD_TOUCH
 	CheckBlockTap(idx);
 	if (Input_TouchMode && !(touches[idx].type & TOUCH_TYPE_GUI)) return;
 #endif
@@ -837,13 +836,13 @@ static void OnPointerUp(void* obj, int idx) {
 	}
 }
 
-static void OnInputDown(void* obj, int key, cc_bool was, struct InputDevice* device) {
+static void OnInputDown(void* obj, int key, hc_bool was, struct InputDevice* device) {
 	struct Screen* s;
-	cc_bool triggered;
+	hc_bool triggered;
 	int i;
 	if (Input.DownHook) { Input.DownHook(key, device); return; }
 
-#ifndef CC_BUILD_WEB
+#ifndef HC_BUILD_WEB
 	if (key == device->escapeButton && (s = Gui_GetClosable())) {
 		/* Don't want holding down escape to go in and out of pause menu */
 		if (!was) Gui_Remove(s);
@@ -876,7 +875,7 @@ static void OnInputDown(void* obj, int key, cc_bool was, struct InputDevice* dev
 	if (Gui.InputGrab) return;
 
 	if (InputDevice_IsPause(key, device)) {
-#ifdef CC_BUILD_WEB
+#ifdef HC_BUILD_WEB
 		/* Can't do this in KeyUp, because pressing escape without having */
 		/* explicitly disabled mouse lock means a KeyUp event isn't sent. */
 		/* But switching to pause screen disables mouse lock, causing a KeyUp */
@@ -897,7 +896,7 @@ static void OnInputDown(void* obj, int key, cc_bool was, struct InputDevice* dev
 	} else { HandleHotkeyDown(key); }
 }
 
-static void OnInputDownLegacy(void* obj, int key, cc_bool was, struct InputDevice* device) {
+static void OnInputDownLegacy(void* obj, int key, hc_bool was, struct InputDevice* device) {
 	/* Event originated from ClassiCube, ignore it */
 	if (device == &NormDevice) return;
 
@@ -905,11 +904,11 @@ static void OnInputDownLegacy(void* obj, int key, cc_bool was, struct InputDevic
 	OnInputDown(obj, key, was, &NormDevice);
 }
 
-static void OnInputUp(void* obj, int key, cc_bool was, struct InputDevice* device) {
+static void OnInputUp(void* obj, int key, hc_bool was, struct InputDevice* device) {
 	struct Screen* s;
 	int i;
 
-#ifdef CC_BUILD_WEB
+#ifdef HC_BUILD_WEB
 	/* When closing menus (which reacquires mouse focus) in key down, */
 	/* this still leaves the cursor visible. But if this is instead */
 	/* done in key up, the cursor disappears as expected. */
@@ -938,19 +937,19 @@ static void OnInputUp(void* obj, int key, cc_bool was, struct InputDevice* devic
 
 static int moveFlags[MAX_LOCAL_PLAYERS];
 
-static cc_bool Player_TriggerLeft(int key,  struct InputDevice* device) {
+static hc_bool Player_TriggerLeft(int key,  struct InputDevice* device) {
 	moveFlags[device->mappedIndex] |= FACE_BIT_XMIN;
 	return Gui.InputGrab == NULL;
 }
-static cc_bool Player_TriggerRight(int key, struct InputDevice* device) {
+static hc_bool Player_TriggerRight(int key, struct InputDevice* device) {
 	moveFlags[device->mappedIndex] |= FACE_BIT_XMAX;
 	return Gui.InputGrab == NULL;
 }
-static cc_bool Player_TriggerUp(int key,    struct InputDevice* device) {
+static hc_bool Player_TriggerUp(int key,    struct InputDevice* device) {
 	moveFlags[device->mappedIndex] |= FACE_BIT_YMIN;
 	return Gui.InputGrab == NULL;
 }
-static cc_bool Player_TriggerDown(int key,  struct InputDevice* device) {
+static hc_bool Player_TriggerDown(int key,  struct InputDevice* device) {
 	moveFlags[device->mappedIndex] |= FACE_BIT_YMAX;
 	return Gui.InputGrab == NULL;
 }

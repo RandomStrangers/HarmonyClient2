@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_DREAMCAST
+#if defined HC_BUILD_DREAMCAST
 #include "_PlatformBase.h"
 #include "Stream.h"
 #include "ExtMath.h"
@@ -28,32 +28,32 @@
 KOS_INIT_FLAGS(INIT_CONTROLLER | INIT_KEYBOARD | INIT_MOUSE |
                INIT_VMU        | INIT_CDROM    | INIT_NET);
 
-const cc_result ReturnCode_FileShareViolation = 1000000000; // not used
-const cc_result ReturnCode_FileNotFound     = ENOENT;
-const cc_result ReturnCode_DirectoryExists  = EEXIST;
-const cc_result ReturnCode_SocketInProgess  = EINPROGRESS;
-const cc_result ReturnCode_SocketWouldBlock = EWOULDBLOCK;
-const cc_result ReturnCode_SocketDropped    = EPIPE;
+const hc_result ReturnCode_FileShareViolation = 1000000000; // not used
+const hc_result ReturnCode_FileNotFound     = ENOENT;
+const hc_result ReturnCode_DirectoryExists  = EEXIST;
+const hc_result ReturnCode_SocketInProgess  = EINPROGRESS;
+const hc_result ReturnCode_SocketWouldBlock = EWOULDBLOCK;
+const hc_result ReturnCode_SocketDropped    = EPIPE;
 
-const char* Platform_AppNameSuffix = " Dreamcast";
-cc_bool Platform_ReadonlyFilesystem;
-static cc_bool usingSD;
+const char* Platform_AppNameSuffix = " (Dreamcast)";
+hc_bool Platform_ReadonlyFilesystem;
+static hc_bool usingSD;
 
 
 /*########################################################################################################################*
 *------------------------------------------------------Logging/Time-------------------------------------------------------*
 *#########################################################################################################################*/
-cc_uint64 Stopwatch_ElapsedMicroseconds(cc_uint64 beg, cc_uint64 end) {
+hc_uint64 Stopwatch_ElapsedMicroseconds(hc_uint64 beg, hc_uint64 end) {
 	if (end < beg) return 0;
 	return end - beg;
 }
 
-cc_uint64 Stopwatch_Measure(void) {
+hc_uint64 Stopwatch_Measure(void) {
 	return timer_us_gettime64();
 }
 
 static uint32 str_offset;
-extern cc_bool window_inited;
+extern hc_bool window_inited;
 #define MAX_ONSCREEN_LINES 17
 #define ONSCREEN_LINE_HEIGHT (24 + 2) // 8 * 3 text, plus 2 pixel padding
 #define Onscreen_LineOffset(y) ((10 + y + (str_offset * ONSCREEN_LINE_HEIGHT)) * vid_mode->width)
@@ -67,7 +67,7 @@ static void PlotOnscreen(int x, int y, void* ctx) {
 
 static void LogOnscreen(const char* msg, int len) {
 	char buffer[50];
-	cc_string str;
+	hc_string str;
 	uint32 secs, ms;
 	timer_ms_gettime(&secs, &ms);
 	
@@ -95,7 +95,7 @@ TimeMS DateTime_CurrentUTC(void) {
 	timer_ms_gettime(&secs, &ms);
 	
 	time_t boot_time  = rtc_boot_time();
-	cc_uint64 curSecs = boot_time + secs;
+	hc_uint64 curSecs = boot_time + secs;
 	return curSecs + UNIX_EPOCH_SECONDS;
 }
 
@@ -120,11 +120,11 @@ void DateTime_CurrentLocal(struct DateTime* t) {
 /*########################################################################################################################*
 *----------------------------------------------------VMU options file-----------------------------------------------------*
 *#########################################################################################################################*/
-static const cc_uint8 icon_pal[] = {
+static const hc_uint8 icon_pal[] = {
 0xff,0xff, 0xdd,0xfd, 0x00,0x50, 0x33,0xf3, 0xee,0xfe, 0xcc,0xfc, 0xbb,0xfb, 0x00,0x40, 
 0x88,0xf8, 0x00,0xb0, 0x22,0xf2, 0x00,0xb0, 0x00,0xf0, 0x00,0x30, 0x00,0x00, 0x00,0xf0,
 };
-static const cc_uint8 icon_data[] = {
+static const hc_uint8 icon_data[] = {
 0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xd9, 0x97, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee,
 0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xd9, 0xc3, 0x3c, 0x97, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee,
 0xee, 0xee, 0xee, 0xee, 0xee, 0xd9, 0xc3, 0x60, 0x06, 0x3c, 0x97, 0xee, 0xee, 0xee, 0xee, 0xee,
@@ -160,13 +160,13 @@ static const cc_uint8 icon_data[] = {
 };
 
 static volatile int vmu_write_FD = -10000;
-static int VMUFile_Do(cc_file* file, int mode) {
+static int VMUFile_Do(hc_file* file, int mode) {
 	void* data = NULL;
 	int fd, err = -1, len;
 	vmu_pkg_t pkg;
 	
 	errno = 0;
-	fd    = fs_open("/vmu/a1/CCOPT.txt", O_RDONLY);
+	fd    = fs_open("/vmu/a1/HCOPT.txt", O_RDONLY);
 	
 	// Try to extract stored data from the VMU
 	if (fd >= 0) {
@@ -180,7 +180,7 @@ static int VMUFile_Do(cc_file* file, int mode) {
 	
 	// Copy VMU data into a RAM temp file
 	errno = 0;
-	fd    = fs_open("/ram/ccopt", O_RDWR | O_CREAT | O_TRUNC);
+	fd    = fs_open("/ram/hcopt", O_RDWR | O_CREAT | O_TRUNC);
 	if (fd < 0) return errno;
 	
 	if (err >= 0) {
@@ -194,7 +194,7 @@ static int VMUFile_Do(cc_file* file, int mode) {
 	return 0;
 }
 
-static cc_result VMUFile_Close(cc_file file) {
+static hc_result VMUFile_Close(hc_file file) {
 	void* data;
 	uint8* pkg_data;
 	int fd, err = -1, len, pkg_len;
@@ -207,11 +207,11 @@ static cc_result VMUFile_Close(cc_file file) {
 	fs_read(file, data, len);
 	
 	fs_close(file);
-	fs_unlink("/ram/ccopt");
+	fs_unlink("/ram/hcopt");
 	
-	strcpy(pkg.desc_short, "CC options file");
-	strcpy(pkg.desc_long,  "ClassiCube config/settings");
-	strcpy(pkg.app_id,     "ClassiCube");
+	strcpy(pkg.desc_short, "HC options file");
+	strcpy(pkg.desc_long,  "HarmonyClient config/settings");
+	strcpy(pkg.app_id,     "HarmonyClient");
 	pkg.eyecatch_type = VMUPKG_EC_NONE;
 	pkg.data_len      = len;
 	pkg.data          = data;
@@ -225,7 +225,7 @@ static cc_result VMUFile_Close(cc_file file) {
 	
 	// Copy into VMU file
 	errno = 0;
-	fd    = fs_open("/vmu/a1/CCOPT.txt", O_RDWR | O_CREAT | O_TRUNC);
+	fd    = fs_open("/vmu/a1/HCOPT.txt", O_RDWR | O_CREAT | O_TRUNC);
 	if (fd < 0) return errno;
 	
 	fs_write(fd, pkg_data, pkg_len);
@@ -238,16 +238,16 @@ static cc_result VMUFile_Close(cc_file file) {
 /*########################################################################################################################*
 *-----------------------------------------------------Directory/File------------------------------------------------------*
 *#########################################################################################################################*/
-static cc_string root_path = String_FromConst("/cd/");
+static hc_string root_path = String_FromConst("/cd/");
 
-void Platform_EncodePath(cc_filepath* dst, const cc_string* path) {
+void Platform_EncodePath(hc_filepath* dst, const hc_string* path) {
 	char* str = dst->buffer;
 	Mem_Copy(str, root_path.buffer, root_path.length);
 	str += root_path.length;
 	String_EncodeUtf8(str, path);
 }
 
-cc_result Directory_Create(const cc_filepath* path) {
+hc_result Directory_Create(const hc_filepath* path) {
 	int res = fs_mkdir(path->buffer);
 	int err = res == -1 ? errno : 0;
 	
@@ -261,14 +261,14 @@ cc_result Directory_Create(const cc_filepath* path) {
 	return err;
 }
 
-int File_Exists(const cc_filepath* path) {
+int File_Exists(const hc_filepath* path) {
 	struct stat sb;
 	return fs_stat(path->buffer, &sb, 0) == 0 && S_ISREG(sb.st_mode);
 }
 
-cc_result Directory_Enum(const cc_string* dirPath, void* obj, Directory_EnumCallback callback) {
-	cc_string path; char pathBuffer[FILENAME_SIZE];
-	cc_filepath str;
+hc_result Directory_Enum(const hc_string* dirPath, void* obj, Directory_EnumCallback callback) {
+	hc_string path; char pathBuffer[FILENAME_SIZE];
+	hc_filepath str;
 	// CD filesystem loader doesn't usually set errno
 	//  when it can't find the requested file
 	errno = 0;
@@ -304,7 +304,7 @@ cc_result Directory_Enum(const cc_string* dirPath, void* obj, Directory_EnumCall
 	return err;
 }
 
-static cc_result File_Do(cc_file* file, const char* path, int mode) {
+static hc_result File_Do(hc_file* file, const char* path, int mode) {
 	// CD filesystem loader doesn't usually set errno
 	//  when it can't find the requested file
 	errno = 0;
@@ -316,36 +316,36 @@ static cc_result File_Do(cc_file* file, const char* path, int mode) {
 	if (res == -1 && err == 0) err = ENOENT;
 
 	// Read/Write VMU for options.txt if no SD card, since that file is critical
-	cc_string raw = String_FromReadonly(path);
+	hc_string raw = String_FromReadonly(path);
 	if (err && String_CaselessEqualsConst(&raw, "/cd/options.txt")) {
 		return VMUFile_Do(file, mode);
 	}
 	return err;
 }
 
-cc_result File_Open(cc_file* file, const cc_filepath* path) {
+hc_result File_Open(hc_file* file, const hc_filepath* path) {
 	return File_Do(file, path->buffer, O_RDONLY);
 }
-cc_result File_Create(cc_file* file, const cc_filepath* path) {
+hc_result File_Create(hc_file* file, const hc_filepath* path) {
 	return File_Do(file, path->buffer, O_RDWR | O_CREAT | O_TRUNC);
 }
-cc_result File_OpenOrCreate(cc_file* file, const cc_filepath* path) {
+hc_result File_OpenOrCreate(hc_file* file, const hc_filepath* path) {
 	return File_Do(file, path->buffer, O_RDWR | O_CREAT);
 }
 
-cc_result File_Read(cc_file file, void* data, cc_uint32 count, cc_uint32* bytesRead) {
+hc_result File_Read(hc_file file, void* data, hc_uint32 count, hc_uint32* bytesRead) {
 	int res    = fs_read(file, data, count);
 	*bytesRead = res;
 	return res == -1 ? errno : 0;
 }
 
-cc_result File_Write(cc_file file, const void* data, cc_uint32 count, cc_uint32* bytesWrote) {
+hc_result File_Write(hc_file file, const void* data, hc_uint32 count, hc_uint32* bytesWrote) {
 	int res     = fs_write(file, data, count);
 	*bytesWrote = res;
 	return res == -1 ? errno : 0;
 }
 
-cc_result File_Close(cc_file file) {
+hc_result File_Close(hc_file file) {
 	if (file == vmu_write_FD) 
 		return VMUFile_Close(file);
 	
@@ -357,20 +357,20 @@ cc_result File_Close(cc_file file) {
 	return res == -1 ? errno : 0;
 }
 
-cc_result File_Seek(cc_file file, int offset, int seekType) {
-	static cc_uint8 modes[3] = { SEEK_SET, SEEK_CUR, SEEK_END };
+hc_result File_Seek(hc_file file, int offset, int seekType) {
+	static hc_uint8 modes[3] = { SEEK_SET, SEEK_CUR, SEEK_END };
 	
 	int res = fs_seek(file, offset, modes[seekType]);
 	return res == -1 ? errno : 0;
 }
 
-cc_result File_Position(cc_file file, cc_uint32* pos) {
+hc_result File_Position(hc_file file, hc_uint32* pos) {
 	int res = fs_seek(file, 0, SEEK_CUR);
 	*pos    = res;
 	return res == -1 ? errno : 0;
 }
 
-cc_result File_Length(cc_file file, cc_uint32* len) {
+hc_result File_Length(hc_file file, hc_uint32* len) {
 	int res = fs_total(file);
 	*len    = res;
 	return res == -1 ? errno : 0;
@@ -381,7 +381,7 @@ cc_result File_Length(cc_file file, cc_uint32* len) {
 *--------------------------------------------------------Threading--------------------------------------------------------*
 *#########################################################################################################################*/
 // !!! NOTE: Dreamcast is configured to use preemptive multithreading !!!
-void Thread_Sleep(cc_uint32 milliseconds) { 
+void Thread_Sleep(hc_uint32 milliseconds) { 
 	thd_sleep(milliseconds); 
 }
 
@@ -452,7 +452,7 @@ void Waitable_Wait(void* handle) {
 	if (res < 0) Logger_Abort2(errno, "Event wait");
 }
 
-void Waitable_WaitFor(void* handle, cc_uint32 milliseconds) {
+void Waitable_WaitFor(void* handle, hc_uint32 milliseconds) {
 	int res = sem_wait_timed((semaphore_t*)handle, milliseconds);
 	if (res >= 0) return;
 	
@@ -464,10 +464,11 @@ void Waitable_WaitFor(void* handle, cc_uint32 milliseconds) {
 /*########################################################################################################################*
 *---------------------------------------------------------Socket----------------------------------------------------------*
 *#########################################################################################################################*/
-cc_result Socket_ParseAddress(const cc_string* address, int port, cc_sockaddr* addrs, int* numValidAddrs) {
+hc_result Socket_ParseAddress(const hc_string* address, int port, hc_sockaddr* addrs, int* numValidAddrs) {
 	char str[NATIVE_STR_LEN];
 
-	char portRaw[32]; cc_string portStr;
+	char portRaw[32]; 
+	hc_string portStr;
 	struct addrinfo hints = { 0 };
 	struct addrinfo* result;
 	struct addrinfo* cur;
@@ -510,7 +511,7 @@ cc_result Socket_ParseAddress(const cc_string* address, int port, cc_sockaddr* a
 	return i == 0 ? ERR_INVALID_ARGUMENT : 0;
 }
 
-cc_result Socket_Create(cc_socket* s, cc_sockaddr* addr, cc_bool nonblocking) {
+hc_result Socket_Create(hc_socket* s, hc_sockaddr* addr, hc_bool nonblocking) {
 	struct sockaddr* raw = (struct sockaddr*)addr->data;
 
 	*s = socket(raw->sa_family, SOCK_STREAM, IPPROTO_TCP);
@@ -522,31 +523,31 @@ cc_result Socket_Create(cc_socket* s, cc_sockaddr* addr, cc_bool nonblocking) {
 	return 0;
 }
 
-cc_result Socket_Connect(cc_socket s, cc_sockaddr* addr) {
+hc_result Socket_Connect(hc_socket s, hc_sockaddr* addr) {
 	struct sockaddr* raw = (struct sockaddr*)addr->data;
 
 	int res = connect(s, raw, addr->size);
 	return res == -1 ? errno : 0;
 }
 
-cc_result Socket_Read(cc_socket s, cc_uint8* data, cc_uint32 count, cc_uint32* modified) {
+hc_result Socket_Read(hc_socket s, hc_uint8* data, hc_uint32 count, hc_uint32* modified) {
 	int recvCount = recv(s, data, count, 0);
 	if (recvCount != -1) { *modified = recvCount; return 0; }
 	*modified = 0; return errno;
 }
 
-cc_result Socket_Write(cc_socket s, const cc_uint8* data, cc_uint32 count, cc_uint32* modified) {
+hc_result Socket_Write(hc_socket s, const hc_uint8* data, hc_uint32 count, hc_uint32* modified) {
 	int sentCount = send(s, data, count, 0);
 	if (sentCount != -1) { *modified = sentCount; return 0; }
 	*modified = 0; return errno;
 }
 
-void Socket_Close(cc_socket s) {
+void Socket_Close(hc_socket s) {
 	shutdown(s, SHUT_RDWR);
 	close(s);
 }
 
-static cc_result Socket_Poll(cc_socket s, int mode, cc_bool* success) {
+static hc_result Socket_Poll(hc_socket s, int mode, hc_bool* success) {
 	struct pollfd pfd;
 	int flags;
 
@@ -560,13 +561,13 @@ static cc_result Socket_Poll(cc_socket s, int mode, cc_bool* success) {
 	return 0;
 }
 
-cc_result Socket_CheckReadable(cc_socket s, cc_bool* readable) {
+hc_result Socket_CheckReadable(hc_socket s, hc_bool* readable) {
 	return Socket_Poll(s, SOCKET_POLL_READ, readable);
 }
 
-cc_result Socket_CheckWritable(cc_socket s, cc_bool* writable) {
+hc_result Socket_CheckWritable(hc_socket s, hc_bool* writable) {
 	socklen_t resultSize = sizeof(socklen_t);
-	cc_result res = Socket_Poll(s, SOCKET_POLL_WRITE, writable);
+	hc_result res = Socket_Poll(s, SOCKET_POLL_WRITE, writable);
 	if (res || *writable) return res;
 
 	/* https://stackoverflow.com/questions/29479953/so-error-value-after-successful-socket-operation */
@@ -602,11 +603,11 @@ static void TryInitSDCard(void) {
 		Platform_LogConst("Failed to mount SD card"); return;
 	}
 
-	root_path = String_FromReadonly("/sd/ClassiCube/");
+	root_path = String_FromReadonly("/sd/HarmonyClient/");
 	Platform_ReadonlyFilesystem = false;
 	usingSD   = true;
 
-	cc_filepath* root = FILEPATH_RAW("/sd/ClassiCube");
+	hc_filepath* root = FILEPATH_RAW("/sd/HarmonyClient");
 	int res = Directory_Create(root);
 	Platform_Log1("ROOT DIRECTORY CREATE: %i", &res);
 }
@@ -648,7 +649,7 @@ void Platform_Init(void) {
 }
 void Platform_Free(void) { }
 
-cc_bool Platform_DescribeError(cc_result res, cc_string* dst) {
+hc_bool Platform_DescribeError(hc_result res, hc_string* dst) {
 	char chars[NATIVE_STR_LEN];
 	int len;
 
@@ -665,8 +666,8 @@ cc_bool Platform_DescribeError(cc_result res, cc_string* dst) {
 	return true;
 }
 
-cc_bool Process_OpenSupported = false;
-cc_result Process_StartOpen(const cc_string* args) {
+hc_bool Process_OpenSupported = false;
+hc_result Process_StartOpen(const hc_string* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
@@ -676,7 +677,7 @@ cc_result Process_StartOpen(const cc_string* args) {
 *#########################################################################################################################*/
 #define MACHINE_KEY "DreamCastKOS_PVR"
 
-static cc_result GetMachineID(cc_uint32* key) {
+static hc_result GetMachineID(hc_uint32* key) {
 	Mem_Copy(key, MACHINE_KEY, sizeof(MACHINE_KEY) - 1);
 	return 0;
 }

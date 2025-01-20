@@ -2,7 +2,7 @@
 #define GL_SILENCE_DEPRECATION
 
 #include "Core.h"
-#if CC_WIN_BACKEND == CC_WIN_BACKEND_COCOA
+#if HC_WIN_BACKEND == HC_WIN_BACKEND_COCOA
 #include "_WindowBase.h"
 #include "ExtMath.h"
 #include "Funcs.h"
@@ -17,9 +17,9 @@ static int windowX, windowY;
 static NSApplication* appHandle;
 static NSWindow* winHandle;
 static NSView* viewHandle;
-static cc_bool canCheckOcclusion;
-static cc_bool legacy_fullscreen;
-static cc_bool scroll_debugging;
+static hc_bool canCheckOcclusion;
+static hc_bool legacy_fullscreen;
+static hc_bool scroll_debugging;
 
 #if defined MAC_OS_X_VERSION_10_12 && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_12
 	#define WIN_MASK (NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable | NSWindowStyleMaskMiniaturizable)
@@ -39,7 +39,7 @@ extern size_t CGDisplayBitsPerPixel(CGDirectDisplayID display);
 // TODO: Try replacing with NSBitsPerPixelFromDepth([NSScreen mainScreen].depth) instead
 
 // Sourced from https://www.meandmark.com/keycodes.html
-static const cc_uint8 key_map[8 * 16] = {
+static const hc_uint8 key_map[8 * 16] = {
 /* 0x00 */ 'A', 'S', 'D', 'F', 'H', 'G', 'Z', 'X',
 /* 0x08 */ 'C', 'V',   0, 'B', 'Q', 'W', 'E', 'R',
 /* 0x10 */ 'Y', 'T', '1', '2', '3', '4', '6', '5',
@@ -73,10 +73,10 @@ static int MapNativeKey(UInt32 key) { return key < Array_Elems(key_map) ? key_ma
 /*########################################################################################################################*
  *---------------------------------------------------------Cursor---------------------------------------------------------*
  *#########################################################################################################################*/
-static cc_bool warping;
+static hc_bool warping;
 static int warpDX, warpDY;
 
-static cc_bool GetMouseCoords(int* x, int* y) {
+static hc_bool GetMouseCoords(int* x, int* y) {
 	NSPoint loc = [NSEvent mouseLocation];
 	*x = (int)loc.x                        - windowX;
 	*y = (DisplayInfo.Height - (int)loc.y) - windowY;
@@ -109,7 +109,7 @@ void Cursor_SetPosition(int x, int y) {
 	warpDY  = y - curY;
 }
 
-static void Cursor_DoSetVisible(cc_bool visible) {
+static void Cursor_DoSetVisible(hc_bool visible) {
 	if (visible) {
 		CGDisplayShowCursor(CGMainDisplayID());
 	} else {
@@ -134,7 +134,7 @@ void Window_DisableRawMouse(void) {
 /*########################################################################################################################*
 *---------------------------------------------------------General---------------------------------------------------------*
 *#########################################################################################################################*/
-void Clipboard_GetText(cc_string* value) {
+void Clipboard_GetText(hc_string* value) {
 	NSPasteboard* pasteboard;
 	const char* src;
 	NSString* str;
@@ -149,7 +149,7 @@ void Clipboard_GetText(cc_string* value) {
 	String_AppendUtf8(value, src, len);
 }
 
-void Clipboard_SetText(const cc_string* value) {
+void Clipboard_SetText(const hc_string* value) {
 	NSPasteboard* pasteboard;
 	char raw[NATIVE_STR_LEN];
 	NSString* str;
@@ -168,7 +168,7 @@ static void LogUnhandled(NSString* str) {
 	const char* src = [str UTF8String];
 	if (!src) return;
 	
-	cc_string msg = String_FromReadonly(src);
+	hc_string msg = String_FromReadonly(src);
 	Platform_Log(msg.buffer, msg.length);
 	Logger_Log(&msg);
 }
@@ -216,7 +216,7 @@ void Window_Free(void) { }
 /*########################################################################################################################*
 *-----------------------------------------------------------Window--------------------------------------------------------*
 *#########################################################################################################################*/
-#ifdef CC_BIG_ENDIAN
+#ifdef HC_BIG_ENDIAN
 	/* Default byte order is big endian */
 	/* Also can't use kCGBitmapByteOrder32Host because that doesn't exist in older SDKs */
 	#define BITMAP_BYTE_ORDER 0
@@ -253,16 +253,16 @@ static void RefreshWindowBounds(void) {
 	Window_Main.Height = (int)view.size.height;
 }
 
-@interface CCWindow : NSWindow { }
+@interface HCWindow : NSWindow { }
 @end
-@implementation CCWindow
+@implementation HCWindow
 // If this isn't overriden, an annoying beep sound plays anytime a key is pressed
 - (void)keyDown:(NSEvent *)event { }
 @end
 
-@interface CCWindowDelegate : NSObject { }
+@interface HCWindowDelegate : NSObject { }
 @end
-@implementation CCWindowDelegate
+@implementation HCWindowDelegate
 - (void)windowDidResize:(NSNotification *)notification {
 	RefreshWindowBounds();
 	Event_RaiseVoid(&WindowEvents.Resized);
@@ -270,7 +270,7 @@ static void RefreshWindowBounds(void) {
 
 - (void)windowDidMove:(NSNotification *)notification {
 	RefreshWindowBounds();
-#if CC_GFX_BACKEND_IS_GL()
+#if HC_GFX_BACKEND_IS_GL()
 	GLContext_Update();
 #endif
 }
@@ -301,9 +301,9 @@ static void RefreshWindowBounds(void) {
 
 
 static void DoDrawFramebuffer(NSRect dirty);
-@interface CCView : NSView { }
+@interface HCView : NSView { }
 @end
-@implementation CCView
+@implementation HCView
 
 - (void)drawRect:(NSRect)dirty { DoDrawFramebuffer(dirty); }
 
@@ -328,7 +328,7 @@ static void MakeContentView(void) {
 	[winHandle setContentView:viewHandle];
 }
 
-#ifdef CC_BUILD_ICON
+#ifdef HC_BUILD_ICON
 // See misc/macOS/mac_icon_gen.cs for how to generate this file
 #include "../misc/macOS/CCIcon_mac.h"
 
@@ -362,7 +362,7 @@ static pascal OSErr HandleQuitMessage(const AppleEvent* ev, AppleEvent* reply, l
 }
 
 static void DoCreateWindow(int width, int height) {
-	CCWindowDelegate* del;
+	HCWindowDelegate* del;
 	NSRect rect;
 
 	// Technically the coordinates for the origin are at bottom left corner
@@ -372,7 +372,7 @@ static void DoCreateWindow(int width, int height) {
 	rect.size.width  = width; 
 	rect.size.height = height;
 
-	winHandle = [CCWindow alloc];
+	winHandle = [HCWindow alloc];
 	[winHandle initWithContentRect:rect styleMask:WIN_MASK backing:NSBackingStoreBuffered defer:false];
 	[winHandle setAcceptsMouseMovedEvents:YES];
 	
@@ -388,7 +388,7 @@ static void DoCreateWindow(int width, int height) {
 	Window_Main.UIScaleY   = DEFAULT_UI_SCALE_Y;
 	// CGAssociateMouseAndMouseCursorPosition implicitly grabs cursor
 
-	del = [CCWindowDelegate alloc];
+	del = [HCWindowDelegate alloc];
 	[winHandle setDelegate:del];
 	RefreshWindowBounds();
 	MakeContentView();
@@ -401,7 +401,7 @@ void Window_Create3D(int width, int height) { DoCreateWindow(width, height); }
 
 void Window_Destroy(void) { }
 
-void Window_SetTitle(const cc_string* title) {
+void Window_SetTitle(const hc_string* title) {
 	char raw[NATIVE_STR_LEN];
 	NSString* str;
 	String_EncodeUtf8(raw, title);
@@ -479,7 +479,7 @@ static int MapNativeMouse(long button) {
 
 static void ProcessKeyChars(id ev) {
 	const char* src;
-	cc_codepoint cp;
+	hc_codepoint cp;
 	NSString* chars;
 	int i, len, flags;
 
@@ -661,13 +661,13 @@ static void OpenSaveDoCallback(NSURL* url, FileDialogCallback callback) {
     src = [str UTF8String];
     len = String_Length(src);
     
-    cc_string path; char pathBuffer[NATIVE_STR_LEN];
+    hc_string path; char pathBuffer[NATIVE_STR_LEN];
     String_InitArray(path, pathBuffer);
     String_AppendUtf8(&path, src, len);
     callback(&path);
 }
 
-cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
+hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
 	NSSavePanel* dlg = [NSSavePanel savePanel];
 	
 	// TODO: Use args->defaultName, but only macOS 10.6
@@ -681,7 +681,7 @@ cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
  	return 0;
 }
 
-cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
+hc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
     NSOpenPanel* dlg = [NSOpenPanel openPanel];
     
     NSMutableArray* types = GetOpenSaveFilters(args->filters);
@@ -772,7 +772,7 @@ void OnscreenKeyboard_Close(void) { }
 /*########################################################################################################################*
 *--------------------------------------------------------NSOpenGL---------------------------------------------------------*
 *#########################################################################################################################*/
-#if CC_GFX_BACKEND_IS_GL() && !defined CC_BUILD_EGL
+#if HC_GFX_BACKEND_IS_GL() && !defined HC_BUILD_EGL
 static NSOpenGLContext* ctxHandle;
 #include <OpenGL/OpenGL.h>
 
@@ -785,7 +785,7 @@ static int SupportsModernFullscreen(void) {
 	return [winHandle respondsToSelector:@selector(toggleFullScreen:)];
 }
 
-static NSOpenGLPixelFormat* MakePixelFormat(cc_bool fullscreen) {
+static NSOpenGLPixelFormat* MakePixelFormat(hc_bool fullscreen) {
 	// TODO: Is there a penalty for fullscreen contexts in 10.7 and later?
 	// Need to test whether there is a performance penalty or not
 	if (SupportsModernFullscreen()) fullscreen = false;
@@ -826,7 +826,7 @@ void GLContext_Update(void) {
 	// TODO: Why does this crash on resizing
 	[ctxHandle update];
 }
-cc_bool GLContext_TryRestore(void) { return true; }
+hc_bool GLContext_TryRestore(void) { return true; }
 
 void GLContext_Free(void) { 
 	[NSOpenGLContext clearCurrentContext];
@@ -835,19 +835,19 @@ void GLContext_Free(void) {
 }
 
 void* GLContext_GetAddress(const char* function) {
-	static const cc_string glPath = String_FromConst("/System/Library/Frameworks/OpenGL.framework/Versions/Current/OpenGL");
+	static const hc_string glPath = String_FromConst("/System/Library/Frameworks/OpenGL.framework/Versions/Current/OpenGL");
 	static void* lib;
 
 	if (!lib) lib = DynamicLib_Load2(&glPath);
 	return DynamicLib_Get2(lib, function);
 }
 
-cc_bool GLContext_SwapBuffers(void) {
+hc_bool GLContext_SwapBuffers(void) {
 	[ctxHandle flushBuffer];
 	return true;
 }
 
-void GLContext_SetVSync(cc_bool vsync) {
+void GLContext_SetVSync(hc_bool vsync) {
 	int value = vsync ? 1 : 0;
 	[ctxHandle setValues:&value forParameter: NSOpenGLCPSwapInterval];
 }
@@ -869,7 +869,7 @@ static const char* GetAccelerationMode(CGLContextObj ctx) {
 	return "Not";
 }
 
-void GLContext_GetApiInfo(cc_string* info) {
+void GLContext_GetApiInfo(hc_string* info) {
 	CGLContextObj ctx = [ctxHandle CGLContextObj];
 	GLinteger rendererID;
 	CGLGetParameter(ctx, kCGLCPCurrentRendererID, &rendererID);
@@ -910,12 +910,12 @@ void GLContext_GetApiInfo(cc_string* info) {
 }
 #else
 // macOS 10.3 and earlier case
-void GLContext_GetApiInfo(cc_string* info) {
+void GLContext_GetApiInfo(hc_string* info) {
 	// TODO: retrieve rendererID from a CGLPixelFormatObj, but this isn't all that important
 }
 #endif
 
-cc_result Window_EnterFullscreen(void) {
+hc_result Window_EnterFullscreen(void) {
 	if (SupportsModernFullscreen()) {
 		[winHandle toggleFullScreen:appHandle];
 		return 0;
@@ -945,7 +945,7 @@ cc_result Window_EnterFullscreen(void) {
 	//  against is 10.6 or later, then CGLSetFullScreen will always
 	//  fail to work (CGLSetFullScreenOnDisplay still works) though
 	// So make sure you compile ClassiCube with an older SDK version
-	cc_result res = CGLSetFullScreen([ctxHandle CGLContextObj]);
+	hc_result res = CGLSetFullScreen([ctxHandle CGLContextObj]);
 
 	if (res) Window_ExitFullscreen();
 	RefreshWindowBounds();
@@ -953,7 +953,7 @@ cc_result Window_EnterFullscreen(void) {
 	return res;
 }
 
-cc_result Window_ExitFullscreen(void) {
+hc_result Window_ExitFullscreen(void) {
 	if (SupportsModernFullscreen()) {
 		[winHandle toggleFullScreen:appHandle];
 		return 0;

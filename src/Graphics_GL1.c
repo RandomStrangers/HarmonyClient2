@@ -3,12 +3,12 @@
 #define GLES_SILENCE_DEPRECATION
 
 #include "Core.h"
-#if CC_GFX_BACKEND == CC_GFX_BACKEND_GL1
+#if HC_GFX_BACKEND == HC_GFX_BACKEND_GL1
 #include "_GraphicsBase.h"
 #include "Errors.h"
 #include "Window.h"
-#ifdef CC_BUILD_WIN
-	#define CC_BUILD_GL11_FALLBACK
+#ifdef HC_BUILD_WIN
+	#define HC_BUILD_GL11_FALLBACK
 #endif
 
 /* The OpenGL backend is a bit of a mess, since it's really 2 backends in one:
@@ -21,18 +21,18 @@
 #define GL_FUNC(_retType, name) GLAPI _retType APIENTRY name
 #include "../misc/opengl/GL1Funcs.h"
 
-#if defined CC_BUILD_GL11
+#if defined HC_BUILD_GL11
 static GLuint activeList;
 #define gl_DYNAMICLISTID 1234567891
 static void* dynamicListData;
-static cc_uint16 gl_indices[GFX_MAX_INDICES];
+static hc_uint16 gl_indices[GFX_MAX_INDICES];
 #else
 /* OpenGL functions use stdcall instead of cdecl on Windows */
 static void (APIENTRY *_glBindBuffer)(GLenum target, GfxResourceID buffer); /* NOTE: buffer is actually a GLuint in OpenGL */
 static void (APIENTRY *_glDeleteBuffers)(GLsizei n, const GLuint *buffers);
 static void (APIENTRY *_glGenBuffers)(GLsizei n, GLuint *buffers);
-static void (APIENTRY *_glBufferData)(GLenum target, cc_uintptr size, const GLvoid* data, GLenum usage);
-static void (APIENTRY *_glBufferSubData)(GLenum target, cc_uintptr offset, cc_uintptr size, const GLvoid* data);
+static void (APIENTRY *_glBufferData)(GLenum target, hc_uintptr size, const GLvoid* data, GLenum usage);
+static void (APIENTRY *_glBufferSubData)(GLenum target, hc_uintptr offset, hc_uintptr size, const GLvoid* data);
 #endif
 
 static void GLContext_GetAll(const struct DynamicLibSym* syms, int count) {
@@ -44,7 +44,7 @@ static void GLContext_GetAll(const struct DynamicLibSym* syms, int count) {
 }
 
 
-#if defined CC_BUILD_GL11_FALLBACK && !defined CC_BUILD_GL11
+#if defined HC_BUILD_GL11_FALLBACK && !defined HC_BUILD_GL11
 /* Note the following about calling OpenGL functions on Windows */
 /*  1) wglGetProcAddress returns a context specific address */
 /*  2) dllimport functions are implemented using indirect function pointers */
@@ -106,11 +106,11 @@ static GL_SetupVBRangeFunc gfx_setupVBRangeFunc;
 /*########################################################################################################################*
 *-------------------------------------------------------Index buffers-----------------------------------------------------*
 *#########################################################################################################################*/
-#ifndef CC_BUILD_GL11
+#ifndef HC_BUILD_GL11
 GfxResourceID Gfx_CreateIb2(int count, Gfx_FillIBFunc fillFunc, void* obj) {
-	cc_uint16 indices[GFX_MAX_INDICES];
+	hc_uint16 indices[GFX_MAX_INDICES];
 	GfxResourceID id = NULL;
-	cc_uint32 size   = count * sizeof(cc_uint16);
+	hc_uint32 size   = count * sizeof(cc_uint16);
 
 	_glGenBuffers(1, (GLuint*)&id);
 	fillFunc(indices, count, obj);
@@ -138,7 +138,7 @@ void Gfx_DeleteIb(GfxResourceID* ib) { }
 /*########################################################################################################################*
 *------------------------------------------------------Vertex buffers-----------------------------------------------------*
 *#########################################################################################################################*/
-#ifndef CC_BUILD_GL11
+#ifndef HC_BUILD_GL11
 static GfxResourceID Gfx_AllocStaticVb(VertexFormat fmt, int count) {
 	GfxResourceID id = NULL;
 	_glGenBuffers(1, (GLuint*)&id);
@@ -216,10 +216,10 @@ GfxResourceID Gfx_CreateVb2(void* vertices, VertexFormat fmt, int count) {
 /*########################################################################################################################*
 *--------------------------------------------------Dynamic vertex buffers-------------------------------------------------*
 *#########################################################################################################################*/
-#ifndef CC_BUILD_GL11
+#ifndef HC_BUILD_GL11
 static GfxResourceID Gfx_AllocDynamicVb(VertexFormat fmt, int maxVertices) {
 	GfxResourceID id = NULL;
-	cc_uint32 size   = maxVertices * strideSizes[fmt];
+	hc_uint32 size   = maxVertices * strideSizes[fmt];
 
 	_glGenBuffers(1, (GLuint*)&id);
 	_glBindBuffer(GL_ARRAY_BUFFER, id);
@@ -247,7 +247,7 @@ void Gfx_UnlockDynamicVb(GfxResourceID vb) {
 }
 
 void Gfx_SetDynamicVbData(GfxResourceID vb, void* vertices, int vCount) {
-	cc_uint32 size = vCount * gfx_stride;
+	hc_uint32 size = vCount * gfx_stride;
 	_glBindBuffer(GL_ARRAY_BUFFER, vb);
 	_glBufferSubData(GL_ARRAY_BUFFER, 0, size, vertices);
 }
@@ -280,9 +280,9 @@ void Gfx_SetDynamicVbData(GfxResourceID vb, void* vertices, int vCount) {
 /*########################################################################################################################*
 *----------------------------------------------------------Drawing--------------------------------------------------------*
 *#########################################################################################################################*/
-#ifdef CC_BUILD_GL11
+#ifdef CH_BUILD_GL11
 	/* point to client side dynamic array */
-	#define VB_PTR ((cc_uint8*)dynamicListData)
+	#define VB_PTR ((hc_uint8*)dynamicListData)
 	#define IB_PTR gl_indices
 #else
 	/* no client side array, use vertex buffer object */
@@ -302,13 +302,13 @@ static void GL_SetupVbTextured(void) {
 }
 
 static void GL_SetupVbColoured_Range(int startVertex) {
-	cc_uint32 offset = startVertex * SIZEOF_VERTEX_COLOURED;
+	hc_uint32 offset = startVertex * SIZEOF_VERTEX_COLOURED;
 	_glVertexPointer(3, GL_FLOAT,          SIZEOF_VERTEX_COLOURED, VB_PTR + offset +  0);
 	_glColorPointer(4, GL_UNSIGNED_BYTE,   SIZEOF_VERTEX_COLOURED, VB_PTR + offset + 12);
 }
 
 static void GL_SetupVbTextured_Range(int startVertex) {
-	cc_uint32 offset = startVertex * SIZEOF_VERTEX_TEXTURED;
+	hc_uint32 offset = startVertex * SIZEOF_VERTEX_TEXTURED;
 	_glVertexPointer(3,  GL_FLOAT,         SIZEOF_VERTEX_TEXTURED, VB_PTR + offset +  0);
 	_glColorPointer(4, GL_UNSIGNED_BYTE,   SIZEOF_VERTEX_TEXTURED, VB_PTR + offset + 12);
 	_glTexCoordPointer(2, GL_FLOAT,        SIZEOF_VERTEX_TEXTURED, VB_PTR + offset + 16);
@@ -340,7 +340,7 @@ void Gfx_DrawVb_Lines(int verticesCount) {
 }
 
 void Gfx_DrawVb_IndexedTris_Range(int verticesCount, int startVertex) {
-#ifdef CC_BUILD_GL11
+#ifdef HC_BUILD_GL11
 	if (activeList != gl_DYNAMICLISTID) { glCallList(activeList); return; }
 #endif
 	gfx_setupVBRangeFunc(startVertex);
@@ -348,14 +348,14 @@ void Gfx_DrawVb_IndexedTris_Range(int verticesCount, int startVertex) {
 }
 
 void Gfx_DrawVb_IndexedTris(int verticesCount) {
-#ifdef CC_BUILD_GL11
+#ifdef HC_BUILD_GL11
 	if (activeList != gl_DYNAMICLISTID) { glCallList(activeList); return; }
 #endif
 	gfx_setupVBFunc();
 	_glDrawElements(GL_TRIANGLES, ICOUNT(verticesCount), GL_UNSIGNED_SHORT, IB_PTR);
 }
 
-#ifdef CC_BUILD_GL11
+#ifdef HC_BUILD_GL11
 void Gfx_DrawIndexedTris_T2fC4b(int verticesCount, int startVertex) { glCallList(activeList); }
 #else
 void Gfx_DrawIndexedTris_T2fC4b(int verticesCount, int startVertex) {
@@ -365,7 +365,7 @@ void Gfx_DrawIndexedTris_T2fC4b(int verticesCount, int startVertex) {
 	_glTexCoordPointer(2, GL_FLOAT,      SIZEOF_VERTEX_TEXTURED, VB_PTR + offset + 16);
 	_glDrawElements(GL_TRIANGLES,        ICOUNT(verticesCount),  GL_UNSIGNED_SHORT, IB_PTR);
 }
-#endif /* !CC_BUILD_GL11 */
+#endif /* !HC_BUILD_GL11 */
 
 
 /*########################################################################################################################*
@@ -383,7 +383,7 @@ static PackedCol gfx_fogColor;
 static float gfx_fogEnd = -1.0f, gfx_fogDensity = -1.0f;
 static int gfx_fogMode  = -1;
 
-void Gfx_SetFog(cc_bool enabled) {
+void Gfx_SetFog(hc_bool enabled) {
 	gfx_fogEnabled = enabled;
 	if (enabled) { glEnable(GL_FOG); } else { glDisable(GL_FOG); }
 }
@@ -417,7 +417,7 @@ void Gfx_SetFogMode(FogFunc func) {
 	static GLint modes[3] = { GL_LINEAR, GL_EXP, GL_EXP2 };
 	if (func == gfx_fogMode) return;
 
-#ifdef CC_BUILD_GLES
+#ifdef HC_BUILD_GLES
 	/* OpenGL ES doesn't support glFogi, so use glFogf instead */
 	/*  https://www.khronos.org/registry/OpenGL-Refpages/es1.1/xhtml/ */
 	glFogf(GL_FOG_MODE, modes[func]);
@@ -427,12 +427,12 @@ void Gfx_SetFogMode(FogFunc func) {
 	gfx_fogMode = func;
 }
 
-static void SetAlphaTest(cc_bool enabled) {
+static void SetAlphaTest(hc_bool enabled) {
 	if (enabled) { glEnable(GL_ALPHA_TEST); } else { glDisable(GL_ALPHA_TEST); }
 }
 
-void Gfx_DepthOnlyRendering(cc_bool depthOnly) {
-	cc_bool enabled = !depthOnly;
+void Gfx_DepthOnlyRendering(hc_bool depthOnly) {
+	hc_bool enabled = !depthOnly;
 	SetColorWrite(enabled & gfx_colorMask[0], enabled & gfx_colorMask[1], 
 				  enabled & gfx_colorMask[2], enabled & gfx_colorMask[3]);
 	if (enabled) { glEnable(GL_TEXTURE_2D); } else { glDisable(GL_TEXTURE_2D); }
@@ -486,10 +486,10 @@ static void Gfx_RestoreState(void) {
 	glDepthFunc(GL_LEQUAL);
 }
 
-cc_bool Gfx_WarnIfNecessary(void) {
+hc_bool Gfx_WarnIfNecessary(void) {
 	cc_string renderer = String_FromReadonly((const char*)glGetString(GL_RENDERER));
 	
-#ifdef CC_BUILD_GL11
+#ifdef HC_BUILD_GL11
 	Chat_AddRaw("&cYou are using the very outdated OpenGL backend.");
 	Chat_AddRaw("&cAs such you may experience poor performance.");
 	Chat_AddRaw("&cIt is likely you need to install video card drivers.");
@@ -504,24 +504,24 @@ cc_bool Gfx_WarnIfNecessary(void) {
 	if (String_ContainsConst(&renderer, "Intel")) {
 		Chat_AddRaw("&cIntel graphics cards are known to have issues with the OpenGL build.");
 		Chat_AddRaw("&cVSync may not work, and you may see disappearing clouds and map edges.");
-		#ifdef CC_BUILD_WIN
+		#ifdef HC_BUILD_WIN
 		Chat_AddRaw("&cTry downloading the Direct3D 9 build instead.");
 		#endif
 		return true;
 	}
 	return false;
 }
-cc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
+hc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
 
 
 /*########################################################################################################################*
 *-------------------------------------------------------Compatibility-----------------------------------------------------*
 *#########################################################################################################################*/
-#ifdef CC_BUILD_GL11
+#ifdef HC_BUILD_GL11
 static void GLBackend_Init(void) { MakeIndices(gl_indices, GFX_MAX_INDICES, NULL); }
 #else
 
-#ifdef CC_BUILD_GL11_FALLBACK
+#ifdef HC_BUILD_GL11_FALLBACK
 static FP_glDrawElements    _realDrawElements;
 static FP_glColorPointer    _realColorPointer;
 static FP_glTexCoordPointer _realTexCoordPointer;
@@ -529,7 +529,7 @@ static FP_glVertexPointer   _realVertexPointer;
 
 /* On Windows, can replace the GL function drawing with these 1.1 fallbacks */
 /* fake vertex buffer objects by using client side pointers instead */
-typedef struct legacy_buffer { cc_uint8* data; } legacy_buffer;
+typedef struct legacy_buffer { hc_uint8* data; } legacy_buffer;
 static legacy_buffer* cur_ib;
 static legacy_buffer* cur_vb;
 #define legacy_GetBuffer(target) (target == GL_ELEMENT_ARRAY_BUFFER ? &cur_ib : &cur_vb);
@@ -549,7 +549,7 @@ static void APIENTRY legacy_bindBuffer(GLenum target, GfxResourceID src) {
 	*buffer = (legacy_buffer*)src;
 }
 
-static void APIENTRY legacy_bufferData(GLenum target, cc_uintptr size, const GLvoid* data, GLenum usage) {
+static void APIENTRY legacy_bufferData(GLenum target, hc_uintptr size, const GLvoid* data, GLenum usage) {
 	legacy_buffer* buffer = *legacy_GetBuffer(target);
 	Mem_Free(buffer->data);
 
@@ -557,7 +557,7 @@ static void APIENTRY legacy_bufferData(GLenum target, cc_uintptr size, const GLv
 	if (data) Mem_Copy(buffer->data, data, size);
 }
 
-static void APIENTRY legacy_bufferSubData(GLenum target, cc_uintptr offset, cc_uintptr size, const GLvoid* data) {
+static void APIENTRY legacy_bufferSubData(GLenum target, cc_uintptr offset, hc_uintptr size, const GLvoid* data) {
 	legacy_buffer* buffer = *legacy_GetBuffer(target);
 	Mem_Copy(buffer->data, data, size);
 }
@@ -612,7 +612,7 @@ static void APIENTRY gl10_disableClientState(GLenum target) { }
 
 static void APIENTRY gl10_enableClientState(GLenum target) { }
 
-static cc_uint8* gl10_vb;
+static hc_uint8* gl10_vb;
 static void APIENTRY gl10_drawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* indices) {
 	/* TODO */
 	int i;
@@ -648,16 +648,16 @@ static void APIENTRY gl10_vertexPointer(GLint size, GLenum type, GLsizei stride,
 
 
 static void APIENTRY gl11_drawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid* indices) {
-	_realDrawElements(mode, count, type, (cc_uintptr)indices + cur_ib->data);
+	_realDrawElements(mode, count, type, (hc_uintptr)indices + cur_ib->data);
 }
 static void APIENTRY gl11_colorPointer(GLint size, GLenum type, GLsizei stride, GLpointer offset) {
-	_realColorPointer(size,    type, stride, (cc_uintptr)cur_vb->data + offset);
+	_realColorPointer(size,    type, stride, (hc_uintptr)cur_vb->data + offset);
 }
 static void APIENTRY gl11_texCoordPointer(GLint size, GLenum type, GLsizei stride, GLpointer offset) {
-	_realTexCoordPointer(size, type, stride, (cc_uintptr)cur_vb->data + offset);
+	_realTexCoordPointer(size, type, stride, (hc_uintptr)cur_vb->data + offset);
 }
 static void APIENTRY gl11_vertexPointer(GLint size, GLenum type, GLsizei stride, GLpointer offset) {
-	_realVertexPointer(size,   type, stride, (cc_uintptr)cur_vb->data + offset);
+	_realVertexPointer(size,   type, stride, (hc_uintptr)cur_vb->data + offset);
 }
 
 
@@ -715,17 +715,17 @@ static void GLBackend_Init(void) {
 		DynamicLib_Sym2("glGenBuffersARB",    glGenBuffers), DynamicLib_Sym2("glBufferDataARB",    glBufferData),
 		DynamicLib_Sym2("glBufferSubDataARB", glBufferSubData)
 	};
-	static const cc_string vboExt = String_FromConst("GL_ARB_vertex_buffer_object");
-	cc_string extensions = String_FromReadonly((const char*)glGetString(GL_EXTENSIONS));
+	static const hc_string vboExt = String_FromConst("GL_ARB_vertex_buffer_object");
+	hc_string extensions = String_FromReadonly((const char*)glGetString(GL_EXTENSIONS));
 	const GLubyte* ver   = glGetString(GL_VERSION);
 
 	/* Version string is always: x.y. (and whatever afterwards) */
 	int major = ver[0] - '0', minor = ver[2] - '0';
-#ifdef CC_BUILD_GL11_FALLBACK
+#ifdef HC_BUILD_GL11_FALLBACK
 	LoadCoreFuncs();
 #endif
 	customMipmapsLevels = true;
-	Gfx.BackendType     = CC_GFX_BACKEND_GL1;
+	Gfx.BackendType     = HC_GFX_BACKEND_GL1;
 
 	/* Supported in core since 1.5 */
 	if (major > 1 || (major == 1 && minor >= 5)) {

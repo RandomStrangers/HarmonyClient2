@@ -3,7 +3,6 @@
 #include "Block.h"
 #include "World.h"
 #include "Platform.h"
-#include "ExtMath.h"
 #include "Funcs.h"
 #include "Logger.h"
 #include "Entity.h"
@@ -27,20 +26,20 @@ void AABB_Offset(struct AABB* result, const struct AABB* bb, const Vec3* amount)
 	Vec3_Add(&result->Max, &bb->Max, amount);
 }
 
-cc_bool AABB_Intersects(const struct AABB* bb, const struct AABB* other) {
+hc_bool AABB_Intersects(const struct AABB* bb, const struct AABB* other) {
 	return
 		bb->Max.x >= other->Min.x && bb->Min.x <= other->Max.x &&
 		bb->Max.y >= other->Min.y && bb->Min.y <= other->Max.y &&
 		bb->Max.z >= other->Min.z && bb->Min.z <= other->Max.z;
 }
 
-cc_bool AABB_Contains(const struct AABB* parent, const struct AABB* child) {
+hc_bool AABB_Contains(const struct AABB* parent, const struct AABB* child) {
 	return
 		child->Min.x >= parent->Min.x && child->Min.y >= parent->Min.y && child->Min.z >= parent->Min.z &&
 		child->Max.x <= parent->Max.x && child->Max.y <= parent->Max.y && child->Max.z <= parent->Max.z;
 }
 
-cc_bool AABB_ContainsPoint(const struct AABB* parent, const Vec3* P) {
+hc_bool AABB_ContainsPoint(const struct AABB* parent, const Vec3* P) {
 	return
 		P->x >= parent->Min.x && P->y >= parent->Min.y && P->z >= parent->Min.z &&
 		P->x <= parent->Max.x && P->y <= parent->Max.y && P->z <= parent->Max.z;
@@ -57,7 +56,7 @@ static Vec3 Intersection_InverseRotate(Vec3 pos, struct Entity* target) {
 	return pos;
 }
 
-cc_bool Intersection_RayIntersectsRotatedBox(Vec3 origin, Vec3 dir, struct Entity* target, float* tMin, float* tMax) {
+hc_bool Intersection_RayIntersectsRotatedBox(Vec3 origin, Vec3 dir, struct Entity* target, float* tMin, float* tMax) {
 	Vec3 delta, invDir;
 	struct AABB bb;
 
@@ -82,7 +81,7 @@ cc_bool Intersection_RayIntersectsRotatedBox(Vec3 origin, Vec3 dir, struct Entit
 	return Intersection_RayIntersectsBox(origin, invDir, bb.Min, bb.Max, tMin, tMax);
 }
 
-cc_bool Intersection_RayIntersectsBox(Vec3 origin, Vec3 invDir, Vec3 min, Vec3 max, float* t0, float* t1) {
+hc_bool Intersection_RayIntersectsBox(Vec3 origin, Vec3 invDir, Vec3 min, Vec3 max, float* t0, float* t1) {
 	float tmin, tmax, tymin, tymax, tzmin, tzmax;
 	*t0 = 0; *t1 = 0;
 	
@@ -128,7 +127,7 @@ cc_bool Intersection_RayIntersectsBox(Vec3 origin, Vec3 invDir, Vec3 min, Vec3 m
 *#########################################################################################################################*/
 #define SEARCHER_STATES_MIN 64
 static struct SearcherState searcherDefaultStates[SEARCHER_STATES_MIN];
-static cc_uint32 searcherCapacity = SEARCHER_STATES_MIN;
+static hc_uint32 searcherCapacity = SEARCHER_STATES_MIN;
 struct SearcherState* Searcher_States = searcherDefaultStates;
 
 static void Searcher_QuickSort(int left, int right) {
@@ -152,7 +151,7 @@ static void Searcher_QuickSort(int left, int right) {
 int Searcher_FindReachableBlocks(struct Entity* entity, struct AABB* entityBB, struct AABB* entityExtentBB) {
 	Vec3 vel = entity->Velocity;
 	IVec3 min, max;
-	cc_uint32 elements;
+	hc_uint32 elements;
 	struct SearcherState* curState;
 	int count;
 

@@ -1,7 +1,7 @@
-#ifndef CC_LBACKEND_H
-#define CC_LBACKEND_H
+#ifndef HC_LBACKEND_H
+#define HC_LBACKEND_H
 #include "Core.h"
-CC_BEGIN_HEADER
+HC_BEGIN_HEADER
 
 /* 
 Abstracts the gui drawing backend for the Launcher
@@ -30,7 +30,7 @@ void LBackend_CloseScreen(struct LScreen* s);
 void LBackend_UpdateTitleFont(void);
 void LBackend_DrawTitle(struct Context2D* ctx, const char* title);
 
-void LBackend_DecodeFlag(struct Flag* flag, cc_uint8* data, cc_uint32 len);
+void LBackend_DecodeFlag(struct Flag* flag, hc_uint8* data, hc_uint32 len);
 
 /* Marks the entire launcher contents as needing to be redrawn */
 void LBackend_Redraw(void);
@@ -62,7 +62,7 @@ void LBackend_InputUpdate(struct LInput* w);
 void LBackend_InputDraw(struct LInput* w);
 
 void LBackend_InputTick(struct LInput* w);
-void LBackend_InputSelect(struct LInput* w, int idx, cc_bool wasSelected);
+void LBackend_InputSelect(struct LInput* w, int idx, hc_bool wasSelected);
 void LBackend_InputUnselect(struct LInput* w);
 
 void LBackend_LabelInit(struct LLabel* w);
@@ -86,5 +86,5 @@ void LBackend_TableMouseDown(struct LTable* w, int idx);
 void LBackend_TableMouseUp(struct   LTable* w, int idx);
 void LBackend_TableMouseMove(struct LTable* w, int idx);
 
-CC_END_HEADER
+HC_END_HEADER
 #endif

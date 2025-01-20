@@ -17,8 +17,8 @@ struct _ModelsData Models;
 /* NOTE: None of the built in models use more than 12 parts at once, but custom models can use up to 64 parts. */
 #define MODELS_MAX_VERTICES (MODEL_BOX_VERTICES * MAX_CUSTOM_MODEL_PARTS)
 
-#define UV_POS_MASK ((cc_uint16)0x7FFF)
-#define UV_MAX ((cc_uint16)0x8000)
+#define UV_POS_MASK ((hc_uint16)0x7FFF)
+#define UV_MAX ((hc_uint16)0x8000)
 #define UV_MAX_SHIFT 15
 #define AABB_Width(bb)  ((bb)->Max.x - (bb)->Min.x)
 #define AABB_Height(bb) ((bb)->Max.y - (bb)->Min.y)
@@ -53,7 +53,7 @@ void Model_Init(struct Model* model) {
 	model->DrawArm      = Model_NullFunc;
 }
 
-cc_bool Model_ShouldRender(struct Entity* e) {
+hc_bool Model_ShouldRender(struct Entity* e) {
 	Vec3 pos = e->Position;
 	struct AABB bb;
 	float bbWidth, bbHeight, bbLength;
@@ -153,7 +153,7 @@ void Model_ApplyTexture(struct Entity* e) {
 	struct Model* model = Models.Active;
 	struct ModelTex* data;
 	GfxResourceID tex;
-	cc_bool _64x64;
+	hc_bool _64x64;
 
 	tex = model->usesHumanSkin ? e->TextureId : e->MobTextureId;
 	if (tex) {
@@ -187,7 +187,7 @@ static struct VertexTextured* real_vertices;
 static GfxResourceID modelVB;
 
 void Model_LockVB(struct Entity* entity, int verticesCount) {
-#ifdef CC_BUILD_CONSOLE
+#ifdef HC_BUILD_CONSOLE
 	if (!entity->ModelVB) {
 		entity->ModelVB = Gfx_CreateDynamicVb(VERTEX_FORMAT_TEXTURED, Models.Active->maxVertices);
 	}
@@ -233,7 +233,7 @@ void Model_DrawPart(struct ModelPart* part) {
 #define Model_RotateY t = cosY * v.x - sinY * v.z; v.z =  sinY * v.x + cosY * v.z; v.x = t;
 #define Model_RotateZ t = cosZ * v.x + sinZ * v.y; v.y = -sinZ * v.x + cosZ * v.y; v.x = t;
 
-void Model_DrawRotate(float angleX, float angleY, float angleZ, struct ModelPart* part, cc_bool head) {
+void Model_DrawRotate(float angleX, float angleY, float angleZ, struct ModelPart* part, hc_bool head) {
 	struct Model* model        = Models.Active;
 	struct ModelVertex* src    = &model->vertices[part->offset];
 	struct VertexTextured* dst = &Models.Vertices[model->index];
@@ -397,19 +397,19 @@ void BoxDesc_BuildRotatedBox(struct ModelPart* part, const struct BoxDesc* desc)
 }
 
 
-void BoxDesc_XQuad(struct Model* m, int texX, int texY, int texWidth, int texHeight, float z1, float z2, float y1, float y2, float x, cc_bool swapU) {
+void BoxDesc_XQuad(struct Model* m, int texX, int texY, int texWidth, int texHeight, float z1, float z2, float y1, float y2, float x, hc_bool swapU) {
 	int u1 = texX, u2 = texX + texWidth, tmp;
 	if (swapU) { tmp = u1; u1 = u2; u2 = tmp; }
 	BoxDesc_XQuad2(m, z1, z2, y1, y2, x, u1, texY, u2, texY + texHeight);
 }
 
-void BoxDesc_YQuad(struct Model* m, int texX, int texY, int texWidth, int texHeight, float x1, float x2, float z1, float z2, float y, cc_bool swapU) {
+void BoxDesc_YQuad(struct Model* m, int texX, int texY, int texWidth, int texHeight, float x1, float x2, float z1, float z2, float y, hc_bool swapU) {
 	int u1 = texX, u2 = texX + texWidth, tmp;
 	if (swapU) { tmp = u1; u1 = u2; u2 = tmp; }
 	BoxDesc_YQuad2(m, x1, x2, z1, z2, y, u1, texY, u2, texY + texHeight);
 }
 
-void BoxDesc_ZQuad(struct Model* m, int texX, int texY, int texWidth, int texHeight, float x1, float x2, float y1, float y2, float z, cc_bool swapU) {
+void BoxDesc_ZQuad(struct Model* m, int texX, int texY, int texWidth, int texHeight, float x1, float x2, float y1, float y2, float z, hc_bool swapU) {
 	int u1 = texX, u2 = texX + texWidth, tmp;
 	if (swapU) { tmp = u1; u1 = u2; u2 = tmp; }
 	BoxDesc_ZQuad2(m, x1, x2, y1, y2, z, u1, texY, u2, texY + texHeight);
@@ -468,7 +468,7 @@ static void MakeModel(struct Model* model) {
 	Models.Active = active;
 }
 
-struct Model* Model_Get(const cc_string* name) {
+struct Model* Model_Get(const hc_string* name) {
 	struct Model* model;
 
 	for (model = models_head; model; model = model->next) {
@@ -495,7 +495,7 @@ void Model_Unregister(struct Model* model) {
 	{
 		struct Entity* e = Entities.List[i];
 		if (e && e->Model == model) {
-			cc_string humanModelName = String_FromReadonly(Models.Human->name);
+			hc_string humanModelName = String_FromReadonly(Models.Human->name);
 			Entity_SetModel(e, &humanModelName);
 		}
 	}
@@ -505,7 +505,7 @@ void Model_RegisterTexture(struct ModelTex* tex) {
 	LinkedList_Append(tex, textures_head, textures_tail);
 }
 
-static void Models_TextureChanged(void* obj, struct Stream* stream, const cc_string* name) {
+static void Models_TextureChanged(void* obj, struct Stream* stream, const hc_string* name) {
 	struct ModelTex* tex;
 
 	for (tex = textures_head; tex; tex = tex->next) 
@@ -522,7 +522,7 @@ static void Models_TextureChanged(void* obj, struct Stream* stream, const cc_str
 /*########################################################################################################################*
 *------------------------------------------------------Custom Models------------------------------------------------------*
 *#########################################################################################################################*/
-#ifdef CC_BUILD_LOWMEM
+#ifdef HC_BUILD_LOWMEM
 static struct CustomModel* custom_models;
 
 struct CustomModel* CustomModel_Get(int id) {
@@ -587,7 +587,7 @@ static float EuclidianMod(float x, float y) {
 }
 
 static struct ModelVertex oldVertices[MODEL_BOX_VERTICES];
-static float CustomModel_GetAnimValue(cc_uint8 type, struct CustomModelAnim* anim, struct Entity* e) {
+static float CustomModel_GetAnimValue(hc_uint8 type, struct CustomModelAnim* anim, struct Entity* e) {
 	switch (type) {
 		case CustomModelAnimType_Head:
 			return -e->Pitch * MATH_DEG2RAD;
@@ -669,9 +669,9 @@ static void CustomModel_DrawPart(
 ) {
 	int i, animIndex;
 	float rotX, rotY, rotZ;
-	cc_bool head = false;
-	cc_bool modifiedVertices = false;
-	cc_uint8 type, axis;
+	hc_bool head = false;
+	hc_bool modifiedVertices = false;
+	hc_uint8 type, axis;
 	float value = 0.0f;
 
 	if (part->fullbright) {
@@ -907,7 +907,7 @@ void CustomModel_Undefine(struct CustomModel* cm) {
 
 static void CustomModel_FreeAll(void) {
 	int i;
-#ifdef CC_BUILD_LOWMEM
+#ifdef HC_BUILD_LOWMEM
 	if (!custom_models) return;
 #endif
 
@@ -936,7 +936,7 @@ struct ModelSet {
 #define HUMAN_HAT64_VERTICES (6 * MODEL_BOX_VERTICES)
 #define HUMAN_MAX_VERTICES   HUMAN_BASE_VERTICES + HUMAN_HAT64_VERTICES
 
-static void HumanModel_DrawCore(struct Entity* e, struct ModelSet* model, cc_bool opaqueBody) {
+static void HumanModel_DrawCore(struct Entity* e, struct ModelSet* model, hc_bool opaqueBody) {
 	struct ModelLimbs* set;
 	int type, num;
 	Model_ApplyTexture(e);
@@ -1182,7 +1182,7 @@ static void HumanoidModel_Register(void) {
 *#########################################################################################################################*/
 static struct ModelSet chibi_set;
 
-CC_NOINLINE static void ChibiModel_ScalePart(struct ModelPart* dst, struct ModelPart* src) {
+HC_NOINLINE static void ChibiModel_ScalePart(struct ModelPart* dst, struct ModelPart* src) {
 	struct Model* chibi = Models.Active;
 	int i;
 
@@ -1198,7 +1198,7 @@ CC_NOINLINE static void ChibiModel_ScalePart(struct ModelPart* dst, struct Model
 	}
 }
 
-CC_NOINLINE static void ChibiModel_ScaleLimbs(struct ModelLimbs* dst, struct ModelLimbs* src) {
+HC_NOINLINE static void ChibiModel_ScaleLimbs(struct ModelLimbs* dst, struct ModelLimbs* src) {
 	ChibiModel_ScalePart(&dst->leftLeg,  &src->leftLeg);
 	ChibiModel_ScalePart(&dst->rightLeg, &src->rightLeg);
 	ChibiModel_ScalePart(&dst->leftArm,  &src->leftArm);
@@ -2090,7 +2090,7 @@ static TextureLoc BlockModel_GetTex(Face face) {
 	return loc;
 }
 
-static void BlockModel_SpriteZQuad(cc_bool firstPart, cc_bool mirror) {
+static void BlockModel_SpriteZQuad(hc_bool firstPart, hc_bool mirror) {
 	struct VertexTextured* ptr, v;
 	PackedCol col; int tmp;
 	float xz1, xz2;
@@ -2120,7 +2120,7 @@ static void BlockModel_SpriteZQuad(cc_bool firstPart, cc_bool mirror) {
 	bModel_vertices = ptr;
 }
 
-static void BlockModel_SpriteXQuad(cc_bool firstPart, cc_bool mirror) {
+static void BlockModel_SpriteXQuad(hc_bool firstPart, hc_bool mirror) {
 	struct VertexTextured* ptr, v;
 	PackedCol col; int tmp;
 	float x1, x2, z1, z2;
@@ -2150,7 +2150,7 @@ static void BlockModel_SpriteXQuad(cc_bool firstPart, cc_bool mirror) {
 	bModel_vertices = ptr;
 }
 
-static void BlockModel_BuildParts(struct Entity* e, cc_bool sprite) {
+static void BlockModel_BuildParts(struct Entity* e, hc_bool sprite) {
 	struct VertexTextured* ptr;
 	Vec3 min, max;
 	TextureLoc loc;
@@ -2217,7 +2217,7 @@ static void BlockModel_DrawParts(void) {
 }
 
 static void BlockModel_Draw(struct Entity* e) {
-	cc_bool sprite;
+	hc_bool sprite;
 	int i;
 
 	bModel_block = e->ModelBlock;

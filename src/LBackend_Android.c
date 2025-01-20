@@ -1,5 +1,5 @@
 #include "LBackend.h"
-#if defined CC_BUILD_ANDROID11111111111
+#if defined HC_BUILD_ANDROID11111111111
 #include "Launcher.h"
 #include "Drawer2D.h"
 #include "Window.h"
@@ -152,13 +152,13 @@ static int ToAndroidColor(BitmapCol color) {
 
 static jstring JNICALL java_nextTextPart(JNIEnv* env, jobject o, jstring total, jintArray state) {
     char buffer[NATIVE_STR_LEN];
-    cc_string text = JavaGetString(env, total, buffer);
+    hc_string text = JavaGetString(env, total, buffer);
 
     jint* state_ = (*env)->GetIntArrayElements(env, state, NULL);
     text.buffer += state_[0];
     text.length -= state_[0];
 
-    cc_string left = text, part;
+    hc_string left = text, part;
     char colorCode = 'f';
 
     Drawer2D_UNSAFE_NextPart(&text, &part, &colorCode);
@@ -352,7 +352,7 @@ void LBackend_InputUpdate(struct LInput* w) {
 }
 
 void LBackend_InputTick(struct LInput* w) { }
-void LBackend_InputSelect(struct LInput* w, int idx, cc_bool wasSelected) { }
+void LBackend_InputSelect(struct LInput* w, int idx, hc_bool wasSelected) { }
 void LBackend_InputUnselect(struct LInput* w) { }
 void LBackend_InputDraw(struct LInput* w) { }
 
@@ -465,7 +465,7 @@ static void LBackend_TableShow(struct LTable* w) {
 
 static jstring GetTableDetails(JNIEnv* env, struct ServerInfo* server) {
     char buffer[NATIVE_STR_LEN];
-    cc_string text = String_FromArray(buffer);
+    hc_string text = String_FromArray(buffer);
 
     String_Format2(&text, "%i/%i players, up for ", &server->players, &server->maxPlayers);
     LTable_FormatUptime(&text, server->uptime);
@@ -543,7 +543,7 @@ static void JNICALL java_UIString(JNIEnv* env, jobject o, jint id, jstring str) 
     if (!ipt) return;
 
     char buffer[NATIVE_STR_LEN];
-    cc_string text = JavaGetString(env, str, buffer);
+    hc_string text = JavaGetString(env, str, buffer);
     String_Copy(&ipt->text, &text);
     if (ipt->TextChanged) ipt->TextChanged(ipt);
 }

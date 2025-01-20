@@ -1,7 +1,7 @@
-#ifndef CC_MATH_H
-#define CC_MATH_H
+#ifndef HC_MATH_H
+#define HC_MATH_H
 #include "Core.h"
-CC_BEGIN_HEADER
+HC_BEGIN_HEADER
 
 /* Simple math functions and constants. Also implements a RNG algorithm, based on 
       Java's implementation from https://docs.oracle.com/javase/7/docs/api/java/util/Random.html
@@ -13,7 +13,7 @@ CC_BEGIN_HEADER
 #define MATH_RAD2DEG (180.0f / MATH_PI)
 #define MATH_LARGENUM 1000000000.0f
 
-#define Math_Deg2Packed(x) ((cc_uint8)((x) * 256.0f / 360.0f))
+#define Math_Deg2Packed(x) ((hc_uint8)((x) * 256.0f / 360.0f))
 #define Math_Packed2Deg(x) ((x) * 360.0f / 256.0f)
 
 #if defined __GNUC__ && defined __APPLE__ && defined _ARCH_PPC
@@ -21,7 +21,7 @@ CC_BEGIN_HEADER
 	/* (sqrtf doesn't seem to exist in 10.3 and earlier SDKs) */
 	#define Math_AbsF(x) __builtin_fabsf(x)
 	#define Math_SqrtF(x) __builtin_sqrt(x)
-#elif defined __GNUC__ && !defined CC_PLAT_PS1
+#elif defined __GNUC__ && !defined HC_PLAT_PS1
 	/* fabsf/sqrtf are single intrinsic instructions in gcc/clang */
 	/* (sqrtf is only when -fno-math-errno though) */
 	#define Math_AbsF(x) __builtin_fabsf(x)
@@ -34,10 +34,10 @@ CC_BEGIN_HEADER
 float Math_Mod1(float x);
 int   Math_AbsI(int x);
 
-CC_API double Math_Sin(double x);
-CC_API double Math_Cos(double x);
-CC_API float Math_SinF(float x);
-CC_API float Math_CosF(float x);
+HC_API double Math_Sin(double x);
+HC_API double Math_Cos(double x);
+HC_API float Math_SinF(float x);
+HC_API float Math_CosF(float x);
 /* Computes atan2(y, x), intended primarily for angle calculation*/
 /*  Note that accuracy is only up to around 4 decimal places */
 float Math_Atan2f(float x, float y);
@@ -51,7 +51,7 @@ double Math_Exp2(double x);
 
 int Math_Floor(float value);
 int Math_Ceil(float value);
-int Math_ilog2(cc_uint32 value);
+int Math_ilog2(hc_uint32 value);
 int Math_CeilDiv(int a, int b);
 int Math_Sign(float value);
 
@@ -63,25 +63,25 @@ float Math_Lerp(float a, float b, float t);
 float Math_LerpAngle(float leftAngle, float rightAngle, float t);
 
 int Math_NextPowOf2(int value);
-cc_bool Math_IsPowOf2(int value);
+hc_bool Math_IsPowOf2(int value);
 #define Math_Clamp(val, min, max) val = val < (min) ? (min) : val;  val = val > (max) ? (max) : val;
 
-typedef cc_uint64 RNGState;
+typedef hc_uint64 RNGState;
 /* Initialises RNG using seed from current UTC time. */
 void Random_SeedFromCurrentTime(RNGState* rnd);
 /* Initialised RNG using the given seed. */
-CC_API  void Random_Seed(      RNGState* rnd, int seed);
+HC_API  void Random_Seed(      RNGState* rnd, int seed);
 typedef void (*FP_Random_Seed)(RNGState* rnd, int seed);
 
 /* Returns integer from 0 inclusive to n exclusive */
-CC_API  int Random_Next(      RNGState* rnd, int n);
+HC_API  int Random_Next(      RNGState* rnd, int n);
 typedef int (*FP_Random_Next)(RNGState* rnd, int n);
 /* Returns real from 0 inclusive to 1 exclusive */
-CC_API float Random_Float(RNGState* rnd);
+HC_API float Random_Float(RNGState* rnd);
 /* Returns integer from min inclusive to max exclusive */
-static CC_INLINE int Random_Range(RNGState* rnd, int min, int max) {
+static HC_INLINE int Random_Range(RNGState* rnd, int min, int max) {
 	return min + Random_Next(rnd, max - min);
 }
 
-CC_END_HEADER
+HC_END_HEADER
 #endif

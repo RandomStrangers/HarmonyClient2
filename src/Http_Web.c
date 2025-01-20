@@ -1,18 +1,18 @@
 #include "Core.h"
-#ifdef CC_BUILD_WEB
+#ifdef HC_BUILD_WEB
 #include "_HttpBase.h"
 #include <emscripten/emscripten.h>
 #include "Errors.h"
 extern int interop_DownloadAsync(const char* url, int method, int reqID);
 extern int interop_IsHttpsOnly(void);
 static struct RequestList workingReqs, queuedReqs;
-static cc_uint64 startTime;
+static hc_uint64 startTime;
 
 
 /*########################################################################################################################*
 *----------------------------------------------------Http public api------------------------------------------------------*
 *#########################################################################################################################*/
-cc_bool Http_GetResult(int reqID, struct HttpRequest* item) {
+hc_bool Http_GetResult(int reqID, struct HttpRequest* item) {
 	int i = RequestList_Find(&processedReqs, reqID);
 
 	if (i >= 0) *item = processedReqs.entries[i];
@@ -20,7 +20,7 @@ cc_bool Http_GetResult(int reqID, struct HttpRequest* item) {
 	return i >= 0;
 }
 
-cc_bool Http_GetCurrent(int* reqID, int* progress) {
+hc_bool Http_GetCurrent(int* reqID, int* progress) {
 	/* TODO: Stubbed as this isn't required at the moment */
 	*progress = 0;
 	return 0;
@@ -48,16 +48,16 @@ void Http_TryCancel(int reqID) {
 /*########################################################################################################################*
 *----------------------------------------------------Emscripten backend---------------------------------------------------*
 *#########################################################################################################################*/
-static cc_bool HttpBackend_DescribeError(cc_result res, cc_string* dst) { 
+static hc_bool HttpBackend_DescribeError(hc_result res, hc_string* dst) { 
 	return false; 
 }
 
 #define HTTP_MAX_CONCURRENCY 6
 static void Http_StartNextDownload(void) {
-	char urlBuffer[URL_MAX_SIZE]; cc_string url;
+	char urlBuffer[URL_MAX_SIZE]; hc_string url;
 	char urlStr[NATIVE_STR_LEN];
 	struct HttpRequest* req;
-	cc_result res;
+	hc_result res;
 
 	/* Avoid making too many requests at once */
 	if (workingReqs.count >= HTTP_MAX_CONCURRENCY) return;
@@ -119,10 +119,10 @@ EMSCRIPTEN_KEEPALIVE void Http_OnFinishedAsync(int reqID, void* data, int len, i
 }
 
 /* Adds a req to the list of pending requests, waking up worker thread if needed */
-static void HttpBackend_Add(struct HttpRequest* req, cc_uint8 flags) {
+static void HttpBackend_Add(struct HttpRequest* req, hc_uint8 flags) {
 	/* Add time based query string parameter to bypass browser cache */
 	if (flags & HTTP_FLAG_NOCACHE) {
-		cc_string url = String_FromRawArray(req->url);
+		hc_string url = String_FromRawArray(req->url);
 		int lo = (int)(startTime), hi = (int)(startTime >> 32);
 		String_Format2(&url, "?t=%i%i", &hi, &lo);
 	}

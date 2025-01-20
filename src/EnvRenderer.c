@@ -11,16 +11,13 @@
 #include "Utils.h"
 #include "Game.h"
 #include "Logger.h"
-#include "Block.h"
-#include "Event.h"
 #include "TexturePack.h"
-#include "Platform.h"
 #include "Camera.h"
 #include "Particle.h"
 #include "Options.h"
 #include "Entity.h"
 
-cc_bool EnvRenderer_Legacy, EnvRenderer_Minimal;
+hc_bool EnvRenderer_Legacy, EnvRenderer_Minimal;
 
 static float CalcBlendFactor(float x) {
 	float blend = -0.13f + 0.28f * ((float)Math_Log2(x) * 0.17329f);
@@ -40,7 +37,7 @@ static int CalcNumVertices(int axis1Len, int axis2Len) {
 /*########################################################################################################################*
 *------------------------------------------------------------Fog----------------------------------------------------------*
 *#########################################################################################################################*/
-static cc_bool CameraInsideBlock(BlockID block, IVec3* coords) {
+static hc_bool CameraInsideBlock(BlockID block, IVec3* coords) {
 	struct AABB blockBB;
 	Vec3 pos;
 	IVec3_ToVec3(&pos, coords); /* pos = coords; */
@@ -274,7 +271,7 @@ static void UpdateSky(void) {
 *#########################################################################################################################*/
 static GfxResourceID skybox_tex, skybox_vb;
 #define SKYBOX_COUNT (6 * 4)
-cc_bool EnvRenderer_ShouldRenderSkybox(void) { return skybox_tex && !EnvRenderer_Minimal; }
+hc_bool EnvRenderer_ShouldRenderSkybox(void) { return skybox_tex && !EnvRenderer_Minimal; }
 
 static void AllocateSkyboxVB(void) {
 	static const struct VertexTextured vertices[SKYBOX_COUNT] = {
@@ -341,7 +338,7 @@ void EnvRenderer_RenderSkybox(void) {
 /*########################################################################################################################*
 *----------------------------------------------------------Weather--------------------------------------------------------*
 *#########################################################################################################################*/
-cc_int16* Weather_Heightmap;
+hc_int16* Weather_Heightmap;
 static GfxResourceID rain_tex, snow_tex, weather_vb;
 static float weather_accumulator;
 static IVec3 lastPos;
@@ -355,7 +352,7 @@ static IVec3 lastPos;
 
 static void InitWeatherHeightmap(void) {
 	int i;
-	Weather_Heightmap = (cc_int16*)Mem_Alloc(World.Width * World.Length, 2, "weather heightmap");
+	Weather_Heightmap = (hc_int16*)Mem_Alloc(World.Width * World.Length, 2, "weather heightmap");
 	
 	for (i = 0; i < World.Width * World.Length; i++) {
 		Weather_Heightmap[i] = Int16_MaxValue;
@@ -374,7 +371,7 @@ for (y = maxY; y >= 0; y--, i -= World.OneY) {\
 
 static int CalcRainHeightAt(int x, int maxY, int z, int hIndex) {
 	int i = World_Pack(x, maxY, z), y;
-	cc_uint8 draw;
+	hc_uint8 draw;
 
 #ifndef EXTENDED_BLOCKS
 	RainCalcBody(World.Blocks[i]);
@@ -403,8 +400,8 @@ static float GetRainHeight(int x, int z) {
 }
 
 void EnvRenderer_OnBlockChanged(int x, int y, int z, BlockID oldBlock, BlockID newBlock) {
-	cc_bool didBlock = !(Blocks.Draw[oldBlock] == DRAW_GAS || Blocks.Draw[oldBlock] == DRAW_SPRITE);
-	cc_bool nowBlock = !(Blocks.Draw[newBlock] == DRAW_GAS || Blocks.Draw[newBlock] == DRAW_SPRITE);
+	hc_bool didBlock = !(Blocks.Draw[oldBlock] == DRAW_GAS || Blocks.Draw[oldBlock] == DRAW_SPRITE);
+	hc_bool nowBlock = !(Blocks.Draw[newBlock] == DRAW_GAS || Blocks.Draw[newBlock] == DRAW_SPRITE);
 	int hIndex, height;
 	if (didBlock == nowBlock) return;
 
@@ -438,7 +435,7 @@ void EnvRenderer_RenderWeather(float delta) {
 	struct RainCoord coords[WEATHER_RANGE * WEATHER_RANGE];
 	int i, weather, numCoords = 0;
 	struct VertexTextured* v;
-	cc_bool moved, particles;
+	hc_bool moved, particles;
 	float speed, vOffsetBase, vOffset;
 	IVec3 pos;
 
@@ -564,7 +561,7 @@ void EnvRenderer_RenderWeather(float delta) {
 *#########################################################################################################################*/
 static GfxResourceID sides_vb, edges_vb, sides_tex, edges_tex;
 static int sides_vertices, edges_vertices;
-static cc_bool sides_fullBright, edges_fullBright;
+static hc_bool sides_fullBright, edges_fullBright;
 static TextureLoc edges_lastTexLoc, sides_lastTexLoc;
 
 static void RenderBorders(BlockID block, GfxResourceID vb, GfxResourceID tex, int count) {
@@ -787,22 +784,22 @@ static void UpdateMapEdges(void) {
 /*########################################################################################################################*
 *---------------------------------------------------------General---------------------------------------------------------*
 *#########################################################################################################################*/
-static void CloudsPngProcess(struct Stream* stream, const cc_string* name) {
+static void CloudsPngProcess(struct Stream* stream, const hc_string* name) {
 	Game_UpdateTexture(&clouds_tex, stream, name, NULL, NULL);
 }
 static struct TextureEntry clouds_entry = { "clouds.png", CloudsPngProcess };
 
-static void SkyboxPngProcess(struct Stream* stream, const cc_string* name) {
+static void SkyboxPngProcess(struct Stream* stream, const hc_string* name) {
 	Game_UpdateTexture(&skybox_tex, stream, name, NULL, NULL);
 }
 static struct TextureEntry skybox_entry = { "skybox.png", SkyboxPngProcess };
 
-static void SnowPngProcess(struct Stream* stream, const cc_string* name) {
+static void SnowPngProcess(struct Stream* stream, const hc_string* name) {
 	Game_UpdateTexture(&snow_tex, stream, name, NULL, NULL);
 }
 static struct TextureEntry snow_entry = { "snow.png", SnowPngProcess };
 
-static void RainPngProcess(struct Stream* stream, const cc_string* name) {
+static void RainPngProcess(struct Stream* stream, const hc_string* name) {
 	Game_UpdateTexture(&rain_tex, stream, name, NULL, NULL);
 }
 static struct TextureEntry rain_entry = { "rain.png", RainPngProcess };
@@ -855,7 +852,7 @@ void EnvRenderer_SetMode(int flags) {
 	OnContextRecreated(NULL);
 }
 
-int EnvRenderer_CalcFlags(const cc_string* mode) {
+int EnvRenderer_CalcFlags(const hc_string* mode) {
 	if (String_CaselessEqualsConst(mode, "normal")) return 0;
 	if (String_CaselessEqualsConst(mode, "legacy")) return ENV_LEGACY;
 	if (String_CaselessEqualsConst(mode, "fast"))   return ENV_MINIMAL;
@@ -907,7 +904,7 @@ static void OnEnvVariableChanged(void* obj, int envVar) {
 *--------------------------------------------------EnvRenderer component--------------------------------------------------*
 *#########################################################################################################################*/
 static void OnInit(void) {
-	cc_string renderType;
+	hc_string renderType;
 	int flags;
 	Options_UNSAFE_Get(OPT_RENDER_TYPE, &renderType);
 

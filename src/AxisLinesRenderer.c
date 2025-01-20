@@ -8,14 +8,14 @@
 #include "Entity.h"
 #include "ExtMath.h"
 
-cc_bool AxisLinesRenderer_Enabled;
+hc_bool AxisLinesRenderer_Enabled;
 static GfxResourceID axisLines_vb;
 #define AXISLINES_NUM_VERTICES 12
 #define AXISLINES_THICKNESS (1.0f / 32.0f)
 #define AXISLINES_LENGTH 3.0f
 
 void AxisLinesRenderer_Render(void) {
-	static const cc_uint8 indices[36] = {
+	static const hc_uint8 indices[36] = {
 		2,2,1, 2,2,3, 4,2,3, 4,2,1, /* X arrow */
 		1,2,2, 1,2,4, 3,2,4, 3,2,2, /* Z arrow */
 		1,2,3, 1,4,3, 3,4,1, 3,2,1, /* Y arrow */

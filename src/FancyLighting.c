@@ -15,7 +15,7 @@
 
 struct LightNode {
 	IVec3 coords; /* 12 bytes */
-	cc_uint8 brightness; /* 1 byte */
+	hc_uint8 brightness; /* 1 byte */
 	/* char padding[3]; */
 };
 
@@ -39,8 +39,8 @@ static struct Queue unlightQueue;
 /* E.G. myPalette[0b_0010_0001] will give us the color for lamp level 2 and lava level 1 (lowest level is 0) */
 static PackedCol* palettes[PALETTE_COUNT];
 
-typedef cc_uint8* LightingChunk;
-static cc_uint8* chunkLightingDataFlags;
+typedef hc_uint8* LightingChunk;
+static hc_uint8* chunkLightingDataFlags;
 #define CHUNK_UNCALCULATED 0
 #define CHUNK_SELF_CALCULATED 1
 #define CHUNK_ALL_CALCULATED 2
@@ -106,7 +106,7 @@ static void AllocState(void) {
 	InitPalettes();
 	chunksCount = World.ChunksCount;
 
-	chunkLightingDataFlags = (cc_uint8*)Mem_AllocCleared(chunksCount, sizeof(cc_uint8), "light flags");
+	chunkLightingDataFlags = (hc_uint8*)Mem_AllocCleared(chunksCount, sizeof(hc_uint8), "light flags");
 	chunkLightingData = (LightingChunk*)Mem_AllocCleared(chunksCount, sizeof(LightingChunk), "light chunks");
 	Queue_Init(&lightQueue, sizeof(struct LightNode));
 	Queue_Init(&unlightQueue, sizeof(struct LightNode));
@@ -141,8 +141,8 @@ static void FreeState(void) {
 #define GlobalCoordsToChunkCoordsIndex(x, y, z) (LocalCoordsToIndex(x & CHUNK_MASK, y & CHUNK_MASK, z & CHUNK_MASK))
 
 /* Sets the light level at this cell. Does NOT check that the cell is in bounds. */
-static void SetBrightness(cc_uint8 brightness, int x, int y, int z, cc_bool isLamp, cc_bool refreshChunk) {
-	cc_uint8 clearMask, shift = isLamp ? FANCY_LIGHTING_LAMP_SHIFT : 0, prevValue;
+static void SetBrightness(hc_uint8 brightness, int x, int y, int z, hc_bool isLamp, hc_bool refreshChunk) {
+	hc_uint8 clearMask, shift = isLamp ? FANCY_LIGHTING_LAMP_SHIFT : 0, prevValue;
 	int cx = x >> CHUNK_SHIFT, lx = x & CHUNK_MASK;
 	int cy = y >> CHUNK_SHIFT, ly = y & CHUNK_MASK;
 	int cz = z >> CHUNK_SHIFT, lz = z & CHUNK_MASK;
@@ -150,7 +150,7 @@ static void SetBrightness(cc_uint8 brightness, int x, int y, int z, cc_bool isLa
 	int localIndex = LocalCoordsToIndex(lx, ly, lz);
 
 	if (chunkLightingData[chunkIndex] == NULL) {
-		chunkLightingData[chunkIndex] = (cc_uint8*)Mem_TryAllocCleared(CHUNK_SIZE_3, sizeof(cc_uint8));
+		chunkLightingData[chunkIndex] = (hc_uint8*)Mem_TryAllocCleared(CHUNK_SIZE_3, sizeof(hc_uint8));
 	}
 
 	/* 00001111 if lamp, otherwise 11110000*/
@@ -178,7 +178,7 @@ static void SetBrightness(cc_uint8 brightness, int x, int y, int z, cc_bool isLa
 	}
 }
 /* Returns the light level at this cell. Does NOT check that the cell is in bounds. */
-static cc_uint8 GetBrightness(int x, int y, int z, cc_bool isLamp) {
+static hc_uint8 GetBrightness(int x, int y, int z, hc_bool isLamp) {
 	int cx = x >> CHUNK_SHIFT, lx = x & CHUNK_MASK;
 	int cy = y >> CHUNK_SHIFT, ly = y & CHUNK_MASK;
 	int cz = z >> CHUNK_SHIFT, lz = z & CHUNK_MASK;
@@ -206,7 +206,7 @@ Blocks.Draw[thisBlock] == DRAW_TRANSPARENT_THICK || \
 Blocks.Draw[thisBlock] == DRAW_TRANSLUCENT\
 )
 
-static cc_bool CanLightPass(BlockID thisBlock, Face face) {
+static hc_bool CanLightPass(BlockID thisBlock, Face face) {
 	if (IsFullTransparent(thisBlock)) { return true; }
 	if (Blocks.Brightness[thisBlock]) { return true; }
 	if (IsFullOpaque(thisBlock)) { return false; }
@@ -222,9 +222,9 @@ static cc_bool CanLightPass(BlockID thisBlock, Face face) {
 		Queue_Enqueue(&lightQueue, &ln); \
 	} \
 
-static void FlushLightQueue(cc_bool isLamp, cc_bool refreshChunk) {
+static void FlushLightQueue(hc_bool isLamp, hc_bool refreshChunk) {
 	struct LightNode ln;
-	cc_uint8 brightnessHere;
+	hc_uint8 brightnessHere;
 	BlockID thisBlock;
 
 	while (lightQueue.count > 0) {
@@ -261,7 +261,7 @@ static void FlushLightQueue(cc_bool isLamp, cc_bool refreshChunk) {
 	}
 }
 
-cc_uint8 GetBlockBrightness(BlockID curBlock, cc_bool isLamp) {
+hc_uint8 GetBlockBrightness(BlockID curBlock, hc_bool isLamp) {
 	if (isLamp) return Blocks.Brightness[curBlock] >> FANCY_LIGHTING_LAMP_SHIFT;
 	return Blocks.Brightness[curBlock] & FANCY_LIGHTING_MAX_LEVEL;
 }
@@ -273,7 +273,7 @@ static void CalculateChunkLightingSelf(int chunkIndex, int cx, int cy, int cz) {
 	int x, y, z;
 	/* Block coordinates */
 	int chunkStartX, chunkStartY, chunkStartZ, chunkEndX, chunkEndY, chunkEndZ;
-	cc_uint8 brightness;
+	hc_uint8 brightness;
 	BlockID curBlock;
 	struct LightNode entry;
 
@@ -395,10 +395,10 @@ static void CalculateChunkLightingAll(int chunkIndex, int cx, int cy, int cz) {
 		} \
 
 /* Spreads darkness out from this point and relights any necessary areas afterward */
-static void CalcUnlight(int x, int y, int z, cc_uint8 brightness, cc_bool isLamp) {
+static void CalcUnlight(int x, int y, int z, hc_uint8 brightness, hc_bool isLamp) {
 	int count = 0;
 	struct LightNode curNode, otherNode;
-	cc_uint8 neighborBrightness, neighborBlockBrightness;
+	hc_uint8 neighborBrightness, neighborBlockBrightness;
 	IVec3 neighborCoords;
 	BlockID thisBlockTrue, thisBlock;
 
@@ -437,10 +437,10 @@ static void CalcUnlight(int x, int y, int z, cc_uint8 brightness, cc_bool isLamp
 
 	FlushLightQueue(isLamp, true);
 }
-static void CalcBlockChange(int x, int y, int z, BlockID oldBlock, BlockID newBlock, cc_bool isLamp) {
-	cc_uint8 oldBlockLightLevel = GetBlockBrightness(oldBlock, isLamp);
-	cc_uint8 newBlockLightLevel = GetBlockBrightness(newBlock, isLamp);
-	cc_uint8 oldLightLevelHere = GetBrightness(x, y, z, isLamp);
+static void CalcBlockChange(int x, int y, int z, BlockID oldBlock, BlockID newBlock, hc_bool isLamp) {
+	hc_uint8 oldBlockLightLevel = GetBlockBrightness(oldBlock, isLamp);
+	hc_uint8 newBlockLightLevel = GetBlockBrightness(newBlock, isLamp);
+	hc_uint8 oldLightLevelHere = GetBrightness(x, y, z, isLamp);
 	struct LightNode entry;
 
 	/* Cell has no lighting and new block doesn't cast light and blocks all light, no change */
@@ -476,8 +476,8 @@ static void Refresh(void) {
 	FreeState();
 	AllocState();
 }
-static cc_bool IsLit(int x, int y, int z) { return ClassicLighting_IsLit(x, y, z); }
-static cc_bool IsLit_Fast(int x, int y, int z) { return ClassicLighting_IsLit_Fast(x, y, z); }
+static hc_bool IsLit(int x, int y, int z) { return ClassicLighting_IsLit(x, y, z); }
+static hc_bool IsLit_Fast(int x, int y, int z) { return ClassicLighting_IsLit_Fast(x, y, z); }
 
 #define CalcForChunkIfNeeded(cx, cy, cz, chunkIndex) \
 	if (chunkLightingDataFlags[chunkIndex] < CHUNK_ALL_CALCULATED) { \
@@ -485,7 +485,7 @@ static cc_bool IsLit_Fast(int x, int y, int z) { return ClassicLighting_IsLit_Fa
 	}
 
 static PackedCol Color_Core(int x, int y, int z, int paletteFace) {
-	cc_uint8 lightData;
+	hc_uint8 lightData;
 	int cx, cy, cz, chunkIndex;
 	int chunkCoordsIndex;
 

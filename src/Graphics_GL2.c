@@ -3,7 +3,7 @@
 #define GLES_SILENCE_DEPRECATION
 
 #include "Core.h"
-#if CC_GFX_BACKEND == CC_GFX_BACKEND_GL2
+#if HC_GFX_BACKEND == HC_GFX_BACKEND_GL2
 #include "_GraphicsBase.h"
 #include "Errors.h"
 #include "Window.h"
@@ -17,7 +17,7 @@
 #include "../misc/opengl/GL1Funcs.h"
 
 /* Functions must be dynamically linked on Windows */
-#ifdef CC_BUILD_WIN
+#ifdef HC_BUILD_WIN
 /* e.g. static void (APIENTRY *_glFunction)(int args); */
 #undef  GL_FUNC
 #define GL_FUNC(_retType, name) static _retType (APIENTRY *name)
@@ -64,9 +64,9 @@ static GLuint GL_GenAndBind(GLenum target) {
 }
 
 GfxResourceID Gfx_CreateIb2(int count, Gfx_FillIBFunc fillFunc, void* obj) {
-	cc_uint16 indices[GFX_MAX_INDICES];
+	hc_uint16 indices[GFX_MAX_INDICES];
 	GLuint id      = GL_GenAndBind(GL_ELEMENT_ARRAY_BUFFER);
-	cc_uint32 size = count * sizeof(cc_uint16);
+	hc_uint32 size = count * sizeof(hc_uint16);
 
 	fillFunc(indices, count, obj);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, indices, GL_STATIC_DRAW);
@@ -117,7 +117,7 @@ void Gfx_UnlockVb(GfxResourceID vb) {
 *#########################################################################################################################*/
 static GfxResourceID Gfx_AllocDynamicVb(VertexFormat fmt, int maxVertices) {
 	GLuint id      = GL_GenAndBind(GL_ARRAY_BUFFER);
-	cc_uint32 size = maxVertices * strideSizes[fmt];
+	hc_uint32 size = maxVertices * strideSizes[fmt];
 
 	glBufferData(GL_ARRAY_BUFFER, size, NULL, GL_DYNAMIC_DRAW);
 	return uint_to_ptr(id);
@@ -143,7 +143,7 @@ void Gfx_UnlockDynamicVb(GfxResourceID vb) {
 }
 
 void Gfx_SetDynamicVbData(GfxResourceID vb, void* vertices, int vCount) {
-	cc_uint32 size = vCount * gfx_stride;
+	hc_uint32 size = vCount * gfx_stride;
 	glBindBuffer(GL_ARRAY_BUFFER, ptr_to_uint(vb));
 	glBufferSubData(GL_ARRAY_BUFFER, 0, size, vertices);
 }
@@ -169,7 +169,7 @@ void Gfx_SetDynamicVbData(GfxResourceID vb, void* vertices, int vCount) {
 
 /* cached uniforms (cached for multiple programs */
 static struct Matrix _view, _proj, _mvp;
-static cc_bool gfx_texTransform;
+static hc_bool gfx_texTransform;
 static float _texX, _texY;
 static PackedCol gfx_fogColor;
 static float gfx_fogEnd = -1.0f, gfx_fogDensity = -1.0f;
@@ -207,7 +207,7 @@ static struct GLShader {
 static struct GLShader* gfx_activeShader;
 
 /* Generates source code for a GLSL vertex shader, based on shader's flags */
-static void GenVertexShader(const struct GLShader* shader, cc_string* dst) {
+static void GenVertexShader(const struct GLShader* shader, hc_string* dst) {
 	int uv = shader->features & FTR_TEXTURE_UV;
 	int tm = shader->features & FTR_TEX_OFFSET;
 
@@ -227,7 +227,7 @@ static void GenVertexShader(const struct GLShader* shader, cc_string* dst) {
 	String_AppendConst(dst,         "}");
 }
 
-static void AddPostProcessing(cc_string* dst) {
+static void AddPostProcessing(hc_string* dst) {
 	switch (postProcess) {
 	case POSTPROCESS_GRAYSCALE:
 		String_AppendConst(dst, "  float gray = 0.21 * col.r + 0.71 * col.g + 0.07 * col.b;\n");
@@ -237,14 +237,14 @@ static void AddPostProcessing(cc_string* dst) {
 }
 
 /* Generates source code for a GLSL fragment shader, based on shader's flags */
-static void GenFragmentShader(const struct GLShader* shader, cc_string* dst) {
+static void GenFragmentShader(const struct GLShader* shader, hc_string* dst) {
 	int uv = shader->features & FTR_TEXTURE_UV;
 	int al = shader->features & FTR_ALPHA_TEST;
 	int fl = shader->features & FTR_LINEAR_FOG;
 	int fd = shader->features & FTR_DENSIT_FOG;
 	int fm = shader->features & FTR_HASANY_FOG;
 
-#ifdef CC_BUILD_GLES
+#ifdef HC_BUILD_GLES
 	int mp = shader->features & FTR_FS_MEDIUMP;
 	if (mp) String_AppendConst(dst, "precision mediump float;\n");
 	else    String_AppendConst(dst, "precision highp float;\n");
@@ -272,7 +272,7 @@ static void GenFragmentShader(const struct GLShader* shader, cc_string* dst) {
 }
 
 /* Tries to compile GLSL shader code */
-static GLint CompileShader(GLint shader, const cc_string* src) {
+static GLint CompileShader(GLint shader, const hc_string* src) {
 	const char* str = src->buffer;
 	int len = src->length;
 	GLint temp;
@@ -450,7 +450,7 @@ void Gfx_BindTexture(GfxResourceID texId) {
 /*########################################################################################################################*
 *-----------------------------------------------------State management----------------------------------------------------*
 *#########################################################################################################################*/
-void Gfx_SetFog(cc_bool enabled) { gfx_fogEnabled = enabled; SwitchProgram(); }
+void Gfx_SetFog(hc_bool enabled) { gfx_fogEnabled = enabled; SwitchProgram(); }
 void Gfx_SetFogCol(PackedCol color) {
 	if (color == gfx_fogColor) return;
 	gfx_fogColor = color;
@@ -478,10 +478,10 @@ void Gfx_SetFogMode(FogFunc func) {
 	SwitchProgram();
 }
 
-static void SetAlphaTest(cc_bool enabled) { SwitchProgram(); }
+static void SetAlphaTest(hc_bool enabled) { SwitchProgram(); }
 
-void Gfx_DepthOnlyRendering(cc_bool depthOnly) {
-	cc_bool enabled = !depthOnly;
+void Gfx_DepthOnlyRendering(hc_bool depthOnly) {
+	hc_bool enabled = !depthOnly;
 	SetColorWrite(enabled & gfx_colorMask[0], enabled & gfx_colorMask[1], 
 				  enabled & gfx_colorMask[2], enabled & gfx_colorMask[3]);
 }
@@ -530,12 +530,12 @@ static void GLContext_GetAll(const struct DynamicLibSym* syms, int count) {
 }
 
 static void GLBackend_Init(void) {
-#ifdef CC_BUILD_WIN
+#ifdef HC_BUILD_WIN
 	GLContext_GetAll(core_funcs, Array_Elems(core_funcs));
 #endif
-	Gfx.BackendType = CC_GFX_BACKEND_GL2;
+	Gfx.BackendType = HC_GFX_BACKEND_GL2;
 
-#ifdef CC_BUILD_GLES
+#ifdef HC_BUILD_GLES
 	// OpenGL ES 2.0 doesn't support custom mipmaps levels, but 3.2 does
 	// Note that GL_MAJOR_VERSION and GL_MINOR_VERSION were not actually
 	//  implemented until 3.0.. but hopefully older GPU drivers out there
@@ -558,7 +558,7 @@ static void GLBackend_Init(void) {
     String_InitArray_NT(str, strBuffer);
     String_Format2(&str,"Modern OpenGL build requires at least OpenGL 2.0\n" \
                         "Your system only supports OpenGL %i.%i however\n\n" \
-                        "As such ClassiCube will likely perform poorly or not work\n" \
+                        "As such Harmony Client will likely perform poorly or not work\n" \
                         "It is recommended you use the Normal OpenGL build instead\n",
                         &major, &minor);
     strBuffer[str.length] = '\0';
@@ -600,8 +600,8 @@ static void Gfx_RestoreState(void) {
 	Gfx_RecreateTexture(&white_square, &bmp, 0, false);
 }
 
-cc_bool Gfx_WarnIfNecessary(void) { 
-	cc_string renderer = String_FromReadonly((const char*)glGetString(GL_RENDERER));
+hc_bool Gfx_WarnIfNecessary(void) { 
+	hc_string renderer = String_FromReadonly((const char*)glGetString(GL_RENDERER));
 
 	if (String_ContainsConst(&renderer, "llvmpipe")) {
 		Chat_AddRaw("&cSoftware rendering is being used, performance will greatly suffer.");
@@ -620,7 +620,7 @@ static void SetPostProcess(int v) {
 	DirtyUniform(UNI_MASK_ALL);
 }
 
-cc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) {
+hc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) {
 	MenuOptionsScreen_AddEnum(s, "Post process", 
 		postProcess_Names, Array_Elems(postProcess_Names),
 		GetPostProcess, SetPostProcess, NULL);
@@ -648,13 +648,13 @@ static void GL_SetupVbTextured(void) {
 }
 
 static void GL_SetupVbColoured_Range(int startVertex) {
-	cc_uint32 offset = startVertex * SIZEOF_VERTEX_COLOURED;
+	hc_uint32 offset = startVertex * SIZEOF_VERTEX_COLOURED;
 	glVertexAttribPointer(0, 3, GL_FLOAT,         false, SIZEOF_VERTEX_COLOURED, uint_to_ptr(offset     ));
 	glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, true,  SIZEOF_VERTEX_COLOURED, uint_to_ptr(offset + 12));
 }
 
 static void GL_SetupVbTextured_Range(int startVertex) {
-	cc_uint32 offset = startVertex * SIZEOF_VERTEX_TEXTURED;
+	hc_uint32 offset = startVertex * SIZEOF_VERTEX_TEXTURED;
 	glVertexAttribPointer(0, 3, GL_FLOAT,         false, SIZEOF_VERTEX_TEXTURED, uint_to_ptr(offset     ));
 	glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, true,  SIZEOF_VERTEX_TEXTURED, uint_to_ptr(offset + 12));
 	glVertexAttribPointer(2, 2, GL_FLOAT,         false, SIZEOF_VERTEX_TEXTURED, uint_to_ptr(offset + 16));

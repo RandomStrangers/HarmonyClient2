@@ -186,7 +186,7 @@ static void FrustumCulling_Normalise(struct Plane* plane) {
 	plane->a /= t; plane->b /= t; plane->c /= t; plane->d /= t;
 }
 
-cc_bool FrustumCulling_SphereInFrustum(float x, float y, float z, float radius) {
+hc_bool FrustumCulling_SphereInFrustum(float x, float y, float z, float radius) {
 	float d;
 
 	d = frustumR.a * x + frustumR.b * y + frustumR.c * z + frustumR.d;
@@ -237,7 +237,7 @@ void FrustumCulling_CalcFrustumEquations(struct Matrix* clip) {
 	FrustumCulling_Normalise(&frustumT);
 
 	/* Extract the FAR plane (Different for each graphics backend) */
-#if (CC_GFX_BACKEND == CC_GFX_BACKEND_D3D9) || (CC_GFX_BACKEND == CC_GFX_BACKEND_D3D11)
+#if (HC_GFX_BACKEND == HC_GFX_BACKEND_D3D9) || (HC_GFX_BACKEND == HC_GFX_BACKEND_D3D11)
 	/* OpenGL and Direct3D require slightly different behaviour for NEAR clipping planes */
 	/* https://www.gamedevs.org/uploads/fast-extraction-viewing-frustum-planes-from-world-view-projection-matrix.pdf */
 	/* (and because reverse Z is used, 'NEAR' plane is actually the 'FAR' clipping plane) */

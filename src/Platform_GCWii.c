@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_GCWII
+#if defined HC_BUILD_GCWII
 #include "_PlatformBase.h"
 #include "Stream.h"
 #include "ExtMath.h"
@@ -28,19 +28,19 @@
 #endif
 #include "_PlatformConsole.h"
 
-const cc_result ReturnCode_FileShareViolation = 1000000000; /* TODO: not used apparently */
-const cc_result ReturnCode_FileNotFound     = ENOENT;
-const cc_result ReturnCode_DirectoryExists  = EEXIST;
-const cc_result ReturnCode_SocketInProgess  = -EINPROGRESS; // net_XYZ error results are negative
-const cc_result ReturnCode_SocketWouldBlock = -EWOULDBLOCK;
-const cc_result ReturnCode_SocketDropped    = -EPIPE;
+const hc_result ReturnCode_FileShareViolation = 1000000000; /* TODO: not used apparently */
+const hc_result ReturnCode_FileNotFound     = ENOENT;
+const hc_result ReturnCode_DirectoryExists  = EEXIST;
+const hc_result ReturnCode_SocketInProgess  = -EINPROGRESS; // net_XYZ error results are negative
+const hc_result ReturnCode_SocketWouldBlock = -EWOULDBLOCK;
+const hc_result ReturnCode_SocketDropped    = -EPIPE;
 
 #ifdef HW_RVL
-const char* Platform_AppNameSuffix = " Wii";
+const char* Platform_AppNameSuffix = " (Wii)";
 #else
-const char* Platform_AppNameSuffix = " GameCube";
+const char* Platform_AppNameSuffix = " (GameCube)";
 #endif
-cc_bool Platform_ReadonlyFilesystem;
+hc_bool Platform_ReadonlyFilesystem;
 
 
 /*########################################################################################################################*
@@ -99,11 +99,11 @@ void DateTime_CurrentLocal(struct DateTime* t) {
 	t->second = loc_time.tm_sec;
 }
 
-cc_uint64 Stopwatch_Measure(void) {
+hc_uint64 Stopwatch_Measure(void) {
 	return gettime();
 }
 
-cc_uint64 Stopwatch_ElapsedMicroseconds(cc_uint64 beg, cc_uint64 end) {
+hc_uint64 Stopwatch_ElapsedMicroseconds(hc_uint64 beg, hc_uint64 end) {
 	if (end < beg) return 0;
 	return ticks_to_microsecs(end - beg);
 }
@@ -113,7 +113,7 @@ cc_uint64 Stopwatch_ElapsedMicroseconds(cc_uint64 beg, cc_uint64 end) {
 *-----------------------------------------------------Directory/File------------------------------------------------------*
 *#########################################################################################################################*/
 static char root_buffer[NATIVE_STR_LEN];
-static cc_string root_path = String_FromArray(root_buffer);
+static hc_string root_path = String_FromArray(root_buffer);
 
 static bool fat_available; 
 // trying to call mkdir etc with no FAT device loaded seems to be broken (dolphin crashes due to trying to execute invalid instruction)
@@ -122,7 +122,7 @@ static bool fat_available;
 // FindDevice() returns -1 when no matching device, however the code still unconditionally does "if (devoptab_list[dev]->mkdir_r) {"
 // - so will either attempt to access or execute invalid memory
 
-void Platform_EncodePath(cc_filepath* dst, const cc_string* path) {
+void Platform_EncodePath(hc_filepath* dst, const hc_string* path) {
 	char* str = dst->buffer;
 	Mem_Copy(str, root_path.buffer, root_path.length);
 	str   += root_path.length;
@@ -130,24 +130,24 @@ void Platform_EncodePath(cc_filepath* dst, const cc_string* path) {
 	String_EncodeUtf8(str, path);
 }
 
-cc_result Directory_Create(const cc_filepath* path) {
+hc_result Directory_Create(const hc_filepath* path) {
 	if (!fat_available) return ENOSYS;
 
 	return mkdir(path->buffer, 0) == -1 ? errno : 0;
 }
 
-int File_Exists(const cc_filepath* path) {
+int File_Exists(const hc_filepath* path) {
 	if (!fat_available) return false;
 	
 	struct stat sb;
 	return stat(path->buffer, &sb) == 0 && S_ISREG(sb.st_mode);
 }
 
-cc_result Directory_Enum(const cc_string* dirPath, void* obj, Directory_EnumCallback callback) {
+hc_result Directory_Enum(const hc_string* dirPath, void* obj, Directory_EnumCallback callback) {
 	if (!fat_available) return ENOSYS;
 
-	cc_string path; char pathBuffer[FILENAME_SIZE];
-	cc_filepath str;
+	hc_string path; char pathBuffer[FILENAME_SIZE];
+	hc_filepath str;
 	struct dirent* entry;
 	int res;
 
@@ -183,51 +183,51 @@ cc_result Directory_Enum(const cc_string* dirPath, void* obj, Directory_EnumCall
 	return res;
 }
 
-static cc_result File_Do(cc_file* file, const char* path, int mode) {
+static hc_result File_Do(hc_file* file, const char* path, int mode) {
 	*file = open(path, mode, 0);
 	return *file == -1 ? errno : 0;
 }
 
-cc_result File_Open(cc_file* file, const cc_filepath* path) {
+hc_result File_Open(hc_file* file, const hc_filepath* path) {
 	if (!fat_available) return ReturnCode_FileNotFound;
 	return File_Do(file, path->buffer, O_RDONLY);
 }
 
-cc_result File_Create(cc_file* file, const cc_filepath* path) {
+hc_result File_Create(hc_file* file, const hc_filepath* path) {
 	if (!fat_available) return ENOTSUP;
 	return File_Do(file, path->buffer, O_RDWR | O_CREAT | O_TRUNC);
 }
 
-cc_result File_OpenOrCreate(cc_file* file, const cc_filepath* path) {
+hc_result File_OpenOrCreate(hc_file* file, const hc_filepath* path) {
 	if (!fat_available) return ENOTSUP;
 	return File_Do(file, path->buffer, O_RDWR | O_CREAT);
 }
 
-cc_result File_Read(cc_file file, void* data, cc_uint32 count, cc_uint32* bytesRead) {
+hc_result File_Read(hc_file file, void* data, hc_uint32 count, hc_uint32* bytesRead) {
 	*bytesRead = read(file, data, count);
 	return *bytesRead == -1 ? errno : 0;
 }
 
-cc_result File_Write(cc_file file, const void* data, cc_uint32 count, cc_uint32* bytesWrote) {
+hc_result File_Write(hc_file file, const void* data, hc_uint32 count, hc_uint32* bytesWrote) {
 	*bytesWrote = write(file, data, count);
 	return *bytesWrote == -1 ? errno : 0;
 }
 
-cc_result File_Close(cc_file file) {
+hc_result File_Close(hc_file file) {
 	return close(file) == -1 ? errno : 0;
 }
 
-cc_result File_Seek(cc_file file, int offset, int seekType) {
-	static cc_uint8 modes[3] = { SEEK_SET, SEEK_CUR, SEEK_END };
+hc_result File_Seek(hc_file file, int offset, int seekType) {
+	static hc_uint8 modes[3] = { SEEK_SET, SEEK_CUR, SEEK_END };
 	return lseek(file, offset, modes[seekType]) == -1 ? errno : 0;
 }
 
-cc_result File_Position(cc_file file, cc_uint32* pos) {
+hc_result File_Position(hc_file file, hc_uint32* pos) {
 	*pos = lseek(file, 0, SEEK_CUR);
 	return *pos == -1 ? errno : 0;
 }
 
-cc_result File_Length(cc_file file, cc_uint32* len) {
+hc_result File_Length(hc_file file, hc_uint32* len) {
 	struct stat st;
 	if (fstat(file, &st) == -1) { *len = -1; return errno; }
 	*len = st.st_size; return 0;
@@ -237,7 +237,7 @@ cc_result File_Length(cc_file file, cc_uint32* len) {
 /*########################################################################################################################*
 *--------------------------------------------------------Threading--------------------------------------------------------*
 *#########################################################################################################################*/
-void Thread_Sleep(cc_uint32 milliseconds) { usleep(milliseconds * 1000); }
+void Thread_Sleep(hc_uint32 milliseconds) { usleep(milliseconds * 1000); }
 
 static void* ExecThread(void* param) {
 	((Thread_StartFunc)param)(); 
@@ -347,7 +347,7 @@ void Waitable_Wait(void* handle) {
 	Mutex_Unlock(&ptr->mutex);
 }
 
-void Waitable_WaitFor(void* handle, cc_uint32 milliseconds) {
+void Waitable_WaitFor(void* handle, hc_uint32 milliseconds) {
 	struct WaitData* ptr = (struct WaitData*)handle;
 	struct timespec ts;
 	int res;
@@ -368,7 +368,7 @@ void Waitable_WaitFor(void* handle, cc_uint32 milliseconds) {
 /*########################################################################################################################*
 *---------------------------------------------------------Socket----------------------------------------------------------*
 *#########################################################################################################################*/
-static cc_result ParseHost(const char* host, int port, cc_sockaddr* addrs, int* numValidAddrs) {
+static hc_result ParseHost(const char* host, int port, hc_sockaddr* addrs, int* numValidAddrs) {
 #ifdef HW_RVL
 	struct hostent* res = net_gethostbyname(host);
 	struct sockaddr_in* addr4;
@@ -402,7 +402,7 @@ static cc_result ParseHost(const char* host, int port, cc_sockaddr* addrs, int* 
 	return ERR_NOT_SUPPORTED;
 #endif
 }
-cc_result Socket_ParseAddress(const cc_string* address, int port, cc_sockaddr* addrs, int* numValidAddrs) {
+hc_result Socket_ParseAddress(const hc_string* address, int port, hc_sockaddr* addrs, int* numValidAddrs) {
 	struct sockaddr_in* addr4 = (struct sockaddr_in*)addrs[0].data;
 	char str[NATIVE_STR_LEN];
 	String_EncodeUtf8(str, address);
@@ -418,7 +418,7 @@ cc_result Socket_ParseAddress(const cc_string* address, int port, cc_sockaddr* a
 	return ParseHost(str, port, addrs, numValidAddrs);
 }
 
-cc_result Socket_Create(cc_socket* s, cc_sockaddr* addr, cc_bool nonblocking) {
+hc_result Socket_Create(hc_socket* s, hc_sockaddr* addr, hc_bool nonblocking) {
 	struct sockaddr* raw = (struct sockaddr*)addr->data;
 
 	*s = net_socket(raw->sa_family, SOCK_STREAM, 0);
@@ -431,35 +431,35 @@ cc_result Socket_Create(cc_socket* s, cc_sockaddr* addr, cc_bool nonblocking) {
 	return 0;
 }
 
-cc_result Socket_Connect(cc_socket s, cc_sockaddr* addr) {
+hc_result Socket_Connect(hc_socket s, hc_sockaddr* addr) {
 	struct sockaddr* raw = (struct sockaddr*)addr->data;
 	
 	int res = net_connect(s, raw, addr->size);
 	return res < 0 ? res : 0;
 }
 
-cc_result Socket_Read(cc_socket s, cc_uint8* data, cc_uint32 count, cc_uint32* modified) {
+hc_result Socket_Read(hc_socket s, hc_uint8* data, hc_uint32 count, hc_uint32* modified) {
 	int res = net_recv(s, data, count, 0);
 	if (res < 0) { *modified = 0; return res; }
 	
 	*modified = res; return 0;
 }
 
-cc_result Socket_Write(cc_socket s, const cc_uint8* data, cc_uint32 count, cc_uint32* modified) {
+hc_result Socket_Write(hc_socket s, const hc_uint8* data, hc_uint32 count, hc_uint32* modified) {
 	int res = net_send(s, data, count, 0);
 	if (res < 0) { *modified = 0; return res; }
 	
 	*modified = res; return 0;
 }
 
-void Socket_Close(cc_socket s) {
+void Socket_Close(hc_socket s) {
 	net_shutdown(s, 2); // SHUT_RDWR = 2
 	net_close(s);
 }
 
 #ifdef HW_RVL
 // libogc only implements net_poll for wii currently
-static cc_result Socket_Poll(cc_socket s, int mode, cc_bool* success) {
+static hc_result Socket_Poll(hc_socket s, int mode, hc_bool* success) {
 	struct pollsd pfd;
 	pfd.socket = s;
 	pfd.events = mode == SOCKET_POLL_READ ? POLLIN : POLLOUT;
@@ -474,7 +474,7 @@ static cc_result Socket_Poll(cc_socket s, int mode, cc_bool* success) {
 }
 #else
 // libogc only implements net_select for gamecube currently
-static cc_result Socket_Poll(cc_socket s, int mode, cc_bool* success) {
+static hc_result Socket_Poll(hc_socket s, int mode, hc_bool* success) {
 	fd_set set;
 	struct timeval time = { 0 };
 	int res; // number of 'ready' sockets
@@ -490,13 +490,13 @@ static cc_result Socket_Poll(cc_socket s, int mode, cc_bool* success) {
 }
 #endif
 
-cc_result Socket_CheckReadable(cc_socket s, cc_bool* readable) {
+hc_result Socket_CheckReadable(hc_socket s, hc_bool* readable) {
 	return Socket_Poll(s, SOCKET_POLL_READ, readable);
 }
 
-cc_result Socket_CheckWritable(cc_socket s, cc_bool* writable) {
+hc_result Socket_CheckWritable(hc_socket s, hc_bool* writable) {
 	u32 resultSize = sizeof(u32);
-	cc_result res  = Socket_Poll(s, SOCKET_POLL_WRITE, writable);
+	hc_result res  = Socket_Poll(s, SOCKET_POLL_WRITE, writable);
 	if (res || *writable) return res;
 
 	return 0;
@@ -529,12 +529,12 @@ static void InitSockets(void) {
 /*########################################################################################################################*
 *--------------------------------------------------------Platform---------------------------------------------------------*
 *#########################################################################################################################*/
-static void AppendDevice(cc_string* path, char* cwd) {
+static void AppendDevice(hc_string* path, char* cwd) {
 	// try to find device FAT mounted on, otherwise default to SD card
 	if (!cwd) { String_AppendConst(path, "sd"); return;	}
 	
 	Platform_Log1("CWD: %c", cwd);
-	cc_string cwd_ = String_FromReadonly(cwd);
+	hc_string cwd_ = String_FromReadonly(cwd);
 	int deviceEnd  = String_IndexOf(&cwd_, ':');
 		
 	if (deviceEnd >= 0) {
@@ -551,7 +551,7 @@ static void FindRootDirectory(void) {
 	
 	root_path.length = 0;
 	AppendDevice(&root_path, cwd);
-	String_AppendConst(&root_path, ":/ClassiCube");
+	String_AppendConst(&root_path, ":/HarmonyClient");
 }
 
 static void CreateRootDirectory(void) {
@@ -575,7 +575,7 @@ void Platform_Init(void) {
 }
 void Platform_Free(void) { }
 
-cc_bool Platform_DescribeError(cc_result res, cc_string* dst) {
+hc_bool Platform_DescribeError(hc_result res, hc_string* dst) {
 	char chars[NATIVE_STR_LEN];
 	int len;
 
@@ -592,8 +592,8 @@ cc_bool Platform_DescribeError(cc_result res, cc_string* dst) {
 	return true;
 }
 
-cc_bool Process_OpenSupported = false;
-cc_result Process_StartOpen(const cc_string* args) {
+hc_bool Process_OpenSupported = false;
+hc_result Process_StartOpen(const hc_string* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
@@ -607,7 +607,7 @@ cc_result Process_StartOpen(const cc_string* args) {
 	#define MACHINE_KEY "GameCubeGameCube"
 #endif
 
-static cc_result GetMachineID(cc_uint32* key) {
+static hc_result GetMachineID(hc_uint32* key) {
 	Mem_Copy(key, MACHINE_KEY, sizeof(MACHINE_KEY) - 1);
 	return 0;
 }

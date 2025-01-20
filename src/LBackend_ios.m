@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_IOS
+#if defined HC_BUILD_IOS
 #include "Bitmap.h"
 #include "Input.h"
 #include "Platform.h"
@@ -33,7 +33,7 @@ extern CGContextRef win_ctx;
 extern UIView* view_handle;
 
 UIColor* ToUIColor(BitmapCol color, float A);
-NSString* ToNSString(const cc_string* text);
+NSString* ToNSString(const hc_string* text);
 void LInput_SetKeyboardType(UITextField* fld, int flags);
 void LInput_SetPlaceholder(UITextField* fld, const char* placeholder);
 
@@ -41,9 +41,9 @@ void LInput_SetPlaceholder(UITextField* fld, const char* placeholder);
 /*########################################################################################################################*
  *----------------------------------------------------Common helpers------------------------------------------------------*
  *#########################################################################################################################*/
-static NSMutableAttributedString* ToAttributedString(const cc_string* text) {
+static NSMutableAttributedString* ToAttributedString(const hc_string* text) {
     // NSMutableAttributedString - iOS 3.2
-    cc_string left = *text, part;
+    hc_string left = *text, part;
     char colorCode = 'f';
     NSMutableAttributedString* str = [[NSMutableAttributedString alloc] init];
     
@@ -63,8 +63,8 @@ static NSMutableAttributedString* ToAttributedString(const cc_string* text) {
 }
 
 
-static UIColor* GetStringColor(const cc_string* text) {
-    cc_string left = *text, part;
+static UIColor* GetStringColor(const hc_string* text) {
+    hc_string left = *text, part;
     char colorCode = 'f';
     Drawer2D_UNSAFE_NextPart(&left, &part, &colorCode);
     
@@ -72,9 +72,9 @@ static UIColor* GetStringColor(const cc_string* text) {
     return ToUIColor(color, 1.0f);
 }
 
-static NSString* GetColorlessString(const cc_string* text) {
+static NSString* GetColorlessString(const hc_string* text) {
     char buffer[128];
-    cc_string tmp = String_FromArray(buffer);
+    hc_string tmp = String_FromArray(buffer);
 
     String_AppendColorless(&tmp, text);
     return ToNSString(&tmp);
@@ -117,14 +117,14 @@ static struct LWidget* FindWidgetForView(id obj) {
     return NULL;
 }
 
-static void LTable_UpdateCellColor(UIView* view, struct ServerInfo* server, int row, cc_bool selected);
+static void LTable_UpdateCellColor(UIView* view, struct ServerInfo* server, int row, hc_bool selected);
 static void LTable_UpdateCell(UITableView* table, UITableViewCell* cell, int row);
 
-static NSString* cellID = @"CC_Cell";
-@interface CCUIController : NSObject<UITableViewDataSource, UITableViewDelegate, UITextFieldDelegate>
+static NSString* cellID = @"HC_Cell";
+@interface HCUIController : NSObject<UITableViewDataSource, UITableViewDelegate, UITextFieldDelegate>
 @end
 
-@implementation CCUIController
+@implementation HCUIController
 
 - (void)handleButtonPress:(id)sender {
     struct LWidget* w = FindWidgetForView(sender);
@@ -219,9 +219,9 @@ static NSString* cellID = @"CC_Cell";
 
 @end
 
-static CCUIController* ui_controller;
+static HCUIController* ui_controller;
 void LBackend_Init(void) {
-    ui_controller = [[CCUIController alloc] init];
+    ui_controller = [[HCUIController alloc] init];
     CFBridgingRetain(ui_controller); // prevent GC TODO even needed?
 }
 
@@ -421,7 +421,7 @@ void LInput_SetKeyboardType(UITextField* fld, int flags) {
 void LInput_SetPlaceholder(UITextField* fld, const char* placeholder) {
     if (!placeholder) return;
     
-    cc_string hint  = String_FromReadonly(placeholder);
+    hc_string hint  = String_FromReadonly(placeholder);
     fld.placeholder = ToNSString(&hint);
 }
 
@@ -562,7 +562,7 @@ void LBackend_TableMouseDown(struct LTable* w, int idx) { }
 void LBackend_TableMouseUp(struct   LTable* w, int idx) { }
 void LBackend_TableMouseMove(struct LTable* w, int idx) { }
 
-static void LTable_UpdateCellColor(UIView* view, struct ServerInfo* server, int row, cc_bool selected) {
+static void LTable_UpdateCellColor(UIView* view, struct ServerInfo* server, int row, hc_bool selected) {
     BitmapCol color = LTable_RowColor(row, selected, server && server->featured);
     if (color) {
         view.backgroundColor = ToUIColor(color, 1.0f);
@@ -578,7 +578,7 @@ static void LTable_UpdateCell(UITableView* table, UITableViewCell* cell, int row
     struct Flag* flag = Flags_Get(server);
     
     char descBuffer[128];
-    cc_string desc = String_FromArray(descBuffer);
+    hc_string desc = String_FromArray(descBuffer);
     String_Format2(&desc, "%i/%i players, up for ", &server->players, &server->maxPlayers);
     LTable_FormatUptime(&desc, server->uptime);
     if (server->software.length) String_Format1(&desc, " | %s", &server->software);
@@ -593,7 +593,7 @@ static void LTable_UpdateCell(UITableView* table, UITableViewCell* cell, int row
     cell.selectionStyle       = UITableViewCellSelectionStyleNone;
     
     NSIndexPath* sel = table.indexPathForSelectedRow;
-    cc_bool selected = sel && sel.row == row;
+    hc_bool selected = sel && sel.row == row;
     LTable_UpdateCellColor(cell, server, row, selected);
 }
 
@@ -616,7 +616,7 @@ static void OnFlagsChanged(void) {
 /*########################################################################################################################*
  *------------------------------------------------------UI Backend--------------------------------------------------------*
  *#########################################################################################################################*/
-void LBackend_DecodeFlag(struct Flag* flag, cc_uint8* data, cc_uint32 len) {
+void LBackend_DecodeFlag(struct Flag* flag, hc_uint8* data, hc_uint32 len) {
 	NSData* ns_data = [NSData dataWithBytes:data length:len];
 	UIImage* img = [UIImage imageWithData:ns_data];
 	if (!img) return;

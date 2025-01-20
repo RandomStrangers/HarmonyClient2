@@ -21,12 +21,12 @@ int Builder_SidesLevel, Builder_EdgeLevel;
 #define Builder_PackChunk(xx, yy, zz) (((yy) + 1) * EXTCHUNK_SIZE_2 + ((zz) + 1) * EXTCHUNK_SIZE + ((xx) + 1))
 
 static BlockID* Builder_Chunk;
-static cc_uint8* Builder_Counts;
+static hc_uint8* Builder_Counts;
 static int* Builder_BitFlags;
 static int Builder_X, Builder_Y, Builder_Z;
 static BlockID Builder_Block;
 static int Builder_ChunkIndex;
-static cc_bool Builder_FullBright;
+static hc_bool Builder_FullBright;
 static int Builder_ChunkEndX, Builder_ChunkEndZ;
 static int Builder_Offsets[FACE_COUNT] = { -1,1, -EXTCHUNK_SIZE,EXTCHUNK_SIZE, -EXTCHUNK_SIZE_2,EXTCHUNK_SIZE_2 };
 
@@ -102,7 +102,7 @@ static void AddVertices(BlockID block, Face face) {
 	part->faces.count[face] += 4;
 }
 
-#ifdef CC_BUILD_GL11
+#ifdef HC_BUILD_GL11
 static void BuildPartVbs(struct ChunkPartInfo* info) {
 	/* Sprites vertices are stored before chunk face sides */
 	int i, count, offset = info->offset + info->spriteCount;
@@ -127,7 +127,7 @@ static void BuildPartVbs(struct ChunkPartInfo* info) {
 }
 #endif
 
-static cc_bool SetPartInfo(struct Builder1DPart* part, int* offset, struct ChunkPartInfo* info) {
+static hc_bool SetPartInfo(struct Builder1DPart* part, int* offset, struct ChunkPartInfo* info) {
 	int vCount = Builder1DPart_VerticesCount(part);
 	info->offset = -1;
 	if (!vCount) return false;
@@ -261,10 +261,10 @@ for (yy = -1; yy < 17; ++yy) {\
 	}\
 }
 
-static cc_bool ReadChunkData(int x1, int y1, int z1, cc_bool* outAllAir) {
+static hc_bool ReadChunkData(int x1, int y1, int z1, hc_bool* outAllAir) {
 	BlockRaw* blocks = World.Blocks;
 	BlockRaw* blocks2;
-	cc_bool allAir = true, allSolid = true;
+	hc_bool allAir = true, allSolid = true;
 	int index, cIndex;
 	BlockID block;
 	int xx, yy, zz, y;
@@ -310,10 +310,10 @@ for (yy = -1; yy < 17; ++yy) {\
 	}\
 }
 
-static cc_bool ReadBorderChunkData(int x1, int y1, int z1, cc_bool* outAllAir) {
+static hc_bool ReadBorderChunkData(int x1, int y1, int z1, hc_bool* outAllAir) {
 	BlockRaw* blocks = World.Blocks;
 	BlockRaw* blocks2;
-	cc_bool allAir = true;
+	hc_bool allAir = true;
 	int index, cIndex;
 	BlockID block;
 	int xx, yy, zz, x, y, z;
@@ -334,7 +334,7 @@ static cc_bool ReadBorderChunkData(int x1, int y1, int z1, cc_bool* outAllAir) {
 }
 
 static void OutputChunkPartsMeta(int x, int y, int z, struct ChunkInfo* info) {
-	cc_bool hasNorm, hasTran;
+	hc_bool hasNorm, hasTran;
 	int partsIndex;
 	int i, j, curIdx, offset;
 	
@@ -360,18 +360,18 @@ static void OutputChunkPartsMeta(int x, int y, int z, struct ChunkInfo* info) {
 }
 
 void Builder_MakeChunk(struct ChunkInfo* info) {
-#ifdef CC_BUILD_TINYSTACK
+#ifdef HC_BUILD_TINYSTACK
 	/* The Saturn build only has 16 kb stack, not large enough */
 	static BlockID chunk[EXTCHUNK_SIZE_3]; 
-	static cc_uint8 counts[CHUNK_SIZE_3 * FACE_COUNT]; 
+	static hc_uint8 counts[CHUNK_SIZE_3 * FACE_COUNT]; 
 	static int bitFlags[1];
 #else
 	BlockID chunk[EXTCHUNK_SIZE_3]; 
-	cc_uint8 counts[CHUNK_SIZE_3 * FACE_COUNT]; 
+	hc_uint8 counts[CHUNK_SIZE_3 * FACE_COUNT]; 
 	int bitFlags[EXTCHUNK_SIZE_3];
 #endif
 
-	cc_bool allAir, allSolid, onBorder;
+	hc_bool allAir, allSolid, onBorder;
 	int xMax, yMax, zMax, totalVerts;
 	int cIndex, index;
 	int x, y, z, xx, yy, zz;
@@ -412,10 +412,10 @@ void Builder_MakeChunk(struct ChunkInfo* info) {
 	OutputChunkPartsMeta(x1, y1, z1, info);
 #ifdef OCCLUSION
 	if (info.NormalParts != null || info.TranslucentParts != null)
-		info.occlusionFlags = (cc_uint8)ComputeOcclusion();
+		info.occlusionFlags = (hc_uint8)ComputeOcclusion();
 #endif
 
-#ifndef CC_BUILD_GL11
+#ifndef HC_BUILD_GL11
 	/* add an extra element to fix crashing on some GPUs */
 	Builder_Vertices = (struct VertexTextured*)Gfx_RecreateAndLockVb(&info->vb,
 													VERTEX_FORMAT_TEXTURED, totalVerts + 1);
@@ -442,7 +442,7 @@ void Builder_MakeChunk(struct ChunkInfo* info) {
 		}
 	}
 
-#ifdef CC_BUILD_GL11
+#ifdef HC_BUILD_GL11
 	cIndex = World_ChunkPack(x1 >> CHUNK_SHIFT, y1 >> CHUNK_SHIFT, z1 >> CHUNK_SHIFT);
 
 	for (index = 0; index < MapRenderer_1DUsedCount; index++) {
@@ -456,7 +456,7 @@ void Builder_MakeChunk(struct ChunkInfo* info) {
 #endif
 }
 
-static cc_bool Builder_OccludedLiquid(int chunkIndex) {
+static hc_bool Builder_OccludedLiquid(int chunkIndex) {
 	chunkIndex += EXTCHUNK_SIZE_2; /* Checking y above */
 	return
 		Blocks.FullOpaque[Builder_Chunk[chunkIndex]]
@@ -485,8 +485,8 @@ static RNGState spriteRng;
 static void Builder_DrawSprite(int x, int y, int z) {
 	struct Builder1DPart* part;
 	struct VertexTextured* v;
-	cc_uint8 offsetType;
-	cc_bool bright;
+	hc_uint8 offsetType;
+	hc_bool bright;
 	PackedCol color;
 	TextureLoc loc;
 	float v1, v2;
@@ -578,7 +578,7 @@ static PackedCol Normal_LightColor(int x, int y, int z, Face face, BlockID block
 	return 0; /* should never happen */
 }
 
-static cc_bool Normal_CanStretch(BlockID initial, int chunkIndex, int x, int y, int z, Face face) {
+static hc_bool Normal_CanStretch(BlockID initial, int chunkIndex, int x, int y, int z, Face face) {
 	BlockID cur = Builder_Chunk[chunkIndex];
 
 	if (cur != initial || Block_IsFaceHidden(cur, Builder_Chunk[chunkIndex + Builder_Offsets[face]], face)) return false;
@@ -588,7 +588,7 @@ static cc_bool Normal_CanStretch(BlockID initial, int chunkIndex, int x, int y, 
 }
 
 static int NormalBuilder_StretchXLiquid(int countIndex, int x, int y, int z, int chunkIndex, BlockID block) {
-	int count = 1; cc_bool stretchTile;
+	int count = 1; hc_bool stretchTile;
 	if (Builder_OccludedLiquid(chunkIndex)) return 0;
 	
 	x++;
@@ -608,7 +608,7 @@ static int NormalBuilder_StretchXLiquid(int countIndex, int x, int y, int z, int
 }
 
 static int NormalBuilder_StretchX(int countIndex, int x, int y, int z, int chunkIndex, BlockID block, Face face) {
-	int count = 1; cc_bool stretchTile;
+	int count = 1; hc_bool stretchTile;
 	x++;
 	chunkIndex++;
 	countIndex += FACE_COUNT;
@@ -626,7 +626,7 @@ static int NormalBuilder_StretchX(int countIndex, int x, int y, int z, int chunk
 }
 
 static int NormalBuilder_StretchZ(int countIndex, int x, int y, int z, int chunkIndex, BlockID block, Face face) {
-	int count = 1; cc_bool stretchTile;
+	int count = 1; hc_bool stretchTile;
 	z++;
 	chunkIndex += EXTCHUNK_SIZE;
 	countIndex += CHUNK_SIZE * FACE_COUNT;
@@ -651,7 +651,7 @@ static void NormalBuilder_RenderBlock(int index, int x, int y, int z) {
 	/* block state */
 	Vec3 min, max;
 	int baseOffset, lightFlags;
-	cc_bool fullBright;
+	hc_bool fullBright;
 
 	/* per-face state */
 	struct Builder1DPart* part;
@@ -768,13 +768,13 @@ static void NormalBuilder_SetActive(void) {
 /*########################################################################################################################*
 *-------------------------------------------------Advanced mesh builder---------------------------------------------------*
 *#########################################################################################################################*/
-#ifdef CC_BUILD_ADVLIGHTING
+#ifdef HC_BUILD_ADVLIGHTING
 static Vec3 adv_minBB, adv_maxBB;
 static int adv_initBitFlags, adv_baseOffset;
 static int* adv_bitFlags;
 static float adv_x1, adv_y1, adv_z1, adv_x2, adv_y2, adv_z2;
 static PackedCol adv_lerp[5], adv_lerpX[5], adv_lerpZ[5], adv_lerpY[5];
-static cc_bool adv_tinted;
+static hc_bool adv_tinted;
 
 enum ADV_MASK {
 	/* z-1 cube points */
@@ -878,7 +878,7 @@ static int adv_masks[FACE_COUNT] = {
 };
 
 
-static cc_bool Adv_CanStretch(BlockID initial, int chunkIndex, int x, int y, int z, Face face) {
+static hc_bool Adv_CanStretch(BlockID initial, int chunkIndex, int x, int y, int z, Face face) {
 	BlockID cur = Builder_Chunk[chunkIndex];
 	adv_bitFlags[chunkIndex] = Adv_ComputeLightFlags(x, y, z, chunkIndex);
 
@@ -890,7 +890,7 @@ static cc_bool Adv_CanStretch(BlockID initial, int chunkIndex, int x, int y, int
 }
 
 static int Adv_StretchXLiquid(int countIndex, int x, int y, int z, int chunkIndex, BlockID block) {
-	int count = 1; cc_bool stretchTile;
+	int count = 1; hc_bool stretchTile;
 	if (Builder_OccludedLiquid(chunkIndex)) return 0;
 	adv_initBitFlags = Adv_ComputeLightFlags(x, y, z, chunkIndex);
 	adv_bitFlags[chunkIndex] = adv_initBitFlags;
@@ -912,7 +912,7 @@ static int Adv_StretchXLiquid(int countIndex, int x, int y, int z, int chunkInde
 }
 
 static int Adv_StretchX(int countIndex, int x, int y, int z, int chunkIndex, BlockID block, Face face) {
-	int count = 1; cc_bool stretchTile;
+	int count = 1; hc_bool stretchTile;
 	adv_initBitFlags = Adv_ComputeLightFlags(x, y, z, chunkIndex);
 	adv_bitFlags[chunkIndex] = adv_initBitFlags;
 	
@@ -933,7 +933,7 @@ static int Adv_StretchX(int countIndex, int x, int y, int z, int chunkIndex, Blo
 }
 
 static int Adv_StretchZ(int countIndex, int x, int y, int z, int chunkIndex, BlockID block, Face face) {
-	int count = 1; cc_bool stretchTile;
+	int count = 1; hc_bool stretchTile;
 	adv_initBitFlags = Adv_ComputeLightFlags(x, y, z, chunkIndex);
 	adv_bitFlags[chunkIndex] = adv_initBitFlags;
 
@@ -1276,11 +1276,11 @@ static void AdvBuilder_SetActive(void) { NormalBuilder_SetActive(); }
 /*########################################################################################################################*
 *-------------------------------------------------Modern mesh builder-----------------------------------------------------*
 *#########################################################################################################################*/
-#ifdef CC_BUILD_ADVLIGHTING
+#ifdef HC_BUILD_ADVLIGHTING
 /* Fast color averaging wizardy from https://stackoverflow.com/questions/8440631/how-would-you-average-two-32-bit-colors-packed-into-an-integer */
 #define AVERAGE(a, b)   ( ((((a) ^ (b)) & 0xfefefefe) >> 1) + ((a) & (b)) )
 
-static cc_bool Modern_IsOccluded(int x, int y, int z) {
+static hc_bool Modern_IsOccluded(int x, int y, int z) {
 	BlockID block = World_SafeGetBlock(x, y, z);
 	if (Blocks.Brightness[block] > 0) { return false; }
 	/* If the block we're pulling colors from is solid, return a darker version of original and increment how many are like this */
@@ -1290,7 +1290,7 @@ static cc_bool Modern_IsOccluded(int x, int y, int z) {
 	return false;
 }
 
-static cc_bool Modern_CanStretch(BlockID initial, int chunkIndex, int x, int y, int z, Face face) {
+static hc_bool Modern_CanStretch(BlockID initial, int chunkIndex, int x, int y, int z, Face face) {
 	return false;
 }
 
@@ -1314,9 +1314,9 @@ static int Modern_StretchZ(int countIndex, int x, int y, int z, int chunkIndex, 
 }
 
 static PackedCol Modern_GetColorX(PackedCol orig, int x, int y, int z, int oY, int oZ) {
-	cc_bool xOccluded =  Modern_IsOccluded(x, y + oY, z     );
-	cc_bool zOccluded =  Modern_IsOccluded(x, y     , z + oZ);
-	cc_bool xzOccluded = Modern_IsOccluded(x, y + oY, z + oZ);
+	hc_bool xOccluded =  Modern_IsOccluded(x, y + oY, z     );
+	hc_bool zOccluded =  Modern_IsOccluded(x, y     , z + oZ);
+	hc_bool xzOccluded = Modern_IsOccluded(x, y + oY, z + oZ);
 
 	PackedCol CoX = xOccluded ? PackedCol_Scale(orig, FANCY_AO) : Lighting.Color_XSide_Fast(x, y + oY, z     );
 	PackedCol CoZ = zOccluded ? PackedCol_Scale(orig, FANCY_AO) : Lighting.Color_XSide_Fast(x, y     , z + oZ);
@@ -1393,9 +1393,9 @@ static void Modern_DrawXMax(int count, int x, int y, int z) {
 }
 
 static PackedCol Modern_GetColorZ(PackedCol orig, int x, int y, int z, int oX, int oY) {
-	cc_bool xOccluded  = Modern_IsOccluded(x + oX, y     , z);
-	cc_bool zOccluded  = Modern_IsOccluded(x,      y + oY, z);
-	cc_bool xzOccluded = Modern_IsOccluded(x + oX, y + oY, z);
+	hc_bool xOccluded  = Modern_IsOccluded(x + oX, y     , z);
+	hc_bool zOccluded  = Modern_IsOccluded(x,      y + oY, z);
+	hc_bool xzOccluded = Modern_IsOccluded(x + oX, y + oY, z);
 
 	PackedCol CoX   =                                xOccluded ? PackedCol_Scale(orig, FANCY_AO) : Lighting.Color_ZSide_Fast(x + oX, y     , z);
 	PackedCol CoZ   =                                zOccluded ? PackedCol_Scale(orig, FANCY_AO) : Lighting.Color_ZSide_Fast(x     , y + oY, z);
@@ -1472,9 +1472,9 @@ static void Modern_DrawZMax(int count, int x, int y, int z) {
 }
 
 static PackedCol Modern_GetColorYMin(PackedCol orig, int x, int y, int z, int oX, int oZ) {
-	cc_bool xOccluded  = Modern_IsOccluded(x + oX, y, z     );
-	cc_bool zOccluded  = Modern_IsOccluded(x,      y, z + oZ);
-	cc_bool xzOccluded = Modern_IsOccluded(x + oX, y, z + oZ);
+	hc_bool xOccluded  = Modern_IsOccluded(x + oX, y, z     );
+	hc_bool zOccluded  = Modern_IsOccluded(x,      y, z + oZ);
+	hc_bool xzOccluded = Modern_IsOccluded(x + oX, y, z + oZ);
 
 	PackedCol CoX   =                                xOccluded ? PackedCol_Scale(orig, FANCY_AO) : Lighting.Color_YMin_Fast(x + oX, y, z     );
 	PackedCol CoZ   =                                zOccluded ? PackedCol_Scale(orig, FANCY_AO) : Lighting.Color_YMin_Fast(x     , y, z + oZ);
@@ -1518,9 +1518,9 @@ static void Modern_DrawYMin(int count, int x, int y, int z) {
 }
 
 static PackedCol Modern_GetColorYMax(PackedCol orig, int x, int y, int z, int oX, int oZ) {
-	cc_bool xOccluded  = Modern_IsOccluded(x + oX, y, z     );
-	cc_bool zOccluded  = Modern_IsOccluded(x,      y, z + oZ);
-	cc_bool xzOccluded = Modern_IsOccluded(x + oX, y, z + oZ);
+	hc_bool xOccluded  = Modern_IsOccluded(x + oX, y, z     );
+	hc_bool zOccluded  = Modern_IsOccluded(x,      y, z + oZ);
+	hc_bool xzOccluded = Modern_IsOccluded(x + oX, y, z + oZ);
 
 	PackedCol CoX   =                                xOccluded ? PackedCol_Scale(orig, FANCY_AO) : Lighting.Color(x + oX, y, z     );
 	PackedCol CoZ   =                                zOccluded ? PackedCol_Scale(orig, FANCY_AO) : Lighting.Color(x     , y, z + oZ);
@@ -1622,7 +1622,7 @@ static void ModernBuilder_SetActive(void) { NormalBuilder_SetActive(); }
 /*########################################################################################################################*
 *---------------------------------------------------Builder interface-----------------------------------------------------*
 *#########################################################################################################################*/
-cc_bool Builder_SmoothLighting;
+hc_bool Builder_SmoothLighting;
 void Builder_ApplyActive(void) {
 	if (Builder_SmoothLighting) {
 		if (Lighting_Mode != LIGHTING_MODE_CLASSIC) {

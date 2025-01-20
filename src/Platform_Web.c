@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_WEB
+#if defined HC_BUILD_WEB
 
 #include "_PlatformBase.h"
 #include "Stream.h"
@@ -31,35 +31,35 @@
 #define _EHOSTUNREACH 23
 #define _EINPROGRESS  26
 
-const cc_result ReturnCode_FileShareViolation = 1000000000; /* Not used in web filesystem backend */
-const cc_result ReturnCode_FileNotFound     = _ENOENT;
-const cc_result ReturnCode_SocketInProgess  = _EINPROGRESS;
-const cc_result ReturnCode_SocketWouldBlock = _EAGAIN;
-const cc_result ReturnCode_DirectoryExists  = _EEXIST;
+const hc_result ReturnCode_FileShareViolation = 1000000000; /* Not used in web filesystem backend */
+const hc_result ReturnCode_FileNotFound     = _ENOENT;
+const hc_result ReturnCode_SocketInProgess  = _EINPROGRESS;
+const hc_result ReturnCode_SocketWouldBlock = _EAGAIN;
+const hc_result ReturnCode_DirectoryExists  = _EEXIST;
 
 const char* Platform_AppNameSuffix = "";
-cc_bool Platform_ReadonlyFilesystem;
-cc_bool Platform_SingleProcess;
+hc_bool Platform_ReadonlyFilesystem;
+hc_bool Platform_SingleProcess;
 
 
 /*########################################################################################################################*
 *---------------------------------------------------------Memory----------------------------------------------------------*
 *#########################################################################################################################*/
-void* Mem_Set(void*  dst, cc_uint8 value,  cc_uint32 numBytes) { return memset( dst, value, numBytes); }
-void* Mem_Copy(void* dst, const void* src, cc_uint32 numBytes) { return memcpy( dst, src,   numBytes); }
-void* Mem_Move(void* dst, const void* src, cc_uint32 numBytes) { return memmove(dst, src,   numBytes); }
+void* Mem_Set(void*  dst, hc_uint8 value,  hc_uint32 numBytes) { return memset( dst, value, numBytes); }
+void* Mem_Copy(void* dst, const void* src, hc_uint32 numBytes) { return memcpy( dst, src,   numBytes); }
+void* Mem_Move(void* dst, const void* src, hc_uint32 numBytes) { return memmove(dst, src,   numBytes); }
 
-void* Mem_TryAlloc(cc_uint32 numElems, cc_uint32 elemsSize) {
-	cc_uint32 size = CalcMemSize(numElems, elemsSize);
+void* Mem_TryAlloc(hc_uint32 numElems, hc_uint32 elemsSize) {
+	hc_uint32 size = CalcMemSize(numElems, elemsSize);
 	return size ? malloc(size) : NULL;
 }
 
-void* Mem_TryAllocCleared(cc_uint32 numElems, cc_uint32 elemsSize) {
+void* Mem_TryAllocCleared(hc_uint32 numElems, hc_uint32 elemsSize) {
 	return calloc(numElems, elemsSize);
 }
 
-void* Mem_TryRealloc(void* mem, cc_uint32 numElems, cc_uint32 elemsSize) {
-	cc_uint32 size = CalcMemSize(numElems, elemsSize);
+void* Mem_TryRealloc(void* mem, hc_uint32 numElems, hc_uint32 elemsSize) {
+	hc_uint32 size = CalcMemSize(numElems, elemsSize);
 	return size ? realloc(mem, size) : NULL;
 }
 
@@ -71,15 +71,15 @@ void Mem_Free(void* mem) {
 /*########################################################################################################################*
 *------------------------------------------------------Logging/Time-------------------------------------------------------*
 *#########################################################################################################################*/
-cc_uint64 Stopwatch_ElapsedMicroseconds(cc_uint64 beg, cc_uint64 end) {
+hc_uint64 Stopwatch_ElapsedMicroseconds(hc_uint64 beg, hc_uint64 end) {
 	if (end < beg) return 0;
 	return end - beg;
 }
 
-cc_uint64 Stopwatch_Measure(void) {
+hc_uint64 Stopwatch_Measure(void) {
 	/* time is a milliseconds double */
 	/*  convert to microseconds */
-	return (cc_uint64)(emscripten_get_now() * 1000);
+	return (hc_uint64)(emscripten_get_now() * 1000);
 }
 
 extern void interop_Log(const char* msg, int len);
@@ -90,7 +90,7 @@ void Platform_Log(const char* msg, int len) {
 TimeMS DateTime_CurrentUTC(void) {
 	struct timeval cur;
 	gettimeofday(&cur, NULL);
-	return (cc_uint64)cur.tv_sec + UNIX_EPOCH_SECONDS;
+	return (hc_uint64)cur.tv_sec + UNIX_EPOCH_SECONDS;
 }
 
 extern void interop_GetLocalTime(struct DateTime* t);
@@ -102,28 +102,28 @@ void DateTime_CurrentLocal(struct DateTime* t) {
 /*########################################################################################################################*
 *-----------------------------------------------------Directory/File------------------------------------------------------*
 *#########################################################################################################################*/
-void Platform_EncodePath(cc_filepath* dst, const cc_string* path) {
+void Platform_EncodePath(hc_filepath* dst, const hc_string* path) {
 	char* str = dst->buffer;
 	String_EncodeUtf8(str, path);
 }
 
-void Directory_GetCachePath(cc_string* path) { }
+void Directory_GetCachePath(hc_string* path) { }
 
 extern void interop_InitFilesystem(void);
-cc_result Directory_Create(const cc_filepath* path) {
+hc_result Directory_Create(const hc_filepath* path) {
 	/* Web filesystem doesn't need directories */
 	return 0;
 }
 
 extern int interop_FileExists(const char* path);
-int File_Exists(const cc_filepath* path) {
+int File_Exists(const hc_filepath* path) {
 	return interop_FileExists(path->buffer);
 }
 
 static void* enum_obj;
 static Directory_EnumCallback enum_callback;
 EMSCRIPTEN_KEEPALIVE void Directory_IterCallback(const char* src) {
-	cc_string path; char pathBuffer[FILENAME_SIZE];
+	hc_string path; char pathBuffer[FILENAME_SIZE];
 
 	String_InitArray(path, pathBuffer);
 	String_AppendUtf8(&path, src, String_Length(src));
@@ -131,8 +131,8 @@ EMSCRIPTEN_KEEPALIVE void Directory_IterCallback(const char* src) {
 }
 
 extern int interop_DirectoryIter(const char* path);
-cc_result Directory_Enum(const cc_string* path, void* obj, Directory_EnumCallback callback) {
-	cc_filepath str;
+hc_result Directory_Enum(const hc_string* path, void* obj, Directory_EnumCallback callback) {
+	hc_filepath str;
 	Platform_EncodePath(&str, path);
 
 	enum_obj      = obj;
@@ -142,7 +142,7 @@ cc_result Directory_Enum(const cc_string* path, void* obj, Directory_EnumCallbac
 }
 
 extern int interop_FileCreate(const char* path, int mode);
-static cc_result File_Do(cc_file* file, const char* path, int mode) {
+static hc_result File_Do(hc_file* file, const char* path, int mode) {
 	int res = interop_FileCreate(path, mode);
 
 	/* returned result is negative for error */
@@ -153,18 +153,18 @@ static cc_result File_Do(cc_file* file, const char* path, int mode) {
 	}
 }
 
-cc_result File_Open(cc_file* file, const cc_filepath* path) {
+hc_result File_Open(hc_file* file, const hc_filepath* path) {
 	return File_Do(file, path->buffer, O_RDONLY);
 }
-cc_result File_Create(cc_file* file, const cc_filepath* path) {
+hc_result File_Create(hc_file* file, const hc_filepath* path) {
 	return File_Do(file, path->buffer, O_RDWR | O_CREAT | O_TRUNC);
 }
-cc_result File_OpenOrCreate(cc_file* file, const cc_filepath* path) {
+hc_result File_OpenOrCreate(hc_file* file, const hc_filepath* path) {
 	return File_Do(file, path->buffer, O_RDWR | O_CREAT);
 }
 
 extern int interop_FileRead(int fd, void* data, int count);
-cc_result File_Read(cc_file file, void* data, cc_uint32 count, cc_uint32* bytesRead) {
+hc_result File_Read(hc_file file, void* data, hc_uint32 count, hc_uint32* bytesRead) {
 	int res = interop_FileRead(file, data, count);
 
 	/* returned result is negative for error */
@@ -176,7 +176,7 @@ cc_result File_Read(cc_file file, void* data, cc_uint32 count, cc_uint32* bytesR
 }
 
 extern int interop_FileWrite(int fd, const void* data, int count);
-cc_result File_Write(cc_file file, const void* data, cc_uint32 count, cc_uint32* bytesWrote) {
+hc_result File_Write(hc_file file, const void* data, hc_uint32 count, hc_uint32* bytesWrote) {
 	int res = interop_FileWrite(file, data, count);
 
 	/* returned result is negative for error */
@@ -188,20 +188,20 @@ cc_result File_Write(cc_file file, const void* data, cc_uint32 count, cc_uint32*
 }
 
 extern int interop_FileClose(int fd);
-cc_result File_Close(cc_file file) {
+hc_result File_Close(hc_file file) {
 	/* returned result is negative for error */
 	return -interop_FileClose(file);
 }
 
 extern int interop_FileSeek(int fd, int offset, int whence);
-cc_result File_Seek(cc_file file, int offset, int seekType) {
+hc_result File_Seek(hc_file file, int offset, int seekType) {
 	/* returned result is negative for error */
 	int res = interop_FileSeek(file, offset, seekType);
 	/* FileSeek returns current position, discard that */
 	return res >= 0 ? 0 : -res;
 }
 
-cc_result File_Position(cc_file file, cc_uint32* pos) {
+hc_result File_Position(hc_file file, hc_uint32* pos) {
 	/* FILE_SEEKFROM_CURRENT is same as SEEK_CUR */
 	int res = interop_FileSeek(file, 0, FILE_SEEKFROM_CURRENT);
 	/* returned result is negative for error */
@@ -213,7 +213,7 @@ cc_result File_Position(cc_file file, cc_uint32* pos) {
 }
 
 extern int interop_FileLength(int fd);
-cc_result File_Length(cc_file file, cc_uint32* len) {
+hc_result File_Length(hc_file file, hc_uint32* len) {
 	int res = interop_FileLength(file);
 	/* returned result is negative for error */
 	if (res >= 0) {
@@ -228,7 +228,7 @@ cc_result File_Length(cc_file file, cc_uint32* len) {
 *--------------------------------------------------------Threading--------------------------------------------------------*
 *#########################################################################################################################*/
 /* No real threading support with emscripten backend */
-void  Thread_Sleep(cc_uint32 milliseconds) { }
+void  Thread_Sleep(hc_uint32 milliseconds) { }
 
 void* Mutex_Create(const char* name) { return NULL; }
 void  Mutex_Free(void* handle) { }
@@ -239,7 +239,7 @@ void* Waitable_Create(const char* name) { return NULL; }
 void  Waitable_Free(void* handle) { }
 void  Waitable_Signal(void* handle) { }
 void  Waitable_Wait(void* handle) { }
-void  Waitable_WaitFor(void* handle, cc_uint32 milliseconds) { }
+void  Waitable_WaitFor(void* handle, hc_uint32 milliseconds) { }
 
 
 /*########################################################################################################################*
@@ -253,10 +253,10 @@ void Platform_LoadSysFonts(void) { }
 *#########################################################################################################################*/
 extern void interop_InitSockets(void);
 
-cc_result Socket_ParseAddress(const cc_string* address, int port, cc_sockaddr* addrs, int* numValidAddrs) {
+hc_result Socket_ParseAddress(const hc_string* address, int port, hc_sockaddr* addrs, int* numValidAddrs) {
 	int len = String_EncodeUtf8(addrs[0].data, address);
 	/* TODO can this ever happen */
-	if (len >= CC_SOCKETADDR_MAXSIZE) Logger_Abort("Overrun in Socket_ParseAddress");
+	if (len >= HC_SOCKETADDR_MAXSIZE) Logger_Abort("Overrun in Socket_ParseAddress");
 
 	addrs[0].size  = port;
 	*numValidAddrs = 1;
@@ -264,14 +264,14 @@ cc_result Socket_ParseAddress(const cc_string* address, int port, cc_sockaddr* a
 }
 
 extern int interop_SocketCreate(void);
-extern int interop_SocketConnect(int sock, const cc_uint8* host, int port);
+extern int interop_SocketConnect(int sock, const hc_uint8* host, int port);
 
-cc_result Socket_Create(cc_socket* s, cc_sockaddr* addr, cc_bool nonblocking) {
+hc_result Socket_Create(hc_socket* s, hc_sockaddr* addr, hc_bool nonblocking) {
 	*s = interop_SocketCreate();
 	return 0;
 }
 
-cc_result Socket_Connect(cc_socket s, cc_sockaddr* addr) {
+hc_result Socket_Connect(hc_socket s, hc_sockaddr* addr) {
 	/* size is used to store port number instead */
 	/* returned result is negative for error */
 	int res = -interop_SocketConnect(s, addr->data, addr->size);
@@ -282,7 +282,7 @@ cc_result Socket_Connect(cc_socket s, cc_sockaddr* addr) {
 }
 
 extern int interop_SocketRecv(int sock, void* data, int len);
-cc_result Socket_Read(cc_socket s, cc_uint8* data, cc_uint32 count, cc_uint32* read) {
+hc_result Socket_Read(hc_socket s, hc_uint8* data, hc_uint32 count, hc_uint32* read) {
 	int res; 
 	*read = 0;
 
@@ -305,7 +305,7 @@ cc_result Socket_Read(cc_socket s, cc_uint8* data, cc_uint32 count, cc_uint32* r
 }
 
 extern int interop_SocketSend(int sock, const void* data, int len);
-cc_result Socket_Write(cc_socket s, const cc_uint8* data, cc_uint32 count, cc_uint32* modified) {
+hc_result Socket_Write(hc_socket s, const hc_uint8* data, hc_uint32 count, hc_uint32* modified) {
 	/* returned result is negative for error */
 	int res = interop_SocketSend(s, data, count);
 
@@ -317,12 +317,12 @@ cc_result Socket_Write(cc_socket s, const cc_uint8* data, cc_uint32 count, cc_ui
 }
 
 extern int interop_SocketClose(int sock);
-void Socket_Close(cc_socket s) {
+void Socket_Close(hc_socket s) {
 	interop_SocketClose(s);
 }
 
-extern int interop_SocketWritable(int sock, cc_bool* writable);
-cc_result Socket_CheckWritable(cc_socket s, cc_bool* writable) {
+extern int interop_SocketWritable(int sock, hc_bool* writable);
+hc_result Socket_CheckWritable(hc_socket s, hc_bool* writable) {
 	/* returned result is negative for error */
 	return -interop_SocketWritable(s, writable);
 }
@@ -331,9 +331,9 @@ cc_result Socket_CheckWritable(cc_socket s, cc_bool* writable) {
 /*########################################################################################################################*
 *-----------------------------------------------------Process/Module------------------------------------------------------*
 *#########################################################################################################################*/
-cc_bool Process_OpenSupported = true;
+hc_bool Process_OpenSupported = true;
 
-void Process_Exit(cc_result code) {
+void Process_Exit(hc_result code) {
 	/* 'Window' (i.e. the web canvas) isn't implicitly closed when process is exited */
 	if (code) Window_RequestClose();
 	/* game normally calls exit with code = 0 due to async IndexedDB loading */
@@ -341,9 +341,9 @@ void Process_Exit(cc_result code) {
 }
 
 extern int interop_OpenTab(const char* url);
-cc_result Process_StartOpen(const cc_string* args) {
+hc_result Process_StartOpen(const hc_string* args) {
 	char str[NATIVE_STR_LEN];
-	cc_result res;
+	hc_result res;
 	String_EncodeUtf8(str, args);
 
 	res = interop_OpenTab(str);
@@ -356,7 +356,7 @@ cc_result Process_StartOpen(const cc_string* args) {
 /*########################################################################################################################*
 *--------------------------------------------------------Platform---------------------------------------------------------*
 *#########################################################################################################################*/
-cc_bool Platform_DescribeError(cc_result res, cc_string* dst) {
+hc_bool Platform_DescribeError(hc_result res, hc_string* dst) {
 	char* str;
 	int len;
 
@@ -373,7 +373,7 @@ cc_bool Platform_DescribeError(cc_result res, cc_string* dst) {
 }
 
 EMSCRIPTEN_KEEPALIVE void Platform_LogError(const char* msg) {
-	cc_string str = String_FromReadonly(msg);
+	hc_string str = String_FromReadonly(msg);
 	Logger_WarnFunc(&str);
 }
 
@@ -389,14 +389,14 @@ void Platform_Free(void) { }
 /*########################################################################################################################*
 *-------------------------------------------------------Encryption--------------------------------------------------------*
 *#########################################################################################################################*/
-cc_result Platform_Encrypt(const void* data, int len, cc_string* dst) { return ERR_NOT_SUPPORTED; }
-cc_result Platform_Decrypt(const void* data, int len, cc_string* dst) { return ERR_NOT_SUPPORTED; }
+hc_result Platform_Encrypt(const void* data, int len, hc_string* dst) { return ERR_NOT_SUPPORTED; }
+hc_result Platform_Decrypt(const void* data, int len, hc_string* dst) { return ERR_NOT_SUPPORTED; }
 
 
 /*########################################################################################################################*
 *------------------------------------------------------Main driver--------------------------------------------------------*
 *#########################################################################################################################*/
-int Platform_GetCommandLineArgs(int argc, STRING_REF char** argv, cc_string* args) {
+int Platform_GetCommandLineArgs(int argc, STRING_REF char** argv, hc_string* args) {
 	int i, count;
 	argc--; argv++; /* skip executable path argument */
 
@@ -406,7 +406,7 @@ int Platform_GetCommandLineArgs(int argc, STRING_REF char** argv, cc_string* arg
 }
 
 
-cc_result Platform_SetDefaultCurrentDirectory(int argc, char** argv) { return 0; }
+hc_result Platform_SetDefaultCurrentDirectory(int argc, char** argv) { return 0; }
 static int _argc;
 static char** _argv;
 
@@ -423,7 +423,7 @@ int main(int argc, char** argv) {
 	/*     > load indexedDB (async) */
 	/*        > web_main (game actually starts) */
 	interop_FS_Init();
-	interop_DirectorySetWorking("/classicube");
+	interop_DirectorySetWorking("/harmonyclient");
 	interop_AsyncDownloadTexturePack("texpacks/default.zip");
 }
 

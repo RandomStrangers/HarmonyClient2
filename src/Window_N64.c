@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_N64
+#if defined HC_BUILD_N64
 #include "Window.h"
 #include "Platform.h"
 #include "Input.h"
@@ -13,11 +13,11 @@
 #include "ExtMath.h"
 #include <libdragon.h>
 
-static cc_bool launcherMode;
+static hc_bool launcherMode;
 #include "VirtualCursor.h"
 
 struct _DisplayData DisplayInfo;
-struct cc_window WindowInfo;
+struct hc_window WindowInfo;
 
 void Window_PreInit(void) {
 	int buffers = is_memory_expanded() ? 3 : 2;
@@ -50,13 +50,13 @@ void Window_Create3D(int width, int height) { launcherMode = false; }
 
 void Window_Destroy(void) { }
 
-void Window_SetTitle(const cc_string* title) { }
-void Clipboard_GetText(cc_string* value) { }
-void Clipboard_SetText(const cc_string* value) { }
+void Window_SetTitle(const hc_string* title) { }
+void Clipboard_GetText(hc_string* value) { }
+void Clipboard_SetText(const hc_string* value) { }
 
 int Window_GetWindowState(void) { return WINDOW_STATE_FULLSCREEN; }
-cc_result Window_EnterFullscreen(void) { return 0; }
-cc_result Window_ExitFullscreen(void)  { return 0; }
+hc_result Window_EnterFullscreen(void) { return 0; }
+hc_result Window_ExitFullscreen(void)  { return 0; }
 int Window_IsObscured(void)            { return 0; }
 
 void Window_Show(void) { }
@@ -185,8 +185,8 @@ void Window_AllocFramebuffer(struct Bitmap* bmp, int width, int height) {
 
 void Window_DrawFramebuffer(Rect2D r, struct Bitmap* bmp) {
 	surface_t* fb  = display_get();
-	cc_uint32* src = (cc_uint32*)bmp->scan0;
-	cc_uint8*  dst = (cc_uint8*)fb->buffer;
+	hc_uint32* src = (hc_uint32*)bmp->scan0;
+	hc_uint8*  dst = (hc_uint8*)fb->buffer;
 
 	for (int y = 0; y < bmp->height; y++) 
 	{
@@ -207,7 +207,7 @@ void Window_FreeFramebuffer(struct Bitmap* bmp) {
 *------------------------------------------------------Soft keyboard------------------------------------------------------*
 *#########################################################################################################################*/
 void OnscreenKeyboard_Open(struct OpenKeyboardArgs* args) { /* TODO implement */ }
-void OnscreenKeyboard_SetText(const cc_string* text) { }
+void OnscreenKeyboard_SetText(const hc_string* text) { }
 void OnscreenKeyboard_Close(void) { /* TODO implement */ }
 
 
@@ -220,11 +220,11 @@ void Window_ShowDialog(const char* title, const char* msg) {
 	Platform_LogConst(msg);
 }
 
-cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
+hc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
-cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
+hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 #endif

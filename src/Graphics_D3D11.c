@@ -1,5 +1,5 @@
 #include "Core.h"
-#if CC_GFX_BACKEND == CC_GFX_BACKEND_D3D11
+#if HC_GFX_BACKEND == HC_GFX_BACKEND_D3D11
 #include "_GraphicsBase.h"
 #include "Errors.h"
 #include "Window.h"
@@ -27,9 +27,9 @@ static int depthBits; // TODO implement depthBits?? for ZNear calc
 static GfxResourceID white_square;
 
 #ifdef _MSC_VER
-#define CC_ALIGNED(x) __declspec(align(x))
+#define HC_ALIGNED(x) __declspec(align(x))
 #else
-#define CC_ALIGNED(x) __attribute__((aligned(x)))
+#define HC_ALIGNED(x) __attribute__((aligned(x)))
 #endif
 
 static ID3D11Device* device;
@@ -52,7 +52,7 @@ static void LoadD3D11Library(void) {
 	static const struct DynamicLibSym funcs[] = {
 		DynamicLib_Sym(D3D11CreateDeviceAndSwapChain)
 	};
-	static const cc_string path = String_FromConst("d3d11.dll");
+	static const hc_string path = String_FromConst("d3d11.dll");
 	void* lib;
 	DynamicLib_LoadAll(&path, funcs, Array_Elems(funcs), &lib);
 
@@ -104,7 +104,7 @@ void Gfx_Create(void) {
 	LoadD3D11Library();
 	CreateDeviceAndSwapChain();
 	Gfx.Created         = true;
-	Gfx.BackendType     = CC_GFX_BACKEND_D3D11;
+	Gfx.BackendType     = HC_GFX_BACKEND_D3D11;
 	customMipmapsLevels = true;
 	Gfx_RestoreState();
 }
@@ -130,8 +130,8 @@ void Gfx_Free(void) {
 #endif
 }
 
-static cc_bool inited;
-cc_bool Gfx_TryRestoreContext(void) {
+static hc_bool inited;
+hc_bool Gfx_TryRestoreContext(void) {
 	// https://docs.microsoft.com/en-us/windows/uwp/gaming/handling-device-lost-scenarios
 	Gfx_Free();
 	Gfx_Create();
@@ -202,7 +202,7 @@ static void D3D11_DoMipmaps(ID3D11Resource* texture, int x, int y, struct Bitmap
 	if (prev != bmp->scan0) Mem_Free(prev);
 }
 
-static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8 flags, cc_bool mipmaps) {
+static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, hc_uint8 flags, hc_bool mipmaps) {
 	ID3D11Texture2D* tex = NULL;
 	ID3D11ShaderResourceView* view = NULL;
 	HRESULT hr;
@@ -250,7 +250,7 @@ static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8
 	return view;
 }
 
-void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, cc_bool mipmaps) {
+void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, hc_bool mipmaps) {
 	ID3D11ShaderResourceView* view = (ID3D11ShaderResourceView*)texId;
 	ID3D11Resource* res = NULL;
 	D3D11_BOX box;
@@ -293,7 +293,7 @@ void Gfx_DeleteTexture(GfxResourceID* texId) {
 *#########################################################################################################################*/
 GfxResourceID Gfx_CreateIb2(int count, Gfx_FillIBFunc fillFunc, void* obj) {
 	ID3D11Buffer* buffer = NULL;
-	cc_uint16 indices[GFX_MAX_INDICES];
+	hc_uint16 indices[GFX_MAX_INDICES];
 	fillFunc(indices, count, obj);
 	
 	D3D11_BUFFER_DESC desc = { 0 };
@@ -321,7 +321,7 @@ void Gfx_DeleteIb(GfxResourceID* ib) {
 /*########################################################################################################################*
 *------------------------------------------------------Vertex buffers-----------------------------------------------------*
 *#########################################################################################################################*/
-static ID3D11Buffer* CreateVertexBuffer(VertexFormat fmt, int count, cc_bool dynamic) {
+static ID3D11Buffer* CreateVertexBuffer(VertexFormat fmt, int count, hc_bool dynamic) {
 	ID3D11Buffer* buffer = NULL;
 
 	D3D11_BUFFER_DESC desc = { 0 };
@@ -523,7 +523,7 @@ void Gfx_BindDynamicVb(GfxResourceID vb) {
 static ID3D11VertexShader* vs_shaders[3];
 static ID3D11Buffer* vs_cBuffer;
 
-static struct CC_ALIGNED(64) VSConstants {
+static struct HC_ALIGNED(64) VSConstants {
 	struct Matrix mvp;
 	float texX, texY;
 } vs_constants;
@@ -565,7 +565,7 @@ static void VS_CreateConstants(void) {
 static int VS_CalcShaderIndex(void) {
 	if (gfx_format == VERTEX_FORMAT_COLOURED) return 0;
 
-	cc_bool has_offset = vs_constants.texX != 0 || vs_constants.texY != 0;
+	hc_bool has_offset = vs_constants.texX != 0 || vs_constants.texY != 0;
 	return has_offset ? 2 : 1;
 }
 
@@ -634,7 +634,7 @@ void Gfx_DisableTextureOffset(void) {
 //########################################################################################################################
 // https://docs.microsoft.com/en-us/windows/win32/direct3d11/d3d10-graphics-programming-guide-rasterizer-stage
 static ID3D11RasterizerState* rs_states[4];
-static cc_bool rs_culling, rs_scissor;
+static hc_bool rs_culling, rs_scissor;
 
 static void RS_CreateRasterState(void) {
 	// https://docs.microsoft.com/en-us/windows/win32/api/d3d11/ns-d3d11-d3d11_rasterizer_desc
@@ -695,7 +695,7 @@ static void RS_Free(void) {
 	RS_FreeRasterStates();
 }
 
-void Gfx_SetFaceCulling(cc_bool enabled) {
+void Gfx_SetFaceCulling(hc_bool enabled) {
 	rs_culling = enabled;
 	RS_UpdateRasterState();
 }
@@ -708,12 +708,12 @@ void Gfx_SetFaceCulling(cc_bool enabled) {
 static ID3D11SamplerState* ps_samplers[2];
 static ID3D11PixelShader* ps_shaders[12];
 static ID3D11Buffer* ps_cBuffer;
-static cc_bool ps_mipmaps;
+static hc_bool ps_mipmaps;
 static float ps_fogEnd, ps_fogDensity;
 static PackedCol ps_fogColor;
 static int ps_fogMode;
 
-static struct CC_ALIGNED(64) PSConstants {
+static struct HC_ALIGNED(64) PSConstants {
 	float fogValue;
 	float fogR, fogG, fogB;
 } ps_constants;
@@ -839,11 +839,11 @@ static void PS_Free(void) {
 	PS_FreeConstants();
 }
 
-static void SetAlphaTest(cc_bool enabled) {
+static void SetAlphaTest(hc_bool enabled) {
 	PS_UpdateShader();
 }
 // unnecessary? check if any performance is gained, probably irrelevant
-void Gfx_SetAlphaArgBlend(cc_bool enabled) { }
+void Gfx_SetAlphaArgBlend(hc_bool enabled) { }
 
 void Gfx_BindTexture(GfxResourceID texId) {
 	/* defasult texture is otherwise transparent black */
@@ -853,7 +853,7 @@ void Gfx_BindTexture(GfxResourceID texId) {
 	ID3D11DeviceContext_PSSetShaderResources(context, 0, 1, &view);
 }
 
-void Gfx_SetFog(cc_bool enabled) {
+void Gfx_SetFog(hc_bool enabled) {
 	if (gfx_fogEnabled == enabled) return;
 	gfx_fogEnabled = enabled;
 	PS_UpdateShader();
@@ -906,8 +906,8 @@ static ID3D11DepthStencilView* depthbufferView;
 static ID3D11BlendState* om_blendStates[16 * 2];
 static ID3D11DepthStencilState* om_depthStates[4];
 static float gfx_clearColor[4];
-static cc_bool gfx_channels[4] = { true, true, true, true };
-static cc_bool gfx_depthTest, gfx_depthWrite;
+static hc_bool gfx_channels[4] = { true, true, true, true };
+static hc_bool gfx_depthTest, gfx_depthWrite;
 
 static void OM_Clear(GfxBuffers buffers) {
 	if (buffers & GFX_BUFFER_COLOR) {
@@ -1043,21 +1043,21 @@ void Gfx_ClearColor(PackedCol color) {
 	gfx_clearColor[3] = PackedCol_A(color) / 255.0f;
 }
 
-void Gfx_SetDepthTest(cc_bool enabled) {
+void Gfx_SetDepthTest(hc_bool enabled) {
 	gfx_depthTest = enabled;
 	OM_UpdateDepthState();
 }
 
-void Gfx_SetDepthWrite(cc_bool enabled) {
+void Gfx_SetDepthWrite(hc_bool enabled) {
 	gfx_depthWrite = enabled;
 	OM_UpdateDepthState();
 }
 
-static void SetAlphaBlend(cc_bool enabled) {
+static void SetAlphaBlend(hc_bool enabled) {
 	OM_UpdateBlendState();
 }
 
-static void SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a) {
+static void SetColorWrite(hc_bool r, hc_bool g, hc_bool b, hc_bool a) {
 	gfx_channels[0] = r;
 	gfx_channels[1] = g;
 	gfx_channels[2] = b;
@@ -1065,8 +1065,8 @@ static void SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a) {
 	OM_UpdateBlendState();
 }
 
-void Gfx_DepthOnlyRendering(cc_bool depthOnly) {
-	cc_bool enabled = !depthOnly;
+void Gfx_DepthOnlyRendering(hc_bool depthOnly) {
+	hc_bool enabled = !depthOnly;
 	SetColorWrite(enabled & gfx_colorMask[0], enabled & gfx_colorMask[1], 
 				  enabled & gfx_colorMask[2], enabled & gfx_colorMask[3]);
 }
@@ -1081,7 +1081,7 @@ static BitmapCol* D3D11_GetRow(struct Bitmap* bmp, int y, void* ctx) {
 	return (BitmapCol*)row;
 }
 
-cc_result Gfx_TakeScreenshot(struct Stream* output) {
+hc_result Gfx_TakeScreenshot(struct Stream* output) {
 	ID3D11Texture2D* tmp = NULL;
 	struct Bitmap bmp;
 	HRESULT hr;
@@ -1120,7 +1120,7 @@ finished:
 	return hr;
 }
 
-void Gfx_SetVSync(cc_bool vsync) {
+void Gfx_SetVSync(hc_bool vsync) {
 	gfx_vsync = vsync;
 }
 void Gfx_BeginFrame(void) { OM_UpdateTarget(); }
@@ -1147,10 +1147,10 @@ void Gfx_EndFrame(void) {
 	}
 }
 
-cc_bool Gfx_WarnIfNecessary(void) { return false; }
-cc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
+hc_bool Gfx_WarnIfNecessary(void) { return false; }
+hc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
 
-void Gfx_GetApiInfo(cc_string* info) {
+void Gfx_GetApiInfo(hc_string* info) {
 	int pointerSize = sizeof(void*) * 8;
 	HRESULT hr;
 	String_Format1(info, "-- Using Direct3D11 (%i bit) --\n", &pointerSize);

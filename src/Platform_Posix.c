@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_POSIX
+#if defined HC_BUILD_POSIX
 
 #include "_PlatformBase.h"
 #include "Stream.h"
@@ -30,43 +30,43 @@
 #include <stdio.h>
 #include <netdb.h>
 
-const cc_result ReturnCode_FileShareViolation = 1000000000; /* TODO: not used apparently */
-const cc_result ReturnCode_FileNotFound     = ENOENT;
-const cc_result ReturnCode_DirectoryExists  = EEXIST;
-const cc_result ReturnCode_SocketInProgess  = EINPROGRESS;
-const cc_result ReturnCode_SocketWouldBlock = EWOULDBLOCK;
-const cc_result ReturnCode_SocketDropped    = EPIPE;
+const hc_result ReturnCode_FileShareViolation = 1000000000; /* TODO: not used apparently */
+const hc_result ReturnCode_FileNotFound     = ENOENT;
+const hc_result ReturnCode_DirectoryExists  = EEXIST;
+const hc_result ReturnCode_SocketInProgess  = EINPROGRESS;
+const hc_result ReturnCode_SocketWouldBlock = EWOULDBLOCK;
+const hc_result ReturnCode_SocketDropped    = EPIPE;
 #define SUPPORTS_GETADDRINFO 1
 
-#if defined CC_BUILD_ANDROID
+#if defined HC_BUILD_ANDROID
 const char* Platform_AppNameSuffix = " (android)";
-#elif defined CC_BUILD_IOS
+#elif defined HC_BUILD_IOS
 const char* Platform_AppNameSuffix = " (iOS)";
-#elif defined CC_BUILD_LINUX
+#elif defined HC_BUILD_LINUX
 const char* Platform_AppNameSuffix = " (Linux)";
 #else
 const char* Platform_AppNameSuffix = "";
 #endif
-cc_bool Platform_SingleProcess;
-cc_bool Platform_ReadonlyFilesystem;
+hc_bool Platform_SingleProcess;
+hc_bool Platform_ReadonlyFilesystem;
 
 /* Operating system specific include files */
-#if defined CC_BUILD_DARWIN
+#if defined HC_BUILD_DARWIN
 #include <mach/mach_time.h>
 #include <mach-o/dyld.h>
-#if defined CC_BUILD_MACOS
+#if defined HC_BUILD_MACOS
 #include <ApplicationServices/ApplicationServices.h>
 #endif
-#elif defined CC_BUILD_SOLARIS
+#elif defined HC_BUILD_SOLARIS
 #include <sys/filio.h>
 #include <sys/systeminfo.h>
-#elif defined CC_BUILD_BSD
+#elif defined HC_BUILD_BSD
 #include <sys/sysctl.h>
-#elif defined CC_BUILD_HAIKU || defined CC_BUILD_BEOS
+#elif defined HC_BUILD_HAIKU || defined HC_BUILD_BEOS
 /* TODO: Use load_image/resume_thread instead of fork */
 /* Otherwise opening browser never works because fork fails */
 #include <kernel/image.h>
-#elif defined CC_BUILD_OS2
+#elif defined HC_BUILD_OS2
 #include <libcx/net.h>
 #define INCL_DOS
 #define INCL_DOSERRORS
@@ -78,21 +78,21 @@ cc_bool Platform_ReadonlyFilesystem;
 /*########################################################################################################################*
 *---------------------------------------------------------Memory----------------------------------------------------------*
 *#########################################################################################################################*/
-void* Mem_Set(void*  dst, cc_uint8 value,  unsigned numBytes) { return memset( dst, value, numBytes); }
+void* Mem_Set(void*  dst, hc_uint8 value,  unsigned numBytes) { return memset( dst, value, numBytes); }
 void* Mem_Copy(void* dst, const void* src, unsigned numBytes) { return memcpy( dst, src,   numBytes); }
 void* Mem_Move(void* dst, const void* src, unsigned numBytes) { return memmove(dst, src,   numBytes); }
 
-void* Mem_TryAlloc(cc_uint32 numElems, cc_uint32 elemsSize) {
-	cc_uint32 size = CalcMemSize(numElems, elemsSize);
+void* Mem_TryAlloc(hc_uint32 numElems, hc_uint32 elemsSize) {
+	hc_uint32 size = CalcMemSize(numElems, elemsSize);
 	return size ? malloc(size) : NULL;
 }
 
-void* Mem_TryAllocCleared(cc_uint32 numElems, cc_uint32 elemsSize) {
+void* Mem_TryAllocCleared(hc_uint32 numElems, hc_uint32 elemsSize) {
 	return calloc(numElems, elemsSize);
 }
 
-void* Mem_TryRealloc(void* mem, cc_uint32 numElems, cc_uint32 elemsSize) {
-	cc_uint32 size = CalcMemSize(numElems, elemsSize);
+void* Mem_TryRealloc(void* mem, hc_uint32 numElems, hc_uint32 elemsSize) {
+	hc_uint32 size = CalcMemSize(numElems, elemsSize);
 	return size ? realloc(mem, size) : NULL;
 }
 
@@ -104,9 +104,9 @@ void Mem_Free(void* mem) {
 /*########################################################################################################################*
 *------------------------------------------------------Logging/Time-------------------------------------------------------*
 *#########################################################################################################################*/
-#if defined CC_BUILD_ANDROID
+#if defined HC_BUILD_ANDROID
 /* implemented in Platform_Android.c */
-#elif defined CC_BUILD_IOS
+#elif defined HC_BUILD_IOS
 /* implemented in interop_ios.m */
 #else
 void Platform_Log(const char* msg, int len) {
@@ -120,7 +120,7 @@ void Platform_Log(const char* msg, int len) {
 TimeMS DateTime_CurrentUTC(void) {
 	struct timeval cur;
 	gettimeofday(&cur, NULL);
-	return (cc_uint64)cur.tv_sec + UNIX_EPOCH_SECONDS;
+	return (hc_uint64)cur.tv_sec + UNIX_EPOCH_SECONDS;
 }
 
 void DateTime_CurrentLocal(struct DateTime* t) {
@@ -143,10 +143,10 @@ void DateTime_CurrentLocal(struct DateTime* t) {
 *#########################################################################################################################*/
 #define NS_PER_SEC 1000000000ULL
 
-#if defined CC_BUILD_HAIKU || defined CC_BUILD_BEOS
+#if defined HC_BUILD_HAIKU || defined HC_BUILD_BEOS
 /* Implemented in interop_BeOS.cpp */
-#elif defined CC_BUILD_DARWIN
-static cc_uint64 sw_freqMul, sw_freqDiv;
+#elif defined HC_BUILD_DARWIN
+static hc_uint64 sw_freqMul, sw_freqDiv;
 static void Stopwatch_Init(void) {
 	mach_timebase_info_data_t tb = { 0 };
 	mach_timebase_info(&tb);
@@ -154,39 +154,39 @@ static void Stopwatch_Init(void) {
 	sw_freqMul = tb.numer;
 	/* tb.denom may be large, so multiplying by 1000 overflows 32 bits */
 	/* (one powerpc system had tb.denom of 33329426) */
-	sw_freqDiv = (cc_uint64)tb.denom * 1000;
+	sw_freqDiv = (hc_uint64)tb.denom * 1000;
 }
 
-cc_uint64 Stopwatch_Measure(void) { return mach_absolute_time(); }
+hc_uint64 Stopwatch_Measure(void) { return mach_absolute_time(); }
 
-cc_uint64 Stopwatch_ElapsedMicroseconds(cc_uint64 beg, cc_uint64 end) {
+hc_uint64 Stopwatch_ElapsedMicroseconds(hc_uint64 beg, hc_uint64 end) {
 	if (end < beg) return 0;
 	return ((end - beg) * sw_freqMul) / sw_freqDiv;
 }
-#elif defined CC_BUILD_SOLARIS
+#elif defined HC_BUILD_SOLARIS
 /* https://docs.oracle.com/cd/E86824_01/html/E54766/gethrtime-3c.html */
 /* The gethrtime() function returns the current high-resolution real time. Time is expressed as nanoseconds since some arbitrary time in the past */
-cc_uint64 Stopwatch_Measure(void) { return gethrtime(); }
+hc_uint64 Stopwatch_Measure(void) { return gethrtime(); }
 
-cc_uint64 Stopwatch_ElapsedMicroseconds(cc_uint64 beg, cc_uint64 end) {
+hc_uint64 Stopwatch_ElapsedMicroseconds(hc_uint64 beg, hc_uint64 end) {
 	if (end < beg) return 0;
 	return (end - beg) / 1000;
 }
 #else
 /* clock_gettime is optional, see http://pubs.opengroup.org/onlinepubs/009696899/functions/clock_getres.html */
 /* "... These functions are part of the Timers option and need not be available on all implementations..." */
-cc_uint64 Stopwatch_Measure(void) {
+hc_uint64 Stopwatch_Measure(void) {
 	struct timespec t;
-	#ifdef CC_BUILD_IRIX
+	#ifdef HC_BUILD_IRIX
 	clock_gettime(CLOCK_REALTIME, &t);
 	#else
 	/* TODO: CLOCK_MONOTONIC_RAW ?? */
 	clock_gettime(CLOCK_MONOTONIC, &t);
 	#endif
-	return (cc_uint64)t.tv_sec * NS_PER_SEC + t.tv_nsec;
+	return (hc_uint64)t.tv_sec * NS_PER_SEC + t.tv_nsec;
 }
 
-cc_uint64 Stopwatch_ElapsedMicroseconds(cc_uint64 beg, cc_uint64 end) {
+hc_uint64 Stopwatch_ElapsedMicroseconds(hc_uint64 beg, hc_uint64 end) {
 	if (end < beg) return 0;
 	return (end - beg) / 1000;
 }
@@ -196,33 +196,34 @@ cc_uint64 Stopwatch_ElapsedMicroseconds(cc_uint64 beg, cc_uint64 end) {
 /*########################################################################################################################*
 *-----------------------------------------------------Directory/File------------------------------------------------------*
 *#########################################################################################################################*/
-void Platform_EncodePath(cc_filepath* dst, const cc_string* path) {
+void Platform_EncodePath(hc_filepath* dst, const hc_string* path) {
 	char* str = dst->buffer;
 	String_EncodeUtf8(str, path);
 }
 
-#if defined CC_BUILD_ANDROID
+#if defined HC_BUILD_ANDROID
 /* implemented in Platform_Android.c */
-#elif defined CC_BUILD_IOS
+#elif defined HC_BUILD_IOS
 /* implemented in interop_ios.m */
 #else
-void Directory_GetCachePath(cc_string* path) { }
+void Directory_GetCachePath(hc_string* path) { }
 #endif
 
-cc_result Directory_Create(const cc_filepath* path) {
+hc_result Directory_Create(const hc_filepath* path) {
 	/* read/write/search permissions for owner and group, and with read/search permissions for others. */
 	/* TODO: Is the default mode in all cases */
 	return mkdir(path->buffer, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1 ? errno : 0;
 }
 
-int File_Exists(const cc_filepath* path) {
+int File_Exists(const hc_filepath* path) {
 	struct stat sb;
 	return stat(path->buffer, &sb) == 0 && S_ISREG(sb.st_mode);
 }
 
-cc_result Directory_Enum(const cc_string* dirPath, void* obj, Directory_EnumCallback callback) {
-	cc_string path; char pathBuffer[FILENAME_SIZE];
-	cc_filepath str;
+hc_result Directory_Enum(const hc_string* dirPath, void* obj, Directory_EnumCallback callback) {
+	hc_string path; 
+	char pathBuffer[FILENAME_SIZE];
+	hc_filepath str;
 	DIR* dirPtr;
 	struct dirent* entry;
 	char* src;
@@ -249,7 +250,7 @@ cc_result Directory_Enum(const cc_string* dirPath, void* obj, Directory_EnumCall
 		len = String_Length(src);
 		String_AppendUtf8(&path, src, len);
 
-#if defined CC_BUILD_HAIKU || defined CC_BUILD_SOLARIS || defined CC_BUILD_IRIX || defined CC_BUILD_BEOS
+#if defined HC_BUILD_HAIKU || defined HC_BUILD_SOLARIS || defined HC_BUILD_IRIX || defined HC_BUILD_BEOS
 		{
 			char full_path[NATIVE_STR_LEN];
 			struct stat sb;
@@ -270,58 +271,58 @@ cc_result Directory_Enum(const cc_string* dirPath, void* obj, Directory_EnumCall
 	return res;
 }
 
-static cc_result File_Do(cc_file* file, const char* path, int mode) {
+static hc_result File_Do(hc_file* file, const char* path, int mode) {
 	*file = open(path, mode, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	return *file == -1 ? errno : 0;
 }
 
-cc_result File_Open(cc_file* file, const cc_filepath* path) {
-#if !defined CC_BUILD_OS2
+hc_result File_Open(hc_file* file, const hc_filepath* path) {
+#if !defined HC_BUILD_OS2
 	return File_Do(file, path->buffer, O_RDONLY);
 #else
 	return File_Do(file, path->buffer, O_RDONLY | O_BINARY);
 #endif
 }
-cc_result File_Create(cc_file* file, const cc_filepath* path) {
-#if !defined CC_BUILD_OS2
+hc_result File_Create(hc_file* file, const hc_filepath* path) {
+#if !defined HC_BUILD_OS2
 	return File_Do(file, path->buffer, O_RDWR | O_CREAT | O_TRUNC);
 #else
 	return File_Do(file, path->buffer, O_RDWR | O_CREAT | O_TRUNC | O_BINARY);
 #endif
 }
-cc_result File_OpenOrCreate(cc_file* file, const cc_filepath* path) {
-#if !defined CC_BUILD_OS2
+hc_result File_OpenOrCreate(hc_file* file, const hc_filepath* path) {
+#if !defined HC_BUILD_OS2
 	return File_Do(file, path->buffer, O_RDWR | O_CREAT);
 #else
 	return File_Do(file, path->buffer, O_RDWR | O_CREAT | O_BINARY);
 #endif
 }
 
-cc_result File_Read(cc_file file, void* data, cc_uint32 count, cc_uint32* bytesRead) {
+hc_result File_Read(hc_file file, void* data, hc_uint32 count, hc_uint32* bytesRead) {
 	*bytesRead = read(file, data, count);
 	return *bytesRead == -1 ? errno : 0;
 }
 
-cc_result File_Write(cc_file file, const void* data, cc_uint32 count, cc_uint32* bytesWrote) {
+hc_result File_Write(hc_file file, const void* data, hc_uint32 count, hc_uint32* bytesWrote) {
 	*bytesWrote = write(file, data, count);
 	return *bytesWrote == -1 ? errno : 0;
 }
 
-cc_result File_Close(cc_file file) {
+hc_result File_Close(hc_file file) {
 	return close(file) == -1 ? errno : 0;
 }
 
-cc_result File_Seek(cc_file file, int offset, int seekType) {
-	static cc_uint8 modes[3] = { SEEK_SET, SEEK_CUR, SEEK_END };
+hc_result File_Seek(hc_file file, int offset, int seekType) {
+	static hc_uint8 modes[3] = { SEEK_SET, SEEK_CUR, SEEK_END };
 	return lseek(file, offset, modes[seekType]) == -1 ? errno : 0;
 }
 
-cc_result File_Position(cc_file file, cc_uint32* pos) {
+hc_result File_Position(hc_file file, hc_uint32* pos) {
 	*pos = lseek(file, 0, SEEK_CUR);
 	return *pos == -1 ? errno : 0;
 }
 
-cc_result File_Length(cc_file file, cc_uint32* len) {
+hc_result File_Length(hc_file file, hc_uint32* len) {
 	struct stat st;
 	if (fstat(file, &st) == -1) { *len = -1; return errno; }
 	*len = st.st_size; return 0;
@@ -331,9 +332,9 @@ cc_result File_Length(cc_file file, cc_uint32* len) {
 /*########################################################################################################################*
 *--------------------------------------------------------Threading--------------------------------------------------------*
 *#########################################################################################################################*/
-void Thread_Sleep(cc_uint32 milliseconds) { usleep(milliseconds * 1000); }
+void Thread_Sleep(hc_uint32 milliseconds) { usleep(milliseconds * 1000); }
 
-#ifdef CC_BUILD_ANDROID
+#ifdef HC_BUILD_ANDROID
 /* All threads using JNI must detach BEFORE they exit */
 /* (see https://developer.android.com/training/articles/perf-jni#threads */
 static void* ExecThread(void* param) {
@@ -364,13 +365,13 @@ void Thread_Run(void** handle, Thread_StartFunc func, int stackSize, const char*
 	if (res) Logger_Abort2(res, "Creating thread");
 	pthread_attr_destroy(&attrs);
 	
-#if defined CC_BUILD_LINUX || defined CC_BUILD_HAIKU
+#if defined HC_BUILD_LINUX || defined HC_BUILD_HAIKU
 	extern int pthread_setname_np(pthread_t thread, const char* name);
 	pthread_setname_np(*ptr, name);
-#elif defined CC_BUILD_FREEBSD || defined CC_BUILD_OPENBSD
+#elif defined HC_BUILD_FREEBSD || defined HC_BUILD_OPENBSD
 	extern int pthread_set_name_np(pthread_t thread, const char* name);
 	pthread_set_name_np(*ptr, name);
-#elif defined CC_BUILD_NETBSD
+#elif defined HC_BUILD_NETBSD
 	pthread_setname_np(*ptr, "%s", name);
 #endif
 }
@@ -467,7 +468,7 @@ void Waitable_Wait(void* handle) {
 	Mutex_Unlock(&ptr->mutex);
 }
 
-void Waitable_WaitFor(void* handle, cc_uint32 milliseconds) {
+void Waitable_WaitFor(void* handle, hc_uint32 milliseconds) {
 	struct WaitData* ptr = (struct WaitData*)handle;
 	struct timeval tv;
 	struct timespec ts;
@@ -497,7 +498,7 @@ void Waitable_WaitFor(void* handle, cc_uint32 milliseconds) {
 /*########################################################################################################################*
 *--------------------------------------------------------Font/Text--------------------------------------------------------*
 *#########################################################################################################################*/
-static void FontDirCallback(const cc_string* path, void* obj, int isDirectory) {
+static void FontDirCallback(const hc_string* path, void* obj, int isDirectory) {
 	if (isDirectory) {
 		Directory_Enum(path, NULL, FontDirCallback);
 	} else {
@@ -507,48 +508,48 @@ static void FontDirCallback(const cc_string* path, void* obj, int isDirectory) {
 
 void Platform_LoadSysFonts(void) {
 	int i;
-#if defined CC_BUILD_ANDROID
-	static const cc_string dirs[] = {
+#if defined HC_BUILD_ANDROID
+	static const hc_string dirs[] = {
 		String_FromConst("/system/fonts"),
 		String_FromConst("/system/font"),
 		String_FromConst("/data/fonts"),
 	};
-#elif defined CC_BUILD_NETBSD
-	static const cc_string dirs[] = {
+#elif defined HC_BUILD_NETBSD
+	static const hc_string dirs[] = {
 		String_FromConst("/usr/X11R7/lib/X11/fonts"),
 		String_FromConst("/usr/pkg/lib/X11/fonts"),
 		String_FromConst("/usr/pkg/share/fonts")
 	};
-#elif defined CC_BUILD_OPENBSD
-	static const cc_string dirs[] = {
+#elif defined HC_BUILD_OPENBSD
+	static const hc_string dirs[] = {
 		String_FromConst("/usr/X11R6/lib/X11/fonts"),
 		String_FromConst("/usr/share/fonts"),
 		String_FromConst("/usr/local/share/fonts")
 	};
-#elif defined CC_BUILD_HAIKU
-	static const cc_string dirs[] = {
+#elif defined HC_BUILD_HAIKU
+	static const hc_string dirs[] = {
 		String_FromConst("/system/data/fonts")
 	};
-#elif defined CC_BUILD_BEOS
-	static const cc_string dirs[] = {
+#elif defined HC_BUILD_BEOS
+	static const hc_string dirs[] = {
 		String_FromConst("/boot/beos/etc/fonts")
 	};
-#elif defined CC_BUILD_DARWIN
-	static const cc_string dirs[] = {
+#elif defined HC_BUILD_DARWIN
+	static const hc_string dirs[] = {
 		String_FromConst("/System/Library/Fonts"),
 		String_FromConst("/Library/Fonts")
 	};
-#elif defined CC_BUILD_SERENITY
-	static const cc_string dirs[] = {
+#elif defined HC_BUILD_SERENITY
+	static const hc_string dirs[] = {
 		String_FromConst("/res/fonts")
 	};
-#elif defined CC_BUILD_OS2
-	static const cc_string dirs[] = {
+#elif defined HC_BUILD_OS2
+	static const hc_string dirs[] = {
 		String_FromConst("/@unixroot/usr/share/fonts"),
 		String_FromConst("/@unixroot/usr/local/share/fonts")
 	};
 #else
-	static const cc_string dirs[] = {
+	static const hc_string dirs[] = {
 		String_FromConst("/usr/share/fonts"),
 		String_FromConst("/usr/local/share/fonts")
 	};
@@ -564,7 +565,7 @@ void Platform_LoadSysFonts(void) {
 /*########################################################################################################################*
 *---------------------------------------------------------Socket----------------------------------------------------------*
 *#########################################################################################################################*/
-#if defined CC_BUILD_OS2
+#if defined HC_BUILD_OS2
 #undef AF_INET6
 #endif
 
@@ -576,12 +577,13 @@ union SocketAddress {
 	struct sockaddr_storage total;
 	#endif
 };
-/* Sanity check to ensure cc_sockaddr struct is large enough to contain all socket addresses supported by this platform */
-static char sockaddr_size_check[sizeof(union SocketAddress) < CC_SOCKETADDR_MAXSIZE ? 1 : -1];
+/* Sanity check to ensure hc_sockaddr struct is large enough to contain all socket addresses supported by this platform */
+static char sockaddr_size_check[sizeof(union SocketAddress) < HC_SOCKETADDR_MAXSIZE ? 1 : -1];
 
 #if SUPPORTS_GETADDRINFO
-static cc_result ParseHost(const char* host, int port, cc_sockaddr* addrs, int* numValidAddrs) {
-	char portRaw[32]; cc_string portStr;
+static hc_result ParseHost(const char* host, int port, hc_sockaddr* addrs, int* numValidAddrs) {
+	char portRaw[32]; 
+	hc_string portStr;
 	struct addrinfo hints = { 0 };
 	struct addrinfo* result;
 	struct addrinfo* cur;
@@ -616,7 +618,7 @@ static cc_result ParseHost(const char* host, int port, cc_sockaddr* addrs, int* 
 	return i == 0 ? ERR_INVALID_ARGUMENT : 0;
 }
 #else
-static cc_result ParseHost(const char* host, int port, cc_sockaddr* addrs, int* numValidAddrs) {
+static hc_result ParseHost(const char* host, int port, hc_sockaddr* addrs, int* numValidAddrs) {
 	struct hostent* res = gethostbyname(host);
 	struct sockaddr_in* addr4;
 	char* src_addr;
@@ -643,7 +645,7 @@ static cc_result ParseHost(const char* host, int port, cc_sockaddr* addrs, int* 
 }
 #endif
 
-cc_result Socket_ParseAddress(const cc_string* address, int port, cc_sockaddr* addrs, int* numValidAddrs) {
+hc_result Socket_ParseAddress(const hc_string* address, int port, hc_sockaddr* addrs, int* numValidAddrs) {
 	union SocketAddress* addr = (union SocketAddress*)addrs[0].data;
 	char str[NATIVE_STR_LEN];
 
@@ -673,7 +675,7 @@ cc_result Socket_ParseAddress(const cc_string* address, int port, cc_sockaddr* a
 	return ParseHost(str, port, addrs, numValidAddrs);
 }
 
-cc_result Socket_Create(cc_socket* s, cc_sockaddr* addr, cc_bool nonblocking) {
+hc_result Socket_Create(hc_socket* s, hc_sockaddr* addr, hc_bool nonblocking) {
 	struct sockaddr* raw = (struct sockaddr*)addr->data;
 
 	*s = socket(raw->sa_family, SOCK_STREAM, IPPROTO_TCP);
@@ -686,34 +688,34 @@ cc_result Socket_Create(cc_socket* s, cc_sockaddr* addr, cc_bool nonblocking) {
 	return 0;
 }
 
-cc_result Socket_Connect(cc_socket s, cc_sockaddr* addr) {
+hc_result Socket_Connect(hc_socket s, hc_sockaddr* addr) {
 	struct sockaddr* raw = (struct sockaddr*)addr->data;
 	
 	int res = connect(s, raw, addr->size);
 	return res == -1 ? errno : 0;
 }
 
-cc_result Socket_Read(cc_socket s, cc_uint8* data, cc_uint32 count, cc_uint32* modified) {
+hc_result Socket_Read(hc_socket s, hc_uint8* data, hc_uint32 count, hc_uint32* modified) {
 	int recvCount = recv(s, data, count, 0);
 	if (recvCount != -1) { *modified = recvCount; return 0; }
 	*modified = 0; return errno;
 }
 
-cc_result Socket_Write(cc_socket s, const cc_uint8* data, cc_uint32 count, cc_uint32* modified) {
+hc_result Socket_Write(hc_socket s, const hc_uint8* data, hc_uint32 count, hc_uint32* modified) {
 	int sentCount = send(s, data, count, 0);
 	if (sentCount != -1) { *modified = sentCount; return 0; }
 	*modified = 0; return errno;
 }
 
-void Socket_Close(cc_socket s) {
+void Socket_Close(hc_socket s) {
 	shutdown(s, SHUT_RDWR);
 	close(s);
 }
 
-#if defined CC_BUILD_DARWIN || defined CC_BUILD_BEOS
+#if defined HC_BUILD_DARWIN || defined HC_BUILD_BEOS
 /* poll is broken on old OSX apparently https://daniel.haxx.se/docs/poll-vs-select.html */
 /* BeOS lacks support for poll */
-static cc_result Socket_Poll(cc_socket s, int mode, cc_bool* success) {
+static hc_result Socket_Poll(hc_socket s, int mode, hc_bool* success) {
 	fd_set set;
 	struct timeval time = { 0 };
 	int selectCount;
@@ -732,7 +734,7 @@ static cc_result Socket_Poll(cc_socket s, int mode, cc_bool* success) {
 }
 #else
 #include <poll.h>
-static cc_result Socket_Poll(cc_socket s, int mode, cc_bool* success) {
+static hc_result Socket_Poll(hc_socket s, int mode, hc_bool* success) {
 	struct pollfd pfd;
 	int flags;
 
@@ -747,13 +749,13 @@ static cc_result Socket_Poll(cc_socket s, int mode, cc_bool* success) {
 }
 #endif
 
-cc_result Socket_CheckReadable(cc_socket s, cc_bool* readable) {
+hc_result Socket_CheckReadable(hc_socket s, hc_bool* readable) {
 	return Socket_Poll(s, SOCKET_POLL_READ, readable);
 }
 
-cc_result Socket_CheckWritable(cc_socket s, cc_bool* writable) {
+hc_result Socket_CheckWritable(hc_socket s, hc_bool* writable) {
 	socklen_t resultSize = sizeof(socklen_t);
-	cc_result res = Socket_Poll(s, SOCKET_POLL_WRITE, writable);
+	hc_result res = Socket_Poll(s, SOCKET_POLL_WRITE, writable);
 	if (res || *writable) return res;
 
 	/* https://stackoverflow.com/questions/29479953/so-error-value-after-successful-socket-operation */
@@ -765,14 +767,14 @@ cc_result Socket_CheckWritable(cc_socket s, cc_bool* writable) {
 /*########################################################################################################################*
 *-----------------------------------------------------Process/Module------------------------------------------------------*
 *#########################################################################################################################*/
-cc_bool Process_OpenSupported = true;
+hc_bool Process_OpenSupported = true;
 
-#if defined CC_BUILD_MOBILE
-cc_result Process_StartGame2(const cc_string* args, int numArgs) {
+#if defined HC_BUILD_MOBILE
+hc_result Process_StartGame2(const hc_string* args, int numArgs) {
 	return SetGameArgs(args, numArgs);
 }
 #else
-static cc_result Process_RawStart(const char* path, char** argv) {
+static hc_result Process_RawStart(const char* path, char** argv) {
 	pid_t pid = fork();
 	if (pid == -1) return errno;
 
@@ -787,14 +789,14 @@ static cc_result Process_RawStart(const char* path, char** argv) {
 	}
 }
 
-static cc_result Process_RawGetExePath(char* path, int* len);
+static hc_result Process_RawGetExePath(char* path, int* len);
 
-cc_result Process_StartGame2(const cc_string* args, int numArgs) {
+hc_result Process_StartGame2(const hc_string* args, int numArgs) {
 	char raw[GAME_MAX_CMDARGS][NATIVE_STR_LEN];
 	char path[NATIVE_STR_LEN];
 	int i, j, len = 0;
 	char* argv[15];
-	cc_result res;
+	hc_result res;
 	if (Platform_SingleProcess) return SetGameArgs(args, numArgs);
 
 	res = Process_RawGetExePath(path, &len);
@@ -812,15 +814,15 @@ cc_result Process_StartGame2(const cc_string* args, int numArgs) {
 	return Process_RawStart(path, argv);
 }
 #endif
-void Process_Exit(cc_result code) { exit(code); }
+void Process_Exit(hc_result code) { exit(code); }
 
 /* Opening browser/starting shell is not really standardised */
-#if defined CC_BUILD_ANDROID
+#if defined HC_BUILD_ANDROID
 /* Implemented in Platform_Android.c */
-#elif defined CC_BUILD_IOS
+#elif defined HC_BUILD_IOS
 /* implemented in interop_ios.m */
-#elif defined CC_BUILD_MACOS
-cc_result Process_StartOpen(const cc_string* args) {
+#elif defined HC_BUILD_MACOS
+hc_result Process_StartOpen(const hc_string* args) {
 	UInt8 str[NATIVE_STR_LEN];
 	CFURLRef urlCF;
 	int len;
@@ -831,17 +833,17 @@ cc_result Process_StartOpen(const cc_string* args) {
 	CFRelease(urlCF);
 	return 0;
 }
-#elif defined CC_BUILD_HAIKU || defined CC_BUILD_BEOS
+#elif defined HC_BUILD_HAIKU || defined HC_BUILD_BEOS
 /* Implemented in interop_BeOS.cpp */
-#elif defined CC_BUILD_OS2
+#elif defined HC_BUILD_OS2
 inline static void ShowErrorMessage(const char *url) {
 	static char errorMsg[] = "Could not open browser. Please go to: ";
-	cc_string message = String_Init(errorMsg, strlen(errorMsg), 500);
+	hc_string message = String_Init(errorMsg, strlen(errorMsg), 500);
 	String_AppendConst(&message, url);
 	Logger_DialogWarn(&message);
 }
 
-cc_result Process_StartOpen(const cc_string* args) {
+hc_result Process_StartOpen(const hc_string* args) {
 	char str[NATIVE_STR_LEN];
 	APIRET rc;
 	UCHAR path[CCHMAXPATH], params[100], parambuffer[500], *paramptr;
@@ -909,7 +911,7 @@ cc_result Process_StartOpen(const cc_string* args) {
 	return 0;
 }
 #else
-cc_result Process_StartOpen(const cc_string* args) {
+hc_result Process_StartOpen(const hc_string* args) {
 	char str[NATIVE_STR_LEN];
 	char* cmd[3];
 	String_EncodeUtf8(str, args);
@@ -922,23 +924,23 @@ cc_result Process_StartOpen(const cc_string* args) {
 #endif
 
 /* Retrieving exe path is completely OS dependant */
-#if defined CC_BUILD_MACOS
-static cc_result Process_RawGetExePath(char* path, int* len) {
+#if defined HC_BUILD_MACOS
+static hc_result Process_RawGetExePath(char* path, int* len) {
 	Mem_Set(path, '\0', NATIVE_STR_LEN);
-	cc_uint32 size = NATIVE_STR_LEN;
+	hc_uint32 size = NATIVE_STR_LEN;
 	if (_NSGetExecutablePath(path, &size)) return ERR_INVALID_ARGUMENT;
 
 	/* despite what you'd assume, size is NOT changed to length of path */
 	*len = String_CalcLen(path, NATIVE_STR_LEN);
 	return 0;
 }
-#elif defined CC_BUILD_LINUX || defined CC_BUILD_SERENITY
-static cc_result Process_RawGetExePath(char* path, int* len) {
+#elif defined HC_BUILD_LINUX || defined HC_BUILD_SERENITY
+static hc_result Process_RawGetExePath(char* path, int* len) {
 	*len = readlink("/proc/self/exe", path, NATIVE_STR_LEN);
 	return *len == -1 ? errno : 0;
 }
-#elif defined CC_BUILD_FREEBSD
-static cc_result Process_RawGetExePath(char* path, int* len) {
+#elif defined HC_BUILD_FREEBSD
+static hc_result Process_RawGetExePath(char* path, int* len) {
 	static int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1 };
 	size_t size       = NATIVE_STR_LEN;
 
@@ -946,8 +948,8 @@ static cc_result Process_RawGetExePath(char* path, int* len) {
 	*len = String_CalcLen(path, NATIVE_STR_LEN);
 	return 0;
 }
-#elif defined CC_BUILD_OPENBSD
-static cc_result Process_RawGetExePath(char* path, int* len) {
+#elif defined HC_BUILD_OPENBSD
+static hc_result Process_RawGetExePath(char* path, int* len) {
 	static int mib[4] = { CTL_KERN, KERN_PROC_ARGS, 0, KERN_PROC_ARGV };
 	char tmp[NATIVE_STR_LEN];
 	size_t size;
@@ -972,8 +974,8 @@ static cc_result Process_RawGetExePath(char* path, int* len) {
 	Mem_Copy(path, str, *len);
 	return 0;
 }
-#elif defined CC_BUILD_NETBSD
-static cc_result Process_RawGetExePath(char* path, int* len) {
+#elif defined HC_BUILD_NETBSD
+static hc_result Process_RawGetExePath(char* path, int* len) {
 	static int mib[4] = { CTL_KERN, KERN_PROC_ARGS, -1, KERN_PROC_PATHNAME };
 	size_t size       = NATIVE_STR_LEN;
 
@@ -981,26 +983,26 @@ static cc_result Process_RawGetExePath(char* path, int* len) {
 	*len = String_CalcLen(path, NATIVE_STR_LEN);
 	return 0;
 }
-#elif defined CC_BUILD_SOLARIS
-static cc_result Process_RawGetExePath(char* path, int* len) {
+#elif defined HC_BUILD_SOLARIS
+static hc_result Process_RawGetExePath(char* path, int* len) {
 	*len = readlink("/proc/self/path/a.out", path, NATIVE_STR_LEN);
 	return *len == -1 ? errno : 0;
 }
-#elif defined CC_BUILD_HAIKU
-static cc_result Process_RawGetExePath(char* path, int* len) {
+#elif defined HC_BUILD_HAIKU
+static hc_result Process_RawGetExePath(char* path, int* len) {
 	image_info info;
 	int32 cookie = 0;
 
-	cc_result res = get_next_image_info(B_CURRENT_TEAM, &cookie, &info);
+	hc_result res = get_next_image_info(B_CURRENT_TEAM, &cookie, &info);
 	if (res != B_OK) return res;
 
 	*len = String_CalcLen(info.name, NATIVE_STR_LEN);
 	Mem_Copy(path, info.name, *len);
 	return 0;
 }
-#elif defined CC_BUILD_IRIX
-static cc_result Process_RawGetExePath(char* path, int* len) {
-	static cc_string file = String_FromConst("ClassiCube");
+#elif defined HC_BUILD_IRIX
+static hc_result Process_RawGetExePath(char* path, int* len) {
+	static hc_string file = String_FromConst("HarmonyClient");
 
 	/* TODO properly get exe path */
 	/* Maybe use PIOCOPENM from https://nixdoc.net/man-pages/IRIX/man4/proc.4.html */
@@ -1008,8 +1010,8 @@ static cc_result Process_RawGetExePath(char* path, int* len) {
 	*len = file.length;
 	return 0;
 }
-#elif defined CC_BUILD_OS2
-static cc_result Process_RawGetExePath(char* path, int* len) {
+#elif defined HC_BUILD_OS2
+static hc_result Process_RawGetExePath(char* path, int* len) {
 	PPIB pib;
 	DosGetInfoBlocks(NULL, &pib);
 	if (pib && pib->pib_pchcmd) {
@@ -1024,82 +1026,82 @@ static cc_result Process_RawGetExePath(char* path, int* len) {
 /*########################################################################################################################*
 *--------------------------------------------------------Updater----------------------------------------------------------*
 *#########################################################################################################################*/
-#ifdef CC_BUILD_FLATPAK
-cc_bool Updater_Supported = false;
+#ifdef HC_BUILD_FLATPAK
+hc_bool Updater_Supported = false;
 #else
-cc_bool Updater_Supported = true;
+hc_bool Updater_Supported = true;
 #endif
 
-#if defined CC_BUILD_ANDROID
+#if defined HC_BUILD_ANDROID
 /* implemented in Platform_Android.c */
-#elif defined CC_BUILD_IOS
+#elif defined HC_BUILD_IOS
 /* implemented in interop_ios.m */
 #else
-cc_bool Updater_Clean(void) { return true; }
+hc_bool Updater_Clean(void) { return true; }
 
-#if defined CC_BUILD_RPI
+#if defined HC_BUILD_RPI
 	#if __aarch64__
-	const struct UpdaterInfo Updater_Info = { "", 1, { { "OpenGL ES", "cc-rpi64" } } };
+	const struct UpdaterInfo Updater_Info = { "", 1, { { "OpenGL ES", "hc-rpi64" } } };
 	#else
-	const struct UpdaterInfo Updater_Info = { "", 1, { { "OpenGL ES", "ClassiCube.rpi" } } };
+	const struct UpdaterInfo Updater_Info = { "", 1, { { "OpenGL ES", "HarmonyClient.rpi" } } };
 	#endif
-#elif defined CC_BUILD_LINUX
+#elif defined HC_BUILD_LINUX
 	#if __x86_64__
 	const struct UpdaterInfo Updater_Info = {
 		"&eModernGL is recommended for newer machines (2015 or later)", 2,
 		{
-			{ "ModernGL", "cc-nix64-gl2" },
-			{ "OpenGL",   "ClassiCube" }
+			{ "ModernGL", "hc-nix64-gl2" },
+			{ "OpenGL",   "HarmonyClient" }
 		}
 	};
 	#elif __i386__
 	const struct UpdaterInfo Updater_Info = {
 		"&eModernGL is recommended for newer machines (2015 or later)", 2,
 		{
-			{ "ModernGL", "cc-nix32-gl2" },
-			{ "OpenGL",   "ClassiCube.32" }
+			{ "ModernGL", "hc-nix32-gl2" },
+			{ "OpenGL",   "HarmonyClient.32" }
 		}
 	};
 	#else
 	const struct UpdaterInfo Updater_Info = { "&eCompile latest source code to update", 0 };
 	#endif
-#elif defined CC_BUILD_MACOS
+#elif definedHCC_BUILD_MACOS
 	#if __x86_64__
 	const struct UpdaterInfo Updater_Info = {
 		"&eModernGL is recommended for newer machines (2015 or later)", 2,
 		{
-			{ "ModernGL", "cc-osx64-gl2" },
-			{ "OpenGL",   "ClassiCube.64.osx" }
+			{ "ModernGL", "hc-osx64-gl2" },
+			{ "OpenGL",   "HarmonyClient.64.osx" }
 		}
 	};
 	#elif __i386__
 	const struct UpdaterInfo Updater_Info = {
 		"&eModernGL is recommended for newer machines (2015 or later)", 2,
 		{
-			{ "ModernGL", "cc-osx32-gl2" },
-			{ "OpenGL",   "ClassiCube.osx" }
+			{ "ModernGL", "hc-osx32-gl2" },
+			{ "OpenGL",   "HarmonyClient.osx" }
 		}
 	};
 	#else
 	const struct UpdaterInfo Updater_Info = { "&eCompile latest source code to update", 0 };
 	#endif
-#elif defined CC_BUILD_HAIKU
+#elif defined HC_BUILD_HAIKU
 	#if __x86_64__
-	const struct UpdaterInfo Updater_Info = { "", 1, { { "OpenGL", "cc-haiku-64" } } };
+	const struct UpdaterInfo Updater_Info = { "", 1, { { "OpenGL", "hc-haiku-64" } } };
 	#else
 	const struct UpdaterInfo Updater_Info = { "&eCompile latest source code to update", 0 };
 	#endif
-#elif defined CC_BUILD_FREEBSD
+#elif defined HC_BUILD_FREEBSD
 	#if __x86_64__
-	const struct UpdaterInfo Updater_Info = { "", 1, { { "OpenGL", "cc-fbsd64-gl1" } } };
+	const struct UpdaterInfo Updater_Info = { "", 1, { { "OpenGL", "hc-fbsd64-gl1" } } };
 	#elif __i386__
-	const struct UpdaterInfo Updater_Info = { "", 1, { { "OpenGL", "cc-fbsd32-gl1" } } };
+	const struct UpdaterInfo Updater_Info = { "", 1, { { "OpenGL", "hc-fbsd32-gl1" } } };
 	#else
 	const struct UpdaterInfo Updater_Info = { "&eCompile latest source code to update", 0 };
 	#endif
-#elif defined CC_BUILD_NETBSD
+#elif defined HC_BUILD_NETBSD
 	#if __x86_64__
-	const struct UpdaterInfo Updater_Info = { "", 1, { { "OpenGL", "cc-netbsd64-gl1" } } };
+	const struct UpdaterInfo Updater_Info = { "", 1, { { "OpenGL", "hc-netbsd64-gl1" } } };
 	#else
 	const struct UpdaterInfo Updater_Info = { "&eCompile latest source code to update", 0 };
 	#endif
@@ -1107,10 +1109,10 @@ cc_bool Updater_Clean(void) { return true; }
 	const struct UpdaterInfo Updater_Info = { "&eCompile latest source code to update", 0 };
 #endif
 
-cc_result Updater_Start(const char** action) {
+hc_result Updater_Start(const char** action) {
 	char path[NATIVE_STR_LEN + 1];
 	char* argv[2];
-	cc_result res;
+	hc_result res;
 	int len = 0;
 
 	*action = "Getting executable path";
@@ -1129,12 +1131,12 @@ cc_result Updater_Start(const char** action) {
 	return Process_RawStart(path, argv);
 }
 
-cc_result Updater_GetBuildTime(cc_uint64* timestamp) {
+hc_result Updater_GetBuildTime(hc_uint64* timestamp) {
 	char path[NATIVE_STR_LEN + 1];
 	struct stat sb;
 	int len = 0;
 
-	cc_result res = Process_RawGetExePath(path, &len);
+	hc_result res = Process_RawGetExePath(path, &len);
 	if (res) return res;
 	path[len] = '\0';
 
@@ -1143,7 +1145,7 @@ cc_result Updater_GetBuildTime(cc_uint64* timestamp) {
 	return 0;
 }
 
-cc_result Updater_MarkExecutable(void) {
+hc_result Updater_MarkExecutable(void) {
 	struct stat st;
 	if (stat(UPDATE_FILE, &st) == -1) return errno;
 
@@ -1151,7 +1153,7 @@ cc_result Updater_MarkExecutable(void) {
 	return chmod(UPDATE_FILE, st.st_mode) == -1 ? errno : 0;
 }
 
-cc_result Updater_SetNewBuildTime(cc_uint64 timestamp) {
+hc_result Updater_SetNewBuildTime(hc_uint64 timestamp) {
 	struct utimbuf times = { 0 };
 	times.modtime = timestamp;
 	return utime(UPDATE_FILE, &times) == -1 ? errno : 0;
@@ -1164,17 +1166,18 @@ cc_result Updater_SetNewBuildTime(cc_uint64 timestamp) {
 *#########################################################################################################################*/
 #if defined MAC_OS_X_VERSION_MIN_REQUIRED && (MAC_OS_X_VERSION_MIN_REQUIRED < 1040)
 /* Really old mac OS versions don't have the dlopen/dlsym API */
-const cc_string DynamicLib_Ext = String_FromConst(".dylib");
+const hc_string DynamicLib_Ext = String_FromConst(".dylib");
 
-void* DynamicLib_Load2(const cc_string* path) {
-	cc_filepath str;
+void* DynamicLib_Load2(const hc_string* path) {
+	hc_filepath str;
 	Platform_EncodePath(&str, path);
 	return NSAddImage(str.buffer, NSADDIMAGE_OPTION_WITH_SEARCHING |
 								NSADDIMAGE_OPTION_RETURN_ON_ERROR);
 }
 
 void* DynamicLib_Get2(void* lib, const char* name) {
-	cc_string tmp; char tmpBuffer[128];
+	hc_string tmp; 
+	char tmpBuffer[128];
 	NSSymbol sym;
 	String_InitArray_NT(tmp, tmpBuffer);
 
@@ -1188,7 +1191,7 @@ void* DynamicLib_Get2(void* lib, const char* name) {
 	return sym ? NSAddressOfSymbol(sym) : NULL;
 }
 
-cc_bool DynamicLib_DescribeError(cc_string* dst) {
+hc_bool DynamicLib_DescribeError(hc_string* dst) {
 	NSLinkEditErrors err = 0;
 	const char* name = "";
 	const char* msg  = "";
@@ -1202,14 +1205,14 @@ cc_bool DynamicLib_DescribeError(cc_string* dst) {
 #include <dlfcn.h>
 /* TODO: Should we use .bundle instead of .dylib? */
 
-#ifdef CC_BUILD_DARWIN
-const cc_string DynamicLib_Ext = String_FromConst(".dylib");
+#ifdef HC_BUILD_DARWIN
+const hc_string DynamicLib_Ext = String_FromConst(".dylib");
 #else
-const cc_string DynamicLib_Ext = String_FromConst(".so");
+const hc_string DynamicLib_Ext = String_FromConst(".so");
 #endif
 
-void* DynamicLib_Load2(const cc_string* path) {
-	cc_filepath str;
+void* DynamicLib_Load2(const hc_string* path) {
+	hc_filepath str;
 	Platform_EncodePath(&str, path);
 	return dlopen(str.buffer, RTLD_NOW);
 }
@@ -1219,7 +1222,7 @@ void* DynamicLib_Get2(void* lib, const char* name) {
 	return result;
 }
 
-cc_bool DynamicLib_DescribeError(cc_string* dst) {
+hc_bool DynamicLib_DescribeError(hc_string* dst) {
 	char* err = dlerror();
 	if (err) String_AppendConst(dst, err);
 	return err && err[0];
@@ -1237,8 +1240,8 @@ static void Platform_InitPosix(void) {
 }
 void Platform_Free(void) { }
 
-#ifdef CC_BUILD_IRIX
-cc_bool Platform_DescribeError(cc_result res, cc_string* dst) {
+#ifdef HC_BUILD_IRIX
+hc_bool Platform_DescribeError(hc_result res, hc_string* dst) {
 	const char* err = strerror(res);
 	if (!err || res >= 1000) return false;
 
@@ -1246,7 +1249,7 @@ cc_bool Platform_DescribeError(cc_result res, cc_string* dst) {
 	return true;
 }
 #else
-cc_bool Platform_DescribeError(cc_result res, cc_string* dst) {
+hc_bool Platform_DescribeError(hc_result res, hc_string* dst) {
 	char chars[NATIVE_STR_LEN];
 	int len;
 
@@ -1264,9 +1267,9 @@ cc_bool Platform_DescribeError(cc_result res, cc_string* dst) {
 }
 #endif
 
-#if defined CC_BUILD_DARWIN
+#if defined HC_BUILD_DARWIN
 
-#if defined CC_BUILD_MACOS
+#if defined HC_BUILD_MACOS
 static void Platform_InitSpecific(void) {
 	ProcessSerialNumber psn = { 0, kCurrentProcess };
 	#ifdef __ppc__
@@ -1292,7 +1295,7 @@ void Platform_Init(void) {
 }
 #else
 void Platform_Init(void) {
-	#ifdef CC_BUILD_MOBILE
+	#ifdef HC_BUILD_MOBILE
 	Platform_SingleProcess = true;
 	#endif
 	
@@ -1306,8 +1309,8 @@ void Platform_Init(void) {
 *#########################################################################################################################*/
 /* Encrypts data using XTEA block cipher, with OS specific method to get machine-specific key */
 
-static void EncipherBlock(cc_uint32* v, const cc_uint32* key, cc_string* dst) {
-	cc_uint32 v0 = v[0], v1 = v[1], sum = 0, delta = 0x9E3779B9;
+static void EncipherBlock(hc_uint32* v, const hc_uint32* key, hc_string* dst) {
+	hc_uint32 v0 = v[0], v1 = v[1], sum = 0, delta = 0x9E3779B9;
 	int i;
 
     for (i = 0; i < 12; i++) 
@@ -1320,8 +1323,8 @@ static void EncipherBlock(cc_uint32* v, const cc_uint32* key, cc_string* dst) {
 	String_AppendAll(dst, v, 8);
 }
 
-static void DecipherBlock(cc_uint32* v, const cc_uint32* key) {
-	cc_uint32 v0 = v[0], v1 = v[1], delta = 0x9E3779B9, sum = delta * 12;
+static void DecipherBlock(hc_uint32* v, const hc_uint32* key) {
+	hc_uint32 v0 = v[0], v1 = v[1], delta = 0x9E3779B9, sum = delta * 12;
 	int i;
 
     for (i = 0; i < 12; i++) 
@@ -1340,9 +1343,9 @@ static void DecipherBlock(cc_uint32* v, const cc_uint32* key) {
 #define ENC_SIZE 8 /* 2 32 bit ints per block */
 
 /* "b3 c5a-0d9" --> 0xB3C5A0D9 */
-static void DecodeMachineID(char* tmp, int len, cc_uint32* key) {
+static void DecodeMachineID(char* tmp, int len, hc_uint32* key) {
 	int hex[MACHINEID_LEN] = { 0 }, i, j, c;
-	cc_uint8* dst = (cc_uint8*)key;
+	hc_uint8* dst = (hc_uint8*)key;
 
 	/* Get each valid hex character */
 	for (i = 0, j = 0; i < len && j < MACHINEID_LEN; i++) 
@@ -1357,29 +1360,29 @@ static void DecodeMachineID(char* tmp, int len, cc_uint32* key) {
 	}
 }
 
-#if defined CC_BUILD_LINUX
+#if defined HC_BUILD_LINUX
 /* Read /var/lib/dbus/machine-id or /etc/machine-id for the key */
-static cc_result GetMachineID(cc_uint32* key) {
-	const cc_string idFile  = String_FromConst("/var/lib/dbus/machine-id");
-	const cc_string altFile = String_FromConst("/etc/machine-id");
+static hc_result GetMachineID(hc_uint32* key) {
+	const hc_string idFile  = String_FromConst("/var/lib/dbus/machine-id");
+	const hc_string altFile = String_FromConst("/etc/machine-id");
 	char tmp[MACHINEID_LEN];
 	struct Stream s;
-	cc_result res;
+	hc_result res;
 
 	/* Some machines only have dbus id, others only have etc id */
 	res = Stream_OpenFile(&s, &idFile);
 	if (res) res = Stream_OpenFile(&s, &altFile);
 	if (res) return res;
 
-	res = Stream_Read(&s, (cc_uint8*)tmp, MACHINEID_LEN);
+	res = Stream_Read(&s, (hc_uint8*)tmp, MACHINEID_LEN);
 	if (!res) DecodeMachineID(tmp, MACHINEID_LEN, key);
 
 	(void)s.Close(&s);
 	return res;
 }
-#elif defined CC_BUILD_MACOS
+#elif defined HC_BUILD_MACOS
 /* Read kIOPlatformUUIDKey from I/O registry for the key */
-static cc_result GetMachineID(cc_uint32* key) {
+static hc_result GetMachineID(hc_uint32* key) {
 	io_registry_entry_t registry;
 	CFStringRef devID = NULL;
 	char tmp[256] = { 0 };
@@ -1406,10 +1409,10 @@ static cc_result GetMachineID(cc_uint32* key) {
 	IOObjectRelease(registry);
 	return tmp[0] ? 0 : ERR_NOT_SUPPORTED;
 }
-#elif defined CC_BUILD_FREEBSD
+#elif defined HC_BUILD_FREEBSD
 /* Use kern.hostuuid sysctl for the key */
 /* Possible alternatives: kenv("smbios.system.uuid"), /etc/hostid */
-static cc_result GetMachineID(cc_uint32* key) {
+static hc_result GetMachineID(hc_uint32* key) {
 	static int mib[2] = { CTL_KERN, KERN_HOSTUUID };
 	char buf[128];
 	size_t size = 128;
@@ -1418,9 +1421,9 @@ static cc_result GetMachineID(cc_uint32* key) {
 	DecodeMachineID(buf, size, key);
 	return 0;
 }
-#elif defined CC_BUILD_OPENBSD
+#elif defined HC_BUILD_OPENBSD
 /* Use hw.uuid sysctl for the key */
-static cc_result GetMachineID(cc_uint32* key) {
+static hc_result GetMachineID(hc_uint32* key) {
 	static int mib[2] = { CTL_HW, HW_UUID };
 	char buf[128];
 	size_t size = 128;
@@ -1429,9 +1432,9 @@ static cc_result GetMachineID(cc_uint32* key) {
 	DecodeMachineID(buf, size, key);
 	return 0;
 }
-#elif defined CC_BUILD_NETBSD
+#elif defined HC_BUILD_NETBSD
 /* Use hw.uuid for the key */
-static cc_result GetMachineID(cc_uint32* key) {
+static hc_result GetMachineID(hc_uint32* key) {
 	char buf[128];
 	size_t size = 128;
 
@@ -1439,7 +1442,7 @@ static cc_result GetMachineID(cc_uint32* key) {
 	DecodeMachineID(buf, size, key);
 	return 0;
 }
-#elif defined CC_BUILD_SOLARIS
+#elif defined JC_BUILD_SOLARIS
 /* Use SI_HW_SERIAL for the key */
 /* TODO: Should be using SMBIOS UUID for this (search it in illomos source) */
 /* NOTE: Got a '0' for serial number when running in a VM */
@@ -1447,27 +1450,29 @@ static cc_result GetMachineID(cc_uint32* key) {
 #define HW_HOSTID_LEN 11
 #endif
 
-static cc_result GetMachineID(cc_uint32* key) {
+static hc_result GetMachineID(hc_uint32* key) {
 	char host[HW_HOSTID_LEN] = { 0 };
 	if (sysinfo(SI_HW_SERIAL, host, sizeof(host)) == -1) return errno;
 
 	DecodeMachineID(host, HW_HOSTID_LEN, key);
 	return 0;
 }
-#elif defined CC_BUILD_ANDROID
-static cc_result GetMachineID(cc_uint32* key) {
-	cc_string dir; char dirBuffer[STRING_SIZE];
+#elif defined HC_BUILD_ANDROID
+static hc_result GetMachineID(hc_uint32* key) {
+	hc_string dir; 
+	char dirBuffer[STRING_SIZE];
 	String_InitArray(dir, dirBuffer);
 
 	JavaCall_Void_String("getUUID", &dir);
 	DecodeMachineID(dirBuffer, dir.length, key);
 	return 0;
 }
-#elif defined CC_BUILD_IOS
-extern void GetDeviceUUID(cc_string* str);
+#elif defined HC_BUILD_IOS
+extern void GetDeviceUUID(hc_string* str);
 
-static cc_result GetMachineID(cc_uint32* key) {
-    cc_string str; char strBuffer[STRING_SIZE];
+static hc_result GetMachineID(hc_uint32* key) {
+    hc_string str;
+	char strBuffer[STRING_SIZE];
     String_InitArray(str, strBuffer);
 
     GetDeviceUUID(&str);
@@ -1477,13 +1482,13 @@ static cc_result GetMachineID(cc_uint32* key) {
     return 0;
 }
 #else
-static cc_result GetMachineID(cc_uint32* key) { return ERR_NOT_SUPPORTED; }
+static hc_result GetMachineID(hc_uint32* key) { return ERR_NOT_SUPPORTED; }
 #endif
 
-cc_result Platform_Encrypt(const void* data, int len, cc_string* dst) {
-	const cc_uint8* src = (const cc_uint8*)data;
-	cc_uint32 header[4], key[4];
-	cc_result res;
+hc_result Platform_Encrypt(const void* data, int len, hc_string* dst) {
+	const hc_uint8* src = (const hc_uint8*)data;
+	hc_uint32 header[4], key[4];
+	hc_result res;
 	if ((res = GetMachineID(key))) return res;
 
 	header[0] = ENC1; header[1] = ENC2;
@@ -1500,10 +1505,10 @@ cc_result Platform_Encrypt(const void* data, int len, cc_string* dst) {
 	return 0;
 }
 
-cc_result Platform_Decrypt(const void* data, int len, cc_string* dst) {
-	const cc_uint8* src = (const cc_uint8*)data;
-	cc_uint32 header[4], key[4];
-	cc_result res;
+hc_result Platform_Decrypt(const void* data, int len, hc_string* dst) {
+	const hc_uint8* src = (const hc_uint8*)data;
+	hc_uint32 header[4], key[4];
+	hc_result res;
 	int dataLen;
 
 	/* Total size must be >= header size */
@@ -1535,21 +1540,21 @@ cc_result Platform_Decrypt(const void* data, int len, cc_string* dst) {
 /*########################################################################################################################*
 *-----------------------------------------------------Configuration-------------------------------------------------------*
 *#########################################################################################################################*/
-#if defined CC_BUILD_MOBILE
-int Platform_GetCommandLineArgs(int argc, STRING_REF char** argv, cc_string* args) {
+#if defined HC_BUILD_MOBILE
+int Platform_GetCommandLineArgs(int argc, STRING_REF char** argv, hc_string* args) {
 	return GetGameArgs(args);
 }
 #else
-int Platform_GetCommandLineArgs(int argc, STRING_REF char** argv, cc_string* args) {
+int Platform_GetCommandLineArgs(int argc, STRING_REF char** argv, hc_string* args) {
 	int i, count;
 	argc--; argv++; /* skip executable path argument */
 	if (gameHasArgs) return GetGameArgs(args);
 
-	#if defined CC_BUILD_MACOS
+	#if defined HC_BUILD_MACOS
 	/* Sometimes a "-psn_0_[number]" argument is added before actual args */
 	if (argc) {
-		static const cc_string psn = String_FromConst("-psn_0_");
-		cc_string arg0 = String_FromReadonly(argv[0]);
+		static const hc_string psn = String_FromConst("-psn_0_");
+		hc_string arg0 = String_FromReadonly(argv[0]);
 		if (String_CaselessStarts(&arg0, &psn)) { argc--; argv++; }
 	}
 	#endif
@@ -1572,13 +1577,13 @@ int Platform_GetCommandLineArgs(int argc, STRING_REF char** argv, cc_string* arg
 #define IGNORE_RETURN_VALUE(func) (void)!(func)
 
 /* Detects if the game is running in $HOME directory */
-static cc_bool IsProblematicWorkingDirectory(void) {
-	#ifdef CC_BUILD_MACOS
+static hc_bool IsProblematicWorkingDirectory(void) {
+	#ifdef HC_BUILD_MACOS
 	/* TODO: Only change working directory when necessary */
 	/* When running from bundle, working directory is "/" */
 	return true;
 	#else
-	cc_string curDir, homeDir;
+	hc_string curDir, homeDir;
 	char path[2048] = { 0 };
 	const char* home;
 
@@ -1597,10 +1602,10 @@ static cc_bool IsProblematicWorkingDirectory(void) {
 	#endif
 }
 
-cc_result Platform_SetDefaultCurrentDirectory(int argc, char **argv) {
+hc_result Platform_SetDefaultCurrentDirectory(int argc, char **argv) {
 	char path[NATIVE_STR_LEN];
 	int i, len = 0;
-	cc_result res;
+	hc_result res;
 	if (!IsProblematicWorkingDirectory()) return 0;
 	
 	res = Process_RawGetExePath(path, &len);
@@ -1611,9 +1616,9 @@ cc_result Platform_SetDefaultCurrentDirectory(int argc, char **argv) {
 		if (path[i] == '/') break;
 	}
 
-	#ifdef CC_BUILD_MACOS
-	static const cc_string bundle = String_FromConst(".app/Contents/MacOS/");
-	cc_string raw = String_Init(path, len, 0);
+	#ifdef HC_BUILD_MACOS
+	static const hc_string bundle = String_FromConst(".app/Contents/MacOS/");
+	hc_string raw = String_Init(path, len, 0);
 
 	/* If running from within a bundle, set data folder to folder containing bundle */
 	if (String_CaselessEnds(&raw, &bundle)) {

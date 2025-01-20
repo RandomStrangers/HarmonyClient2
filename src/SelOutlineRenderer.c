@@ -33,7 +33,7 @@ x,3,0,  x,2,0,  x,2,3,  x,3,3,
 
 
 static void BuildMesh(struct RayTracer* selected) {
-	static const cc_uint8 indices[288] = {
+	static const hc_uint8 indices[288] = {
 		SelOutline_Y(0) SelOutline_Y(3) /* YMin, YMax */
 		SelOutline_X(0) SelOutline_X(3) /* XMin, XMax */
 		SelOutline_Z(0) SelOutline_Z(3) /* ZMin, ZMax */
@@ -92,7 +92,7 @@ static void BuildMesh(struct RayTracer* selected) {
 	Gfx_UnlockDynamicVb(selOutline_vb);
 }
 
-void SelOutlineRenderer_Render(struct RayTracer* selected, cc_bool dirty) {
+void SelOutlineRenderer_Render(struct RayTracer* selected, hc_bool dirty) {
 	if (Gfx.LostContext) return;
 
 	if (!selOutline_vb)
@@ -120,7 +120,7 @@ static void OnContextLost(void* obj) {
 
 static void OnInit(void) {
 	int opacity;
-	cc_uint8 rgb[3];
+	hc_uint8 rgb[3];
 	Event_Register_(&GfxEvents.ContextLost, NULL, OnContextLost);
 
 	base_size = Options_GetFloat(OPT_SELECTED_BLOCK_OUTLINE_SCALE, 1, 16, 1);

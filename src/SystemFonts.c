@@ -14,9 +14,9 @@
 #include "Options.h"
 
 static char defaultBuffer[STRING_SIZE];
-static cc_string font_default = String_FromArray(defaultBuffer);
+static hc_string font_default = String_FromArray(defaultBuffer);
 
-void SysFont_SetDefault(const cc_string* fontName) {
+void SysFont_SetDefault(const hc_string* fontName) {
 	String_Copy(&font_default, fontName);
 	Event_RaiseVoid(&ChatEvents.FontChanged);
 }
@@ -42,13 +42,13 @@ struct IGameComponent SystemFonts_Component = {
 #define FallbackFont_GetRows(c) (FallbackFont_ValidChar(c) ? font_bitmap[FallbackFont_ToIndex(c)] : missing_cell)
 #define FallbackFont_GetScale(size) ((size) >> 3)
 
-static const cc_uint8 missing_cell[CELL_SIZE] = { 
+static const hc_uint8 missing_cell[CELL_SIZE] = { 
 	0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF 
 };
 
 /* 8x8 font bitmap, represented with 1 bit for each pixel */
 /* Source: Goodly's texture pack for ClassiCube */
-static const cc_uint8 font_bitmap[][CELL_SIZE] = {
+static const hc_uint8 font_bitmap[][CELL_SIZE] = {
 	  { 0x01,0x01,0x01,0x01,0x01,0x00,0x01,0x00 }, /* ! */
 	  { 0x05,0x05,0x05,0x00,0x00,0x00,0x00,0x00 }, /* " */
 	  { 0x0A,0x0A,0x1F,0x0A,0x1F,0x0A,0x0A,0x00 }, /* # */
@@ -145,7 +145,7 @@ static const cc_uint8 font_bitmap[][CELL_SIZE] = {
 	  { 0x00,0x00,0x26,0x19,0x00,0x00,0x00,0x00 }, /* ~ */
 };
 
-static int Fallback_CellWidth(const cc_uint8* rows) {
+static int Fallback_CellWidth(const hc_uint8* rows) {
 	int y, width, widest = 0;
 
 	for (y = 0; y < CELL_SIZE; y++) 
@@ -158,7 +158,7 @@ static int Fallback_CellWidth(const cc_uint8* rows) {
 }
 
 int FallbackFont_TextWidth(const struct DrawTextArgs* args) { 
-	cc_string left = args->text, part;
+	hc_string left = args->text, part;
 	int size  = args->font->size;
 	int scale = FallbackFont_GetScale(size);
 	char colorCode = 'f';
@@ -168,7 +168,7 @@ int FallbackFont_TextWidth(const struct DrawTextArgs* args) {
 	{
 		for (i = 0; i < part.length; i++) 
 		{
-			cc_uint8 c = part.buffer[i];
+			hc_uint8 c = part.buffer[i];
 			if (c == ' ') {
 				width += SPACE_WIDTH * scale;
 			} else {
@@ -183,11 +183,11 @@ int FallbackFont_TextWidth(const struct DrawTextArgs* args) {
 }
 
 static void Fallback_DrawCell(struct Bitmap* bmp, int x, int y, 
-					int scale, const cc_uint8* rows, BitmapCol color) {
+					int scale, const hc_uint8* rows, BitmapCol color) {
 	int xx, srcX, dstX;
 	int yy, srcY, dstY;
 	BitmapCol* dst_row;
-	cc_uint8 src_row;
+	hc_uint8 src_row;
 
 	for (srcY = 0, dstY = y; srcY < CELL_SIZE; srcY++)
 	{
@@ -213,12 +213,12 @@ static void Fallback_DrawCell(struct Bitmap* bmp, int x, int y,
 	}
 }
 
-void FallbackFont_DrawText(struct DrawTextArgs* args, struct Bitmap* bmp, int x, int y, cc_bool shadow) {
-	cc_string left = args->text, part;
+void FallbackFont_DrawText(struct DrawTextArgs* args, struct Bitmap* bmp, int x, int y, hc_bool shadow) {
+	hc_string left = args->text, part;
 	int size  = args->font->size;
 	int scale = FallbackFont_GetScale(size);
 	char colorCode = 'f';
-	const cc_uint8* rows;
+	const hc_uint8* rows;
 	BitmapCol color;
 	int i;
 
@@ -237,7 +237,7 @@ void FallbackFont_DrawText(struct DrawTextArgs* args, struct Bitmap* bmp, int x,
 	
 		for (i = 0; i < part.length; i++) 
 		{
-			cc_uint8 c = part.buffer[i];
+			hc_uint8 c = part.buffer[i];
 			if (c == ' ') { x += SPACE_WIDTH * scale; continue; }
 
 			rows = FallbackFont_GetRows(c);
@@ -248,10 +248,10 @@ void FallbackFont_DrawText(struct DrawTextArgs* args, struct Bitmap* bmp, int x,
 	}
 }
 
-static void Fallback_PlotCell(int x, int scale, const cc_uint8* rows, FallbackFont_Plotter plotter, void* ctx) {
+static void Fallback_PlotCell(int x, int scale, const hc_uint8* rows, FallbackFont_Plotter plotter, void* ctx) {
 	int xx, srcX, dstX;
 	int yy, srcY, dstY;
-	cc_uint8 src_row;
+	hc_uint8 src_row;
 
 	for (srcY = 0; srcY < CELL_SIZE; srcY++)
 	{
@@ -272,13 +272,13 @@ static void Fallback_PlotCell(int x, int scale, const cc_uint8* rows, FallbackFo
 	}
 }
 
-void FallbackFont_Plot(cc_string* str, FallbackFont_Plotter plotter, int scale, void* ctx) {
-	const cc_uint8* rows;
+void FallbackFont_Plot(hc_string* str, FallbackFont_Plotter plotter, int scale, void* ctx) {
+	const hc_uint8* rows;
 	int i, x = 0;
 
 	for (i = 0; i < str->length; i++) 
 	{
-		cc_uint8 c = str->buffer[i];
+		hc_uint8 c = str->buffer[i];
 		if (c == ' ') { x += SPACE_WIDTH * scale; continue; }
 
 		rows = FallbackFont_GetRows(c);
@@ -292,13 +292,13 @@ void FallbackFont_Plot(cc_string* str, FallbackFont_Plotter plotter, int scale, 
 /*########################################################################################################################*
 *--------------------------------------------------------Freetype---------------------------------------------------------*
 *#########################################################################################################################*/
-#if defined CC_BUILD_FREETYPE
+#if defined HC_BUILD_FREETYPE
 #include "freetype/ft2build.h"
 #include "freetype/freetype.h"
 #include "freetype/ftmodapi.h"
 #include "freetype/ftglyph.h"
 
-int cc_strncmp(const char* strA, const char* strB, size_t maxCount) {
+int hc_strncmp(const char* strA, const char* strB, size_t maxCount) {
 	const unsigned char* a = (const unsigned char*)strA;
 	const unsigned char* b = (const unsigned char*)strB;
 	int i;
@@ -310,7 +310,7 @@ int cc_strncmp(const char* strA, const char* strB, size_t maxCount) {
 	return 0;
 }
 
-int cc_strcmp(const char* strA, const char* strB) {
+int hc_strcmp(const char* strA, const char* strB) {
 	const unsigned char* a = (const unsigned char*)strA;
 	const unsigned char* b = (const unsigned char*)strB;
 	int i;
@@ -322,13 +322,13 @@ int cc_strcmp(const char* strA, const char* strB) {
 	return 0;
 }
 
-size_t cc_strlen(const char* a) {
+size_t hc_strlen(const char* a) {
 	int i = 0;
 	while (*a++) i++;
 	return i;
 }
 
-char* cc_strstr(const char* str, const char* substr) {
+char* hc_strstr(const char* str, const char* substr) {
 	if (!substr[0]) return (char*)str;
 
 	for (; *str; str++) 
@@ -337,12 +337,12 @@ char* cc_strstr(const char* str, const char* substr) {
 		if (*str != substr[0]) continue;
 
 		/* It's a possible match */
-		if (cc_strcmp(str, substr) == 0) return (char*)str;
+		if (hc_strcmp(str, substr) == 0) return (char*)str;
 	}
 	return NULL;
 }
 
-int cc_memcmp(const void* ptrA, const void* ptrB, size_t num) {
+int hc_memcmp(const void* ptrA, const void* ptrB, size_t num) {
 	const unsigned char* a = (const unsigned char*)ptrA;
 	const unsigned char* b = (const unsigned char*)ptrB;
 
@@ -353,7 +353,7 @@ int cc_memcmp(const void* ptrA, const void* ptrB, size_t num) {
 	return 0;
 }
 
-void* cc_memchr(const void* ptr, int ch, size_t num) {
+void* hc_memchr(const void* ptr, int ch, size_t num) {
 	const char* a = (const char*)ptr;
 
 	for (; num > 0; num--, a++)
@@ -404,7 +404,7 @@ static void _qsort(void* v, int size, int left, int right,
 	_qsort(v, size, last + 1, right, comp); 
 }
 
-void cc_qsort(void* v, size_t count, size_t size,
+void hc_qsort(void* v, size_t count, size_t size,
 					int (*comp)(const void*, const void*)) {
 	if (!count) return;
 	_qsort(v, 0, count - 1, size, comp);
@@ -415,26 +415,26 @@ void cc_qsort(void* v, size_t count, size_t size,
 static FT_Library ft_lib;
 static struct FT_MemoryRec_ ft_mem;
 static struct StringsBuffer font_list;
-static cc_bool fonts_changed;
+static hc_bool fonts_changed;
 /* Finds the path and face number of the given system font, with closest matching style */
-static cc_string Font_Lookup(const cc_string* fontName, int flags);
+static hc_string Font_Lookup(const hc_string* fontName, int flags);
 
 struct SysFont {
 	FT_Face face;
 	struct Stream src, file;
 	FT_StreamRec stream;
-	cc_uint8 buffer[8192]; /* small buffer to minimise disk I/O */
-	cc_uint16 widths[256]; /* cached width of each character glyph */
+	hc_uint8 buffer[8192]; /* small buffer to minimise disk I/O */
+	hc_uint16 widths[256]; /* cached width of each character glyph */
 	FT_BitmapGlyph glyphs[256];	       /* cached glyphs */
 	FT_BitmapGlyph shadow_glyphs[256]; /* cached glyphs (for back layer shadow) */
-#ifdef CC_BUILD_DARWIN
+#ifdef HC_BUILD_DARWIN
 	char filename[FILENAME_SIZE + 1];
 #endif
 };
 
 static unsigned long SysFont_Read(FT_Stream s, unsigned long offset, unsigned char* buffer, unsigned long count) {
 	struct SysFont* font;
-	cc_result res;
+	hc_result res;
 	if (!count && offset > s->size) return 1;
 
 	font = (struct SysFont*)s->descriptor.pointer;
@@ -469,13 +469,13 @@ static void SysFont_Close(FT_Stream stream) {
 	SysFont_Done(font);
 }
 
-static cc_result SysFont_Init(const cc_string* path, struct SysFont* font, FT_Open_Args* args) {
-	cc_filepath str;
-	cc_file file;
-	cc_uint32 size;
-	cc_result res;
-#ifdef CC_BUILD_DARWIN
-	cc_string filename;
+static hc_result SysFont_Init(const hc_string* path, struct SysFont* font, FT_Open_Args* args) {
+	hc_filepath str;
+	hc_file file;
+	hc_uint32 size;
+	hc_result res;
+#ifdef HC_BUILD_DARWIN
+	hc_string filename;
 #endif
 
 	Platform_EncodePath(&str, path);
@@ -502,7 +502,7 @@ static cc_result SysFont_Init(const cc_string* path, struct SysFont* font, FT_Op
 	Stream_ReadonlyBuffered(&font->src, &font->file, font->buffer, sizeof(font->buffer));
 
 	/* For OSX font suitcase files */
-#ifdef CC_BUILD_DARWIN
+#ifdef HC_BUILD_DARWIN
 	String_InitArray_NT(filename, font->filename);
 	String_Copy(&filename, path);
 	font->filename[filename.length] = '\0';
@@ -522,7 +522,7 @@ static void* FT_ReallocWrapper(FT_Memory memory, long cur_size, long new_size, v
 
 
 #define FONT_CACHE_FILE "fontscache.txt"
-static cc_string font_candidates[] = {
+static hc_string font_candidates[] = {
 	String_FromConst(""),			     /* replaced with font_default */
 	String_FromConst("Arial"),		     /* preferred font on all platforms */
 	String_FromConst("Liberation Sans"), /* Nice looking fallbacks for linux */
@@ -552,7 +552,7 @@ static void InitFreeTypeLibrary(void) {
 	FT_Add_Default_Modules(ft_lib);
 }
 
-static cc_bool loadedPlatformFonts;
+static hc_bool loadedPlatformFonts;
 /* Updates fonts list cache with platform's list of fonts */
 /* This should be avoided due to overhead potential */
 static void SysFonts_LoadPlatform(void) {
@@ -570,7 +570,7 @@ static void SysFonts_LoadPlatform(void) {
 	if (fonts_changed) SysFonts_SaveCache();
 }
 
-static cc_bool loadedCachedFonts;
+static hc_bool loadedCachedFonts;
 static void SysFonts_LoadCached(void) {
 	if (loadedCachedFonts) return;
 	loadedCachedFonts = true;
@@ -585,17 +585,17 @@ void SysFonts_SaveCache(void) {
 
 /* Some language-specific fonts don't support English letters */
 /* and show entirely as '[]' - better off ignoring such fonts */
-static cc_bool SysFonts_SkipFont(FT_Face face) {
+static hc_bool SysFonts_SkipFont(FT_Face face) {
 	if (!face->charmap) return false;
 
 	return FT_Get_Char_Index(face, 'a') == 0 && FT_Get_Char_Index(face, 'z') == 0
 		&& FT_Get_Char_Index(face, 'A') == 0 && FT_Get_Char_Index(face, 'Z') == 0;
 }
 
-static void SysFonts_Add(const cc_string* path, FT_Face face, int index, char type, const char* defStyle) {
-	cc_string key;   char keyBuffer[STRING_SIZE];
-	cc_string value; char valueBuffer[FILENAME_SIZE];
-	cc_string style = String_Empty;
+static void SysFonts_Add(const hc_string* path, FT_Face face, int index, char type, const char* defStyle) {
+	hc_string key;   char keyBuffer[STRING_SIZE];
+	hc_string value; char valueBuffer[FILENAME_SIZE];
+	hc_string style = String_Empty;
 
 	if (!face->family_name || !(face->face_flags & FT_FACE_FLAG_SCALABLE)) return;
 	/* don't want 'Arial Regular' or 'Arial Bold' */
@@ -620,7 +620,7 @@ static void SysFonts_Add(const cc_string* path, FT_Face face, int index, char ty
 	fonts_changed = true;
 }
 
-static int SysFonts_DoRegister(const cc_string* path, int faceIndex, SysFont_RegisterCallback callback) {
+static int SysFonts_DoRegister(const hc_string* path, int faceIndex, SysFont_RegisterCallback callback) {
 	struct SysFont font;
 	FT_Open_Args args;
 	FT_Error err;
@@ -648,9 +648,9 @@ static int SysFonts_DoRegister(const cc_string* path, int faceIndex, SysFont_Reg
 	return count;
 }
 
-cc_result SysFonts_Register(const cc_string* path, SysFont_RegisterCallback callback) {
-	cc_string entry, name, value;
-	cc_string fontPath, index;
+hc_result SysFonts_Register(const hc_string* path, SysFont_RegisterCallback callback) {
+	hc_string entry, name, value;
+	hc_string fontPath, index;
 	int i, count;
 
 	/* if font is already known, skip it */
@@ -671,23 +671,23 @@ cc_result SysFonts_Register(const cc_string* path, SysFont_RegisterCallback call
 }
 
 
-static cc_string Font_LookupOf(const cc_string* fontName, const char type) {
-	cc_string name; char nameBuffer[STRING_SIZE + 2];
+static hc_string Font_LookupOf(const hc_string* fontName, const char type) {
+	hc_string name; char nameBuffer[STRING_SIZE + 2];
 	String_InitArray(name, nameBuffer);
 
 	String_Format2(&name, "%s %r", fontName, &type);
 	return EntryList_UNSAFE_Get(&font_list, &name, '=');
 }
 
-static cc_string Font_DoLookup(const cc_string* fontName, int flags) {
-	cc_string path = String_Empty;
+static hc_string Font_DoLookup(const hc_string* fontName, int flags) {
+	hc_string path = String_Empty;
 
 	if (flags & FONT_FLAGS_BOLD) path = Font_LookupOf(fontName, 'B');
 	return path.length ? path : Font_LookupOf(fontName, 'R');
 }
 
-static cc_string Font_Lookup(const cc_string* fontName, int flags) {
-	cc_string path;
+static hc_string Font_Lookup(const hc_string* fontName, int flags) {
+	hc_string path;
 	
 	SysFonts_LoadCached();
 	path = Font_DoLookup(fontName, flags);
@@ -698,8 +698,8 @@ static cc_string Font_Lookup(const cc_string* fontName, int flags) {
 }
 
 
-const cc_string* SysFonts_UNSAFE_GetDefault(void) {
-	cc_string* font, path;
+const hc_string* SysFonts_UNSAFE_GetDefault(void) {
+	hc_string* font, path;
 	int i;
 	font_candidates[0] = font_default;
 
@@ -714,7 +714,7 @@ const cc_string* SysFonts_UNSAFE_GetDefault(void) {
 }
 
 void SysFonts_GetNames(struct StringsBuffer* buffer) {
-	cc_string entry, name, path;
+	hc_string entry, name, path;
 	int i;
 	SysFonts_LoadCached();
 	SysFonts_LoadPlatform();
@@ -732,9 +732,9 @@ void SysFonts_GetNames(struct StringsBuffer* buffer) {
 }
 
 #define TEXT_CEIL(x) (((x) + 63) >> 6)
-cc_result SysFont_Make(struct FontDesc* desc, const cc_string* fontName, int size, int flags) {
+hc_result SysFont_Make(struct FontDesc* desc, const hc_string* fontName, int size, int flags) {
 	struct SysFont* font;
-	cc_string value, path, index;
+	hc_string value, path, index;
 	int faceIndex, dpiX, dpiY;
 	FT_Open_Args args;
 	FT_Error err;
@@ -768,8 +768,8 @@ cc_result SysFont_Make(struct FontDesc* desc, const cc_string* fontName, int siz
 }
 
 void SysFont_MakeDefault(struct FontDesc* desc, int size, int flags) {
-	cc_string* font;
-	cc_result res;
+	hc_string* font;
+	hc_result res;
 	int i;
 	font_candidates[0] = font_default;
 
@@ -809,10 +809,10 @@ void SysFont_Free(struct FontDesc* desc) {
 int SysFont_TextWidth(struct DrawTextArgs* args) {
 	struct SysFont* font = (struct SysFont*)args->font->handle;
 	FT_Face face   = font->face;
-	cc_string text = args->text;
+	hc_string text = args->text;
 	int i, width = 0, charWidth;
 	FT_Error res;
-	cc_unichar uc;
+	hc_unichar uc;
 
 	for (i = 0; i < text.length; i++) {
 		char c = text.buffer[i];
@@ -820,7 +820,7 @@ int SysFont_TextWidth(struct DrawTextArgs* args) {
 			i++; continue; /* skip over the color code */
 		}
 
-		charWidth = font->widths[(cc_uint8)c];
+		charWidth = font->widths[(hc_uint8)c];
 		/* need to calculate glyph width */
 		if (charWidth == UInt16_MaxValue) {
 			uc  = Convert_CP437ToUnicode(c);
@@ -833,7 +833,7 @@ int SysFont_TextWidth(struct DrawTextArgs* args) {
 				charWidth = face->glyph->advance.x;		
 			}
 
-			font->widths[(cc_uint8)c] = charWidth;
+			font->widths[(hc_uint8)c] = charWidth;
 		}
 		width += charWidth;
 	}
@@ -845,9 +845,9 @@ int SysFont_TextWidth(struct DrawTextArgs* args) {
 }
 
 static void DrawGrayscaleGlyph(FT_Bitmap* img, struct Bitmap* bmp, int x, int y, BitmapCol col) {
-	cc_uint8* src;
+	hc_uint8* src;
 	BitmapCol* dst;
-	cc_uint8 I, invI; /* intensity */
+	hc_uint8 I, invI; /* intensity */
 	int xx, yy;
 
 	for (yy = 0; yy < img->rows; yy++) {
@@ -875,9 +875,9 @@ static void DrawGrayscaleGlyph(FT_Bitmap* img, struct Bitmap* bmp, int x, int y,
 }
 
 static void DrawBlackWhiteGlyph(FT_Bitmap* img, struct Bitmap* bmp, int x, int y, BitmapCol col) {
-	cc_uint8* src;
+	hc_uint8* src;
 	BitmapCol* dst;
-	cc_uint8 intensity;
+	hc_uint8 intensity;
 	int xx, yy;
 
 	for (yy = 0; yy < img->rows; yy++) {
@@ -898,12 +898,12 @@ static void DrawBlackWhiteGlyph(FT_Bitmap* img, struct Bitmap* bmp, int x, int y
 }
 
 static FT_Vector shadow_delta = { 83, -83 };
-void SysFont_DrawText(struct DrawTextArgs* args, struct Bitmap* bmp, int x, int y, cc_bool shadow) {
+void SysFont_DrawText(struct DrawTextArgs* args, struct Bitmap* bmp, int x, int y, hc_bool shadow) {
 	struct SysFont* font  = (struct SysFont*)args->font->handle;
 	FT_BitmapGlyph* glyphs = font->glyphs;
 
 	FT_Face face   = font->face;
-	cc_string text = args->text;
+	hc_string text = args->text;
 	int descender, height, begX = x;
 	BitmapCol color;
 	
@@ -912,7 +912,7 @@ void SysFont_DrawText(struct DrawTextArgs* args, struct Bitmap* bmp, int x, int 
 	FT_Bitmap* img;
 	int i, offset;
 	FT_Error res;
-	cc_unichar uc;
+	hc_unichar uc;
 
 	if (shadow) {
 		glyphs = font->shadow_glyphs;
@@ -934,7 +934,7 @@ void SysFont_DrawText(struct DrawTextArgs* args, struct Bitmap* bmp, int x, int 
 			i++; continue; /* skip over the color code */
 		}
 
-		glyph = glyphs[(cc_uint8)c];
+		glyph = glyphs[(hc_uint8)c];
 		if (!glyph) {
 			uc  = Convert_CP437ToUnicode(c);
 			res = FT_Load_Char(face, uc, FT_LOAD_RENDER);
@@ -946,7 +946,7 @@ void SysFont_DrawText(struct DrawTextArgs* args, struct Bitmap* bmp, int x, int 
 
 			/* due to FT_LOAD_RENDER, glyph is always a bitmap one */
 			FT_Get_Glyph(face->glyph, (FT_Glyph*)&glyph); /* TODO: Check error */
-			glyphs[(cc_uint8)c] = glyph;
+			glyphs[(hc_uint8)c] = glyph;
 		}
 
 		offset = (height + descender) - glyph->top;
@@ -974,10 +974,10 @@ void SysFont_DrawText(struct DrawTextArgs* args, struct Bitmap* bmp, int x, int 
 
 	if (shadow) FT_Set_Transform(face, NULL, NULL);
 }
-#elif defined CC_BUILD_WEB
-static cc_string font_arial = String_FromConst("Arial");
+#elif defined HC_BUILD_WEB
+static hc_string font_arial = String_FromConst("Arial");
 
-const cc_string* SysFonts_UNSAFE_GetDefault(void) {
+const hc_string* SysFonts_UNSAFE_GetDefault(void) {
 	/* Fallback to Arial as default font */
 	/* TODO use serif instead?? */
 	return font_default.length ? &font_default : &font_arial;
@@ -992,12 +992,12 @@ void SysFonts_GetNames(struct StringsBuffer* buffer) {
 	int i;
 
 	for (i = 0; i < Array_Elems(font_names); i++) {
-		cc_string str = String_FromReadonly(font_names[i]);
+		hc_string str = String_FromReadonly(font_names[i]);
 		StringsBuffer_Add(buffer, &str);
 	}
 }
 
-cc_result SysFont_Make(struct FontDesc* desc, const cc_string* fontName, int size, int flags) {
+hc_result SysFont_Make(struct FontDesc* desc, const hc_string* fontName, int size, int flags) {
 	desc->size   = size;
 	desc->flags  = flags;
 	desc->height = Drawer2D_AdjHeight(size);
@@ -1018,17 +1018,17 @@ void SysFont_Free(struct FontDesc* desc) {
 }
 
 void SysFonts_SaveCache(void) { }
-cc_result SysFonts_Register(const cc_string* path, SysFont_RegisterCallback callback) {
+hc_result SysFonts_Register(const hc_string* path, SysFont_RegisterCallback callback) {
 	return ERR_NOT_SUPPORTED;
 }
 
 extern void   interop_SetFont(const char* font, int size, int flags);
 extern double interop_TextWidth(const char* text, const int len);
-extern double interop_TextDraw(const char* text, const int len, struct Bitmap* bmp, int x, int y, cc_bool shadow, const char* hex);
+extern double interop_TextDraw(const char* text, const int len, struct Bitmap* bmp, int x, int y, hc_bool shadow, const char* hex);
 
 int SysFont_TextWidth(struct DrawTextArgs* args) {
 	struct FontDesc* font = args->font;
-	cc_string left = args->text, part;
+	hc_string left = args->text, part;
 	double width   = 0;
 	char colorCode;
 
@@ -1042,14 +1042,14 @@ int SysFont_TextWidth(struct DrawTextArgs* args) {
 	return Math_Ceil(width);
 }
 
-void SysFont_DrawText(struct DrawTextArgs* args, struct Bitmap* bmp, int x, int y, cc_bool shadow) {
+void SysFont_DrawText(struct DrawTextArgs* args, struct Bitmap* bmp, int x, int y, hc_bool shadow) {
 	struct FontDesc* font = args->font;
-	cc_string left  = args->text, part;
+	hc_string left  = args->text, part;
 	BitmapCol color;
 	char colorCode = 'f';
 	double xOffset = 0;
 	char hexBuffer[7];
-	cc_string hex;
+	hc_string hex;
 
 	/* adjust y position to more closely match FreeType drawn text */
 	y += (args->font->height - args->font->size) / 2;
@@ -1073,21 +1073,21 @@ void SysFont_DrawText(struct DrawTextArgs* args, struct Bitmap* bmp, int x, int 
 		xOffset += interop_TextDraw(buffer, len, bmp, x + (int)xOffset, y, shadow, hexBuffer);
 	}
 }
-#elif defined CC_BUILD_IOS
+#elif defined HC_BUILD_IOS
 /* implemented in interop_ios.m */
 extern void interop_GetFontNames(struct StringsBuffer* buffer);
-extern cc_result interop_SysFontMake(struct FontDesc* desc, const cc_string* fontName, int size, int flags);
+extern hc_result interop_SysFontMake(struct FontDesc* desc, const hc_string* fontName, int size, int flags);
 extern void interop_SysMakeDefault(struct FontDesc* desc, int size, int flags);
 extern void interop_SysFontFree(void* handle);
 extern int interop_SysTextWidth(struct DrawTextArgs* args);
-extern void interop_SysTextDraw(struct DrawTextArgs* args, struct Bitmap* bmp, int x, int y, cc_bool shadow);
+extern void interop_SysTextDraw(struct DrawTextArgs* args, struct Bitmap* bmp, int x, int y, hc_bool shadow);
 
 void SysFonts_SaveCache(void) { }
-cc_result SysFonts_Register(const cc_string* path, SysFont_RegisterCallback callback) {
+hc_result SysFonts_Register(const hc_string* path, SysFont_RegisterCallback callback) {
 	return ERR_NOT_SUPPORTED;
 }
 
-const cc_string* SysFonts_UNSAFE_GetDefault(void) {
+const hc_string* SysFonts_UNSAFE_GetDefault(void) {
 	return &String_Empty;
 }
 
@@ -1095,7 +1095,7 @@ void SysFonts_GetNames(struct StringsBuffer* buffer) {
 	interop_GetFontNames(buffer);
 }
 
-cc_result SysFont_Make(struct FontDesc* desc, const cc_string* fontName, int size, int flags) {
+hc_result SysFont_Make(struct FontDesc* desc, const hc_string* fontName, int size, int flags) {
 	return interop_SysFontMake(desc, fontName, size, flags);
 }
 
@@ -1111,20 +1111,20 @@ int SysFont_TextWidth(struct DrawTextArgs* args) {
 	return interop_SysTextWidth(args);
 }
 
-void SysFont_DrawText(struct DrawTextArgs* args, struct Bitmap* bmp, int x, int y, cc_bool shadow) {
+void SysFont_DrawText(struct DrawTextArgs* args, struct Bitmap* bmp, int x, int y, hc_bool shadow) {
 	interop_SysTextDraw(args, bmp, x, y, shadow);
 }
 #else
 void SysFonts_SaveCache(void) { }
-cc_result SysFonts_Register(const cc_string* path, SysFont_RegisterCallback callback) {
+hc_result SysFonts_Register(const hc_string* path, SysFont_RegisterCallback callback) {
 	return ERR_NOT_SUPPORTED;
 }
 
-const cc_string* SysFonts_UNSAFE_GetDefault(void) { return &String_Empty; }
+const hc_string* SysFonts_UNSAFE_GetDefault(void) { return &String_Empty; }
 
 void SysFonts_GetNames(struct StringsBuffer* buffer) { }
 
-cc_result SysFont_Make(struct FontDesc* desc, const cc_string* fontName, int size, int flags) {
+hc_result SysFont_Make(struct FontDesc* desc, const hc_string* fontName, int size, int flags) {
 	size *= DisplayInfo.ScaleY;
 	/* Round upwards to nearest 8 */
 	size = (size + 7) & ~0x07;
@@ -1149,7 +1149,7 @@ int SysFont_TextWidth(struct DrawTextArgs* args) {
 	return FallbackFont_TextWidth(args);
 }
 
-void SysFont_DrawText(struct DrawTextArgs* args, struct Bitmap* bmp, int x, int y, cc_bool shadow) {
+void SysFont_DrawText(struct DrawTextArgs* args, struct Bitmap* bmp, int x, int y, hc_bool shadow) {
 	FallbackFont_DrawText(args, bmp, x, y, shadow);
 }
 #endif

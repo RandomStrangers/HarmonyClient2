@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_BEOS || defined CC_BUILD_HAIKU
+#if defined HC_BUILD_BEOS || defined HC_BUILD_HAIKU
 extern "C" {
 #include "Platform.h"
 #include "String.h"
@@ -13,21 +13,21 @@ extern "C" {
 /*########################################################################################################################*
 *--------------------------------------------------------Platform---------------------------------------------------------*
 *#########################################################################################################################*/
-cc_uint64 Stopwatch_Measure(void) {
+hc_uint64 Stopwatch_Measure(void) {
 	return system_time();
 }
 
-cc_uint64 Stopwatch_ElapsedMicroseconds(cc_uint64 beg, cc_uint64 end) {
+hc_uint64 Stopwatch_ElapsedMicroseconds(hc_uint64 beg, hc_uint64 end) {
 	if (end < beg) return 0;
 	return end - beg;
 }
 
-cc_result Process_StartOpen(const cc_string* args) {
-	static const cc_string https_protocol = String_FromConst("https://");
+hc_result Process_StartOpen(const hc_string* args) {
+	static const hc_string https_protocol = String_FromConst("https://");
 	char str[NATIVE_STR_LEN];
 	String_EncodeUtf8(str, args);
 
-	cc_bool https    = String_CaselessStarts(args, &https_protocol);
+	hc_bool https    = String_CaselessStarts(args, &https_protocol);
 	const char* mime = https ? "application/x-vnd.Be.URL.https" : "application/x-vnd.Be.URL.http";
 	
 	char* argv[] = { str, NULL };
@@ -39,8 +39,8 @@ cc_result Process_StartOpen(const cc_string* args) {
 *-----------------------------------------------------BeOS threading------------------------------------------------------*
 *#########################################################################################################################*/
 // NOTE: BeOS only, as haiku uses the more efficient pthreads implementation in Platform_Posix.c
-#if defined CC_BUILD_BEOS
-void Thread_Sleep(cc_uint32 milliseconds) { snooze(milliseconds * 1000); }
+#if defined HC_BUILD_BEOS
+void Thread_Sleep(hc_uint32 milliseconds) { snooze(milliseconds * 1000); }
 
 static int32 ExecThread(void* param) {
 	((Thread_StartFunc)param)();
@@ -101,7 +101,7 @@ void Waitable_Wait(void* handle) {
 	acquire_sem(id);
 }
 
-void Waitable_WaitFor(void* handle, cc_uint32 milliseconds) {
+void Waitable_WaitFor(void* handle, hc_uint32 milliseconds) {
 	int microseconds = milliseconds * 1000;
 	sem_id id = (sem_id)handle;
 	acquire_sem_etc(id, 1, B_RELATIVE_TIMEOUT, microseconds);

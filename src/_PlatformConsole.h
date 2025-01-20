@@ -1,25 +1,25 @@
-cc_bool Platform_SingleProcess = true;
+hc_bool Platform_SingleProcess = true;
 
 
 /*########################################################################################################################*
 *---------------------------------------------------------Memory----------------------------------------------------------*
 *#########################################################################################################################*/
-void* Mem_Set(void*  dst, cc_uint8 value,  unsigned numBytes) { return memset( dst, value, numBytes); }
+void* Mem_Set(void*  dst, hc_uint8 value,  unsigned numBytes) { return memset( dst, value, numBytes); }
 void* Mem_Copy(void* dst, const void* src, unsigned numBytes) { return memcpy( dst, src,   numBytes); }
 void* Mem_Move(void* dst, const void* src, unsigned numBytes) { return memmove(dst, src,   numBytes); }
 
 #ifndef OVERRIDE_MEM_FUNCTIONS
-void* Mem_TryAlloc(cc_uint32 numElems, cc_uint32 elemsSize) {
-	cc_uint32 size = CalcMemSize(numElems, elemsSize);
+void* Mem_TryAlloc(hc_uint32 numElems, hc_uint32 elemsSize) {
+	hc_uint32 size = CalcMemSize(numElems, elemsSize);
 	return size ? malloc(size) : NULL;
 }
 
-void* Mem_TryAllocCleared(cc_uint32 numElems, cc_uint32 elemsSize) {
+void* Mem_TryAllocCleared(hc_uint32 numElems, hc_uint32 elemsSize) {
 	return calloc(numElems, elemsSize);
 }
 
-void* Mem_TryRealloc(void* mem, cc_uint32 numElems, cc_uint32 elemsSize) {
-	cc_uint32 size = CalcMemSize(numElems, elemsSize);
+void* Mem_TryRealloc(void* mem, hc_uint32 numElems, hc_uint32 elemsSize) {
+	hc_uint32 size = CalcMemSize(numElems, elemsSize);
 	return size ? realloc(mem, size) : NULL;
 }
 
@@ -32,24 +32,24 @@ void Mem_Free(void* mem) {
 /*########################################################################################################################*
 *-----------------------------------------------------Directory/File------------------------------------------------------*
 *#########################################################################################################################*/
-void Directory_GetCachePath(cc_string* path) { }
+void Directory_GetCachePath(hc_string* path) { }
 
 
 /*########################################################################################################################*
 *-----------------------------------------------------Process/Module------------------------------------------------------*
 *#########################################################################################################################*/
-cc_result Process_StartGame2(const cc_string* args, int numArgs) {
-	Platform_LogConst("START CLASSICUBE");
+hc_result Process_StartGame2(const hc_string* args, int numArgs) {
+	Platform_LogConst("START HARMONY CLIENT");
 	return SetGameArgs(args, numArgs);
 }
 
-int Platform_GetCommandLineArgs(int argc, STRING_REF char** argv, cc_string* args) {
+int Platform_GetCommandLineArgs(int argc, STRING_REF char** argv, hc_string* args) {
 	if (gameHasArgs) return GetGameArgs(args);
 	// Consoles *sometimes* doesn't use argv[0] for program name and so argc will be 0
 	//  (e.g. when running via some emulators)
 	if (!argc) return 0;
 
-#if defined CC_BUILD_PS1 || defined CC_BUILD_SATURN
+#if defined HC_BUILD_PS1 || defined HC_BUILD_SATURN
 	// When running in DuckStation at least, argv was a five element array of empty strings ???
 	return 0;
 #endif
@@ -67,43 +67,43 @@ int Platform_GetCommandLineArgs(int argc, STRING_REF char** argv, cc_string* arg
 	return count;
 }
 
-cc_result Platform_SetDefaultCurrentDirectory(int argc, char **argv) {
+hc_result Platform_SetDefaultCurrentDirectory(int argc, char **argv) {
 	return 0;
 }
 
-void Process_Exit(cc_result code) { exit(code); }
+void Process_Exit(hc_result code) { exit(code); }
 
 
 /*########################################################################################################################*
 *--------------------------------------------------------Updater----------------------------------------------------------*
 *#########################################################################################################################*/
-cc_bool Updater_Supported = false;
-cc_bool Updater_Clean(void) { return true; }
+hc_bool Updater_Supported = false;
+hc_bool Updater_Clean(void) { return true; }
 
 const struct UpdaterInfo Updater_Info = { "&eCompile latest source code to update", 0 };
 
-cc_result Updater_Start(const char** action) {
+hc_result Updater_Start(const char** action) {
 	*action = "Starting game";
 	return ERR_NOT_SUPPORTED;
 }
 
-cc_result Updater_GetBuildTime(cc_uint64* timestamp) { return ERR_NOT_SUPPORTED; }
+hc_result Updater_GetBuildTime(hc_uint64* timestamp) { return ERR_NOT_SUPPORTED; }
 
-cc_result Updater_MarkExecutable(void) { return ERR_NOT_SUPPORTED; }
+hc_result Updater_MarkExecutable(void) { return ERR_NOT_SUPPORTED; }
 
-cc_result Updater_SetNewBuildTime(cc_uint64 timestamp) { return ERR_NOT_SUPPORTED; }
+hc_result Updater_SetNewBuildTime(hc_uint64 timestamp) { return ERR_NOT_SUPPORTED; }
 
 
 /*########################################################################################################################*
 *-------------------------------------------------------Dynamic lib-------------------------------------------------------*
 *#########################################################################################################################*/
 // TODO can this actually be supported somehow
-const cc_string DynamicLib_Ext = String_FromConst(".so");
+const hc_string DynamicLib_Ext = String_FromConst(".so");
 
-void* DynamicLib_Load2(const cc_string* path)      { return NULL; }
+void* DynamicLib_Load2(const hc_string* path)      { return NULL; }
 void* DynamicLib_Get2(void* lib, const char* name) { return NULL; }
 
-cc_bool DynamicLib_DescribeError(cc_string* dst) {
+hc_bool DynamicLib_DescribeError(hc_string* dst) {
 	String_AppendConst(dst, "Dynamic linking unsupported");
 	return true;
 }
@@ -114,8 +114,8 @@ cc_bool DynamicLib_DescribeError(cc_string* dst) {
 *-------------------------------------------------------Encryption--------------------------------------------------------*
 *#########################################################################################################################*/
 /* Encrypts data using XTEA block cipher, with OS specific method to get machine-specific key */
-static void EncipherBlock(cc_uint32* v, const cc_uint32* key, cc_string* dst) {
-	cc_uint32 v0 = v[0], v1 = v[1], sum = 0, delta = 0x9E3779B9;
+static void EncipherBlock(hc_uint32* v, const hc_uint32* key, hc_string* dst) {
+	hc_uint32 v0 = v[0], v1 = v[1], sum = 0, delta = 0x9E3779B9;
 
     for (int i = 0; i < 12; i++) 
 	{
@@ -127,8 +127,8 @@ static void EncipherBlock(cc_uint32* v, const cc_uint32* key, cc_string* dst) {
 	String_AppendAll(dst, v, 8);
 }
 
-static void DecipherBlock(cc_uint32* v, const cc_uint32* key) {
-	cc_uint32 v0 = v[0], v1 = v[1], delta = 0x9E3779B9, sum = delta * 12;
+static void DecipherBlock(hc_uint32* v, const hc_uint32* key) {
+	hc_uint32 v0 = v[0], v1 = v[1], delta = 0x9E3779B9, sum = delta * 12;
 
     for (int i = 0; i < 12; i++) 
 	{
@@ -145,12 +145,12 @@ static void DecipherBlock(cc_uint32* v, const cc_uint32* key) {
 #define MACHINEID_LEN 32
 #define ENC_SIZE 8 /* 2 32 bit ints per block */
 
-static cc_result GetMachineID(cc_uint32* key);
+static hc_result GetMachineID(hc_uint32* key);
 
-cc_result Platform_Encrypt(const void* data, int len, cc_string* dst) {
-	const cc_uint8* src = (const cc_uint8*)data;
-	cc_uint32 header[4], key[4] = { 0 };
-	cc_result res;
+hc_result Platform_Encrypt(const void* data, int len, hc_string* dst) {
+	const hc_uint8* src = (const hc_uint8*)data;
+	hc_uint32 header[4], key[4] = { 0 };
+	hc_result res;
 	if ((res = GetMachineID(key))) return res;
 
 	header[0] = ENC1; header[1] = ENC2;
@@ -166,10 +166,10 @@ cc_result Platform_Encrypt(const void* data, int len, cc_string* dst) {
 	return 0;
 }
 
-cc_result Platform_Decrypt(const void* data, int len, cc_string* dst) {
-	const cc_uint8* src = (const cc_uint8*)data;
-	cc_uint32 header[4], key[4] = { 0 };
-	cc_result res;
+hc_result Platform_Decrypt(const void* data, int len, hc_string* dst) {
+	const hc_uint8* src = (const hc_uint8*)data;
+	hc_uint32 header[4], key[4] = { 0 };
+	hc_result res;
 	int dataLen;
 
 	/* Total size must be >= header size */

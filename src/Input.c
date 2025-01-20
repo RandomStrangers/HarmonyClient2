@@ -11,26 +11,25 @@
 #include "Camera.h"
 #include "Inventory.h"
 #include "World.h"
-#include "Event.h"
 #include "Window.h"
 #include "Screens.h"
 #include "Block.h"
 
 struct _InputState Input;
 /* Raises PointerEvents.Up or PointerEvents.Down */
-static void Pointer_SetPressed(int idx, cc_bool pressed);
+static void Pointer_SetPressed(int idx, hc_bool pressed);
 
 
 /*########################################################################################################################*
 *------------------------------------------------------Touch support------------------------------------------------------*
 *#########################################################################################################################*/
-#ifdef CC_BUILD_TOUCH
+#ifdef HC_BUILD_TOUCH
 struct TouchPointer touches[INPUT_MAX_POINTERS];
 
 int Pointers_Count;
 int Input_TapMode  = INPUT_MODE_PLACE;
 int Input_HoldMode = INPUT_MODE_DELETE;
-cc_bool Input_TouchMode;
+hc_bool Input_TouchMode;
 
 static void MouseStatePress(int button);
 static void MouseStateRelease(int button);
@@ -41,17 +40,17 @@ static void ClearTouches(void) {
 	Pointers_Count = Input_TouchMode ? 0 : 1;
 }
 
-void Input_SetTouchMode(cc_bool enabled) {
+void Input_SetTouchMode(hc_bool enabled) {
 	Input_TouchMode = enabled;
 	ClearTouches();
 }
 
-static cc_bool MovedFromBeg(int i, int x, int y) {
+static hc_bool MovedFromBeg(int i, int x, int y) {
 	return Math_AbsI(x - touches[i].begX) > Display_ScaleX(5) ||
 		   Math_AbsI(y - touches[i].begY) > Display_ScaleY(5);
 }
 
-static cc_bool TryUpdateTouch(long id, int x, int y) {
+static hc_bool TryUpdateTouch(long id, int x, int y) {
 	int i;
 	for (i = 0; i < Pointers_Count; i++) 
 	{
@@ -212,7 +211,7 @@ const char* Input_DisplayNames[INPUT_COUNT] = {
 };
 
 void Input_SetPressed(int key) {
-	cc_bool wasPressed = Input.Pressed[key];
+	hc_bool wasPressed = Input.Pressed[key];
 	Input.Pressed[key] = true;
 
 	if (key <= CCMOUSE_M) Event_RaiseInput(&InputEvents._down, key, wasPressed, &NormDevice);
@@ -272,18 +271,18 @@ void Input_CalcDelta(int key, struct InputDevice* device, int* horDelta, int* ve
 	if (key == device->downButton  || key == CCKEY_KP2) *verDelta = +1;
 }
 
-static cc_bool NormDevice_IsPressed(struct InputDevice* device, int key) { 
+static hc_bool NormDevice_IsPressed(struct InputDevice* device, int key) { 
 	return Input.Pressed[key]; 
 }
 
-static cc_bool PadDevice_IsPressed(struct InputDevice* device, int key) {
+static hc_bool PadDevice_IsPressed(struct InputDevice* device, int key) {
 	struct GamepadDevice* gamepad = (struct GamepadDevice*)device;
 	if (!Input_IsPadButton(key)) return false;
 	
 	return gamepad->pressed[key - GAMEPAD_BEG_BTN];
 }
 
-static cc_bool TouchDevice_IsPressed(struct InputDevice* device, int key) { 
+static hc_bool TouchDevice_IsPressed(struct InputDevice* device, int key) { 
 	return false; 
 }
 
@@ -326,7 +325,7 @@ struct InputDevice TouchDevice = {
 *#########################################################################################################################*/
 struct Pointer Pointers[INPUT_MAX_POINTERS];
 
-void Pointer_SetPressed(int idx, cc_bool pressed) {
+void Pointer_SetPressed(int idx, hc_bool pressed) {
 	if (pressed) {
 		Event_RaiseInt(&PointerEvents.Down, idx);
 	} else {
@@ -370,7 +369,7 @@ void Pointer_SetPosition(int idx, int x, int y) {
 	/* TODO: reset to -1, -1 when pointer is removed */
 	Pointers[idx].x = x; Pointers[idx].y = y;
 	
-#ifdef CC_BUILD_TOUCH
+#ifdef HC_BUILD_TOUCH
 	if (Input_TouchMode && !(touches[idx].type & TOUCH_TYPE_GUI)) return;
 #endif
 	Event_RaiseInt(&PointerEvents.Moved, idx);
@@ -450,7 +449,7 @@ static const char* const bindNames[BIND_COUNT] = {
 
 
 #define BindMapping2_Claims(mapping, btn) (device->IsPressed(device, (mapping)->button1) && (mapping)->button2 == btn)
-cc_bool InputBind_Claims(InputBind binding, int btn, struct InputDevice* device) {
+hc_bool InputBind_Claims(InputBind binding, int btn, struct InputDevice* device) {
 	BindMapping* mappings = device->currentBinds;
 	BindMapping* bind = &mappings[binding];
 	int i;
@@ -465,11 +464,11 @@ cc_bool InputBind_Claims(InputBind binding, int btn, struct InputDevice* device)
 }
 
 void InputBind_Load(const struct InputDevice* device) {
-	cc_string name; char nameBuffer[STRING_SIZE + 1];
+	hc_string name; char nameBuffer[STRING_SIZE + 1];
 	const BindMapping* defaults = device->defaultBinds;
 	BindMapping* keybinds = device->currentBinds;
 	BindMapping mapping;
-	cc_string str, part1, part2;
+	hc_string str, part1, part2;
 	int i;
 
 	String_InitArray_NT(name, nameBuffer);
@@ -494,8 +493,8 @@ void InputBind_Load(const struct InputDevice* device) {
 }
 
 void InputBind_Set(InputBind binding, int btn, const struct InputDevice* device) {
-	cc_string name; char nameBuffer[STRING_SIZE];
-	cc_string value;
+	hc_string name; char nameBuffer[STRING_SIZE];
+	hc_string value;
 	String_InitArray(name, nameBuffer);
 
 	String_Format1(&name, device->bindPrefix, bindNames[binding]);
@@ -506,7 +505,7 @@ void InputBind_Set(InputBind binding, int btn, const struct InputDevice* device)
 }
 
 void InputBind_Reset(InputBind binding, const struct InputDevice* device) {
-	cc_string name; char nameBuffer[STRING_SIZE];
+	hc_string name; char nameBuffer[STRING_SIZE];
 	String_InitArray(name, nameBuffer);
 	
 	String_Format1(&name, device->bindPrefix, bindNames[binding]);
@@ -525,7 +524,7 @@ int Gamepad_AxisSensitivity[2] = { AXIS_SENSI_NORMAL, AXIS_SENSI_NORMAL };
 static const float axis_sensiFactor[] = { 0.25f, 0.5f, 1.0f, 2.0f, 4.0f };
 struct GamepadDevice Gamepad_Devices[INPUT_MAX_GAMEPADS];
 
-static void Gamepad_Apply(int port, int btn, cc_bool was, int pressed) {
+static void Gamepad_Apply(int port, int btn, hc_bool was, int pressed) {
 	struct InputDevice* device = &Gamepad_Devices[port].base;
 	device->mappedIndex = Game_MapState(device->rawIndex);
 	

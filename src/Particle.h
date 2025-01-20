@@ -1,8 +1,8 @@
-#ifndef CC_PARTICLE_H
-#define CC_PARTICLE_H
+#ifndef HC_PARTICLE_H
+#define HC_PARTICLE_H
 #include "Vectors.h"
 #include "PackedCol.h"
-CC_BEGIN_HEADER
+HC_BEGIN_HEADER
 
 /* 
 Represents particle effects, and manages rendering and spawning particles
@@ -24,10 +24,10 @@ struct Particle {
 struct CustomParticleEffect {
 	TextureRec rec;
 	PackedCol tintCol;
-	cc_uint8 frameCount;
-	cc_uint8 particleCount;
-	cc_uint8 collideFlags;
-	cc_bool fullBright;
+	hc_uint8 frameCount;
+	hc_uint8 particleCount;
+	hc_uint8 collideFlags;
+	hc_bool fullBright;
 	float size;
 	float sizeVariation;
 	float spread; /* how far from the spawnpoint their location can vary */
@@ -46,5 +46,5 @@ void Particles_BreakBlockEffect(IVec3 coords, BlockID oldBlock, BlockID block);
 void Particles_RainSnowEffect(float x, float y, float z);
 void Particles_CustomEffect(int effectID, float x, float y, float z, float originX, float originY, float originZ);
 
-CC_END_HEADER
+HC_END_HEADER
 #endif

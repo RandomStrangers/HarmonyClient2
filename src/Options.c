@@ -10,9 +10,9 @@
 
 struct StringsBuffer Options;
 static struct StringsBuffer changedOpts;
-cc_result Options_LoadResult;
-static cc_bool savingPaused;
-#if defined CC_BUILD_WEB || defined CC_BUILD_MOBILE || defined CC_BUILD_CONSOLE
+hc_result Options_LoadResult;
+static hc_bool savingPaused;
+#if defined HC_BUILD_WEB || defined HC_BUILD_MOBILE || defined HC_BUILD_CONSOLE
 	#define OPTIONS_SAVE_IMMEDIATELY
 #endif
 
@@ -21,8 +21,8 @@ void Options_Free(void) {
 	StringsBuffer_Clear(&changedOpts);
 }
 
-static cc_bool HasChanged(const cc_string* key) {
-	cc_string entry;
+static hc_bool HasChanged(const hc_string* key) {
+	hc_string entry;
 	int i;
 
 	for (i = 0; i < changedOpts.count; i++) {
@@ -32,8 +32,8 @@ static cc_bool HasChanged(const cc_string* key) {
 	return false;
 }
 
-static cc_bool Options_LoadFilter(const cc_string* entry) {
-	cc_string key, value;
+static hc_bool Options_LoadFilter(const hc_string* entry) {
+	hc_string key, value;
 	String_UNSAFE_Separate(entry, '=', &key, &value);
 	return !HasChanged(&key);
 }
@@ -46,7 +46,7 @@ void Options_Load(void) {
 }
 
 void Options_Reload(void) {
-	cc_string entry, key, value;
+	hc_string entry, key, value;
 	int i;
 
 	/* Reset all the unchanged options */
@@ -83,9 +83,9 @@ void Options_ResumeSaving(void) {
 }
 
 
-cc_bool Options_UNSAFE_Get(const char* keyRaw, cc_string* value) {
+hc_bool Options_UNSAFE_Get(const char* keyRaw, hc_string* value) {
 	int idx;
-	cc_string key = String_FromReadonly(keyRaw);
+	hc_string key = String_FromReadonly(keyRaw);
 
 	*value = EntryList_UNSAFE_Get(&Options, &key, '=');
 	if (value->length) return true; 
@@ -100,8 +100,8 @@ cc_bool Options_UNSAFE_Get(const char* keyRaw, cc_string* value) {
 	return value->length > 0;
 }
 
-void Options_Get(const char* key, cc_string* value, const char* defValue) {
-	cc_string str;
+void Options_Get(const char* key, hc_string* value, const char* defValue) {
+	hc_string str;
 	Options_UNSAFE_Get(key, &str);
 	value->length = 0;
 
@@ -113,7 +113,7 @@ void Options_Get(const char* key, cc_string* value, const char* defValue) {
 }
 
 int Options_GetInt(const char* key, int min, int max, int defValue) {
-	cc_string str;
+	hc_string str;
 	int value;
 	if (!Options_UNSAFE_Get(key, &str))  return defValue;
 	if (!Convert_ParseInt(&str, &value)) return defValue;
@@ -122,9 +122,9 @@ int Options_GetInt(const char* key, int min, int max, int defValue) {
 	return value;
 }
 
-cc_bool Options_GetBool(const char* key, cc_bool defValue) {
-	cc_string str;
-	cc_bool value;
+hc_bool Options_GetBool(const char* key, hc_bool defValue) {
+	hc_string str;
+	hc_bool value;
 	if (!Options_UNSAFE_Get(key, &str))   return defValue;
 	if (!Convert_ParseBool(&str, &value)) return defValue;
 
@@ -132,7 +132,7 @@ cc_bool Options_GetBool(const char* key, cc_bool defValue) {
 }
 
 float Options_GetFloat(const char* key, float min, float max, float defValue) {
-	cc_string str;
+	hc_string str;
 	float value;
 	if (!Options_UNSAFE_Get(key, &str))    return defValue;
 	if (!Convert_ParseFloat(&str, &value)) return defValue;
@@ -142,13 +142,13 @@ float Options_GetFloat(const char* key, float min, float max, float defValue) {
 }
 
 int Options_GetEnum(const char* key, int defValue, const char* const* names, int namesCount) {
-	cc_string str;
+	hc_string str;
 	if (!Options_UNSAFE_Get(key, &str)) return defValue;
 	return Utils_ParseEnum(&str, defValue, names, namesCount);
 }
 
-cc_bool Options_GetColor(const char* key, cc_uint8* rgb) {
-	cc_string value, parts[3];
+hc_bool Options_GetColor(const char* key, hc_uint8* rgb) {
+	hc_string value, parts[3];
 	if (!Options_UNSAFE_Get(key, &value))   return false;
 	if (PackedCol_TryParseHex(&value, rgb)) return true;
 
@@ -160,25 +160,25 @@ cc_bool Options_GetColor(const char* key, cc_uint8* rgb) {
 }
 
 
-void Options_SetBool(const char* keyRaw, cc_bool value) {
-	static const cc_string str_true  = String_FromConst("True");
-	static const cc_string str_false = String_FromConst("False");
+void Options_SetBool(const char* keyRaw, hc_bool value) {
+	static const hc_string str_true  = String_FromConst("True");
+	static const hc_string str_false = String_FromConst("False");
 	Options_Set(keyRaw, value ? &str_true : &str_false);
 }
 
 void Options_SetInt(const char* keyRaw, int value) {
-	cc_string str; char strBuffer[STRING_INT_CHARS];
+	hc_string str; char strBuffer[STRING_INT_CHARS];
 	String_InitArray(str, strBuffer);
 	String_AppendInt(&str, value);
 	Options_Set(keyRaw, &str);
 }
 
-void Options_Set(const char* keyRaw, const cc_string* value) {
-	cc_string key = String_FromReadonly(keyRaw);
+void Options_Set(const char* keyRaw, const hc_string* value) {
+	hc_string key = String_FromReadonly(keyRaw);
 	Options_SetString(&key, value);
 }
 
-void Options_SetString(const cc_string* key, const cc_string* value) {
+void Options_SetString(const hc_string* key, const hc_string* value) {
 	if (!value || !value->length) {
 		if (!EntryList_Remove(&Options, key, '=')) return;
 	} else {
@@ -193,10 +193,10 @@ void Options_SetString(const cc_string* key, const cc_string* value) {
 	StringsBuffer_Add(&changedOpts, key);
 }
 
-void Options_SetSecure(const char* opt, const cc_string* src) {
+void Options_SetSecure(const char* opt, const hc_string* src) {
 	char data[2000], encData[1500+1];
-	cc_string tmp, enc;
-	cc_result res;
+	hc_string tmp, enc;
+	hc_result res;
 	if (!src->length) return;
 
 	String_InitArray(enc, encData);
@@ -211,11 +211,11 @@ void Options_SetSecure(const char* opt, const cc_string* src) {
 	Options_Set(opt, &tmp);
 }
 
-void Options_GetSecure(const char* opt, cc_string* dst) {
-	cc_uint8 data[1500];
+void Options_GetSecure(const char* opt, hc_string* dst) {
+	hc_uint8 data[1500];
 	int dataLen;
-	cc_string raw;
-	cc_result res;
+	hc_string raw;
+	hc_result res;
 
 	Options_UNSAFE_Get(opt, &raw);
 	if (!raw.length) return;

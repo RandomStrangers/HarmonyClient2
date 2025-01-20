@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_SWITCH
+#if defined HC_BUILD_SWITCH
 #include "_WindowBase.h"
 #include "Window.h"
 #include "Platform.h"
@@ -15,13 +15,13 @@
 #include "Gui.h"
 #include <switch.h>
 
-static cc_bool launcherMode;
+static hc_bool launcherMode;
 static Framebuffer fb;
 static PadState pad;
 static AppletHookCookie cookie;
 
 struct _DisplayData DisplayInfo;
-struct cc_window WindowInfo;
+struct hc_window WindowInfo;
 
 static void SetResolution(void) {
 	// check whether the Switch is docked
@@ -93,13 +93,13 @@ void Window_Create3D(int width, int height) {
 
 void Window_Destroy(void) { }
 
-void Window_SetTitle(const cc_string* title) { }
-void Clipboard_GetText(cc_string* value) { }
-void Clipboard_SetText(const cc_string* value) { }
+void Window_SetTitle(const hc_string* title) { }
+void Clipboard_GetText(hc_string* value) { }
+void Clipboard_SetText(const hc_string* value) { }
 
 int Window_GetWindowState(void) { return WINDOW_STATE_FULLSCREEN; }
-cc_result Window_EnterFullscreen(void) { return 0; }
-cc_result Window_ExitFullscreen(void)  { return 0; }
+hc_result Window_EnterFullscreen(void) { return 0; }
+hc_result Window_ExitFullscreen(void)  { return 0; }
 int Window_IsObscured(void)            { return 0; }
 
 void Window_Show(void) { }
@@ -206,16 +206,16 @@ void Window_AllocFramebuffer(struct Bitmap* bmp, int width, int height) {
 
 void Window_DrawFramebuffer(Rect2D r, struct Bitmap* bmp) {
 	// Retrieve the framebuffer
-	cc_uint32 stride;
-	cc_uint32* framebuf = (cc_uint32*)framebufferBegin(&fb, &stride);
+	hc_uint32 stride;
+	hc_uint32* framebuf = (hc_uint32*)framebufferBegin(&fb, &stride);
 
 	// flip upside down
-	for (cc_uint32 y = r.y; y < r.y + r.height; y++)
+	for (hc_uint32 y = r.y; y < r.y + r.height; y++)
 	{
 		BitmapCol* src = Bitmap_GetRow(bmp, y);
-		cc_uint32* dst = framebuf + y * stride / sizeof(cc_uint32);
+		hc_uint32* dst = framebuf + y * stride / sizeof(hc_uint32);
 
-		for (cc_uint32 x = r.x; x < r.x + r.width; x++)
+		for (hc_uint32 x = r.x; x < r.x + r.width; x++)
 		{
 			dst[x] = src[x];
 		}
@@ -256,7 +256,7 @@ static void GLContext_InitSurface(void) {
 *#########################################################################################################################*/
 static void OnscreenTextChanged(const char* text) {
 	char tmpBuffer[NATIVE_STR_LEN];
-	cc_string tmp = String_FromArray(tmpBuffer);
+	hc_string tmp = String_FromArray(tmpBuffer);
 	String_AppendUtf8(&tmp, text, String_Length(text));
     
 	Event_RaiseString(&InputEvents.TextChanged, &tmp);
@@ -291,7 +291,7 @@ void OnscreenKeyboard_Open(struct OpenKeyboardArgs* args) {
 
 	swkbdClose(&kbd);
 }
-void OnscreenKeyboard_SetText(const cc_string* text) { }
+void OnscreenKeyboard_SetText(const hc_string* text) { }
 void OnscreenKeyboard_Close(void) { /* TODO implement */ }
 
 
@@ -305,11 +305,11 @@ static void ShowDialogCore(const char* title, const char* msg) {
 	errorApplicationShow(&c);
 }
 
-cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
+hc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
-cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
+hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 #endif

@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_XBOX360
+#if defined HC_BUILD_XBOX360
 #include "Window.h"
 #include "Platform.h"
 #include "Input.h"
@@ -16,10 +16,10 @@
 #include <usb/usbmain.h>
 #include <pci/io.h>
 
-static cc_bool launcherMode;
+static hc_bool launcherMode;
 
 struct _DisplayData DisplayInfo;
-struct cc_window WindowInfo;
+struct hc_window WindowInfo;
 
 static uint32_t reg_read32(int reg)
 {
@@ -53,13 +53,13 @@ void Window_Create3D(int width, int height) { launcherMode = false; }
 
 void Window_Destroy(void) { }
 
-void Window_SetTitle(const cc_string* title) { }
-void Clipboard_GetText(cc_string* value) { }
-void Clipboard_SetText(const cc_string* value) { }
+void Window_SetTitle(const hc_string* title) { }
+void Clipboard_GetText(hc_string* value) { }
+void Clipboard_SetText(const hc_string* value) { }
 
 int Window_GetWindowState(void) { return WINDOW_STATE_FULLSCREEN; }
-cc_result Window_EnterFullscreen(void) { return 0; }
-cc_result Window_ExitFullscreen(void)  { return 0; }
+hc_result Window_EnterFullscreen(void) { return 0; }
+hc_result Window_ExitFullscreen(void)  { return 0; }
 int Window_IsObscured(void)            { return 0; }
 
 void Window_Show(void) { }
@@ -164,7 +164,7 @@ void Window_DrawFramebuffer(Rect2D r, struct Bitmap* bmp) {
 
 	for (int y = r.y; y < r.y + r.height; y++) 
 	{
-		cc_uint32* src = Bitmap_GetRow(bmp, y);
+		hc_uint32* src = Bitmap_GetRow(bmp, y);
 		
 		for (int x = r.x; x < r.x + r.width; x++) {
 			// TODO: Can the uint be copied directly ?
@@ -190,7 +190,7 @@ void OnscreenKeyboard_Open(struct OpenKeyboardArgs* args) {
 	VirtualKeyboard_Open(args, launcherMode);
 }
 
-void OnscreenKeyboard_SetText(const cc_string* text) {
+void OnscreenKeyboard_SetText(const hc_string* text) {
 	VirtualKeyboard_SetText(text);
 }
 
@@ -208,11 +208,11 @@ void Window_ShowDialog(const char* title, const char* msg) {
 	Platform_LogConst(msg);
 }
 
-cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
+hc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
-cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
+hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 #endif

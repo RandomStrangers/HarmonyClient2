@@ -1,7 +1,7 @@
-#ifndef CC_GUI_H
-#define CC_GUI_H
+#ifndef HC_GUI_H
+#define HC_GUI_H
 #include "Core.h"
-CC_BEGIN_HEADER
+HC_BEGIN_HEADER
 
 /* Describes and manages 2D GUI elements on screen.
    Copyright 2014-2023 ClassiCube | Licensed under BSD-3
@@ -22,29 +22,29 @@ struct Widget;
 struct InputDevice;
 extern struct IGameComponent Gui_Component;
 
-CC_VAR extern struct _GuiData {
+HC_VAR extern struct _GuiData {
 	/* The list of screens currently shown. */
 	struct Screen** Screens;
 	/* The number of screens currently shown. */
 	int ScreensCount;
 	/* Whether vanilla Minecraft Classic gui texture is used. */
-	cc_bool ClassicTexture;
+	hc_bool ClassicTexture;
 	/* Whether tab list is laid out like vanilla Minecraft Classic. */
-	cc_bool ClassicTabList;
+	hc_bool ClassicTabList;
 	/* Whether menus are laid out like vanilla Minecraft Classic. */
-	cc_bool ClassicMenu;
+	hc_bool ClassicMenu;
 	/* Whether classic-style chat screen is used */
-	cc_bool ClassicChat;
+	hc_bool ClassicChat;
 	/* Maximum number of visible chatlines on screen. Can be 0. */
 	int     Chatlines;
 	/* Whether clicking on a chatline inserts it into chat input. */
-	cc_bool ClickableChat;
+	hc_bool ClickableChat;
 	/* Whether pressing tab in chat input attempts to autocomplete player names. */
-	cc_bool TabAutocomplete;
+	hc_bool TabAutocomplete;
 	/* Whether FPS counter (and other info) is shown in top left. */
-	cc_bool ShowFPS;
+	hc_bool ShowFPS;
 	/* Whether classic-style inventory is used */
-	cc_bool ClassicInventory;
+	hc_bool ClassicInventory;
 	float RawHotbarScale, RawChatScale, RawInventoryScale, RawCrosshairScale;
 	GfxResourceID GuiTex, GuiClassicTex, IconsTex, TouchTex;
 	int DefaultLines;
@@ -53,12 +53,12 @@ CC_VAR extern struct _GuiData {
 	/* The highest priority screen that has grabbed input. */
 	struct Screen* InputGrab;
 	/* Whether chat automatically scales based on window size. */
-	cc_bool AutoScaleChat;
+	hc_bool AutoScaleChat;
 	/* Whether the touch UI is currently being displayed */
-	cc_bool TouchUI;
+	hc_bool TouchUI;
 } Gui;
 
-#ifdef CC_BUILD_TOUCH
+#ifdef HC_BUILD_TOUCH
 #define Gui_TouchUI Gui.TouchUI
 #else
 #define Gui_TouchUI false
@@ -70,8 +70,8 @@ float Gui_GetInventoryScale(void);
 float Gui_GetChatScale(void);
 float Gui_GetCrosshairScale(void);
 
-CC_NOINLINE void Gui_MakeTitleFont(struct FontDesc* font);
-CC_NOINLINE void Gui_MakeBodyFont(struct FontDesc* font);
+HC_NOINLINE void Gui_MakeTitleFont(struct FontDesc* font);
+HC_NOINLINE void Gui_MakeBodyFont(struct FontDesc* font);
 
 /* Functions for a Screen instance. */
 struct ScreenVTABLE {
@@ -92,7 +92,7 @@ struct ScreenVTABLE {
 	/* Returns non-zero if a key character press is handled. */
 	int  (*HandlesKeyPress)(void* elem, char keyChar);
 	/* Returns non-zero if on-screen keyboard text changed is handled. */
-	int  (*HandlesTextChanged)(void* elem, const cc_string* str);
+	int  (*HandlesTextChanged)(void* elem, const hc_string* str);
 	/* Returns non-zero if a pointer press is handled. */
 	int  (*HandlesPointerDown)(void* elem, int id, int x, int y);
 	/* Called when a pointer is released. */
@@ -111,10 +111,10 @@ struct ScreenVTABLE {
 	int (*HandlesPadAxis)(void* elem, int axis, float x, float y);
 };
 #define Screen_Body const struct ScreenVTABLE* VTABLE; \
-	cc_bool grabsInput;  /* Whether this screen grabs input. Causes the cursor to become visible. */ \
-	cc_bool blocksWorld; /* Whether this screen completely and opaquely covers the game world behind it. */ \
-	cc_bool closable;    /* Whether this screen is automatically closed when pressing Escape */ \
-	cc_bool dirty;       /* Whether this screens needs to have its mesh rebuilt. */ \
+	hc_bool grabsInput;  /* Whether this screen grabs input. Causes the cursor to become visible. */ \
+	hc_bool blocksWorld; /* Whether this screen completely and opaquely covers the game world behind it. */ \
+	hc_bool closable;    /* Whether this screen is automatically closed when pressing Escape */ \
+	hc_bool dirty;       /* Whether this screens needs to have its mesh rebuilt. */ \
 	int maxVertices; GfxResourceID vb; /* Vertex buffer storing the contents of the screen */ \
 	struct Widget** widgets; int numWidgets; /* The widgets/individual elements in the screen */ \
 	int selectedI, maxWidgets;
@@ -181,12 +181,12 @@ struct WidgetVTABLE {
 
 #define Widget_Body const struct WidgetVTABLE* VTABLE; \
 	int x, y, width, height;       /* Top left corner, and dimensions, of this widget */ \
-	cc_bool active;                /* Whether this widget is currently being moused over */ \
-	cc_uint8 flags;                /* Flags controlling the widget's interactability */ \
-	cc_uint8 horAnchor, verAnchor; /* The reference point for when this widget is resized */ \
+	hc_bool active;                /* Whether this widget is currently being moused over */ \
+	hc_uint8 flags;                /* Flags controlling the widget's interactability */ \
+	hc_uint8 horAnchor, verAnchor; /* The reference point for when this widget is resized */ \
 	int xOffset, yOffset;          /* Offset from the reference point */ \
 	Widget_LeftClick MenuClick; \
-	cc_pointer meta;
+	hc_pointer meta;
 
 /* Whether a widget is prevented from being interacted with */
 #define WIDGET_FLAG_DISABLED   0x01
@@ -195,7 +195,7 @@ struct WidgetVTABLE {
 /* Whether for dual screen builds, this widget still appears on */
 /*  the main game screen instead of the dedicated UI screen */
 #define WIDGET_FLAG_MAINSCREEN 0x04
-#ifdef CC_BUILD_DUALSCREEN
+#ifdef HC_BUILD_DUALSCREEN
 	#define Window_UI Window_Alt
 #else
 	#define Window_UI Window_Main
@@ -203,7 +203,7 @@ struct WidgetVTABLE {
 
 /* Represents an individual 2D gui component. */
 struct Widget { Widget_Body };
-void Widget_SetLocation(void* widget, cc_uint8 horAnchor, cc_uint8 verAnchor, int xOffset, int yOffset);
+void Widget_SetLocation(void* widget, hc_uint8 horAnchor, hc_uint8 verAnchor, int xOffset, int yOffset);
 /* Calculates where this widget should be on-screen based on its attributes. */
 /* These attributes are width/height, horAnchor/verAnchor, xOffset/yOffset */
 void Widget_CalcPosition(void* widget);
@@ -239,35 +239,35 @@ extern struct Screen* Gui_Screens[GUI_MAX_SCREENS];
 
 /* Calculates position of an element on a particular axis */
 /* For example, to calculate X position of a text widget on screen */
-int Gui_CalcPos(cc_uint8 anchor, int offset, int size, int axisLen);
+int Gui_CalcPos(hc_uint8 anchor, int offset, int size, int axisLen);
 /* Returns non-zero if the given rectangle contains the given point. */
 int Gui_Contains(int recX, int recY, int width, int height, int x, int y);
 /* Returns non-zero if one or more pointers lie within the given rectangle. */
 int Gui_ContainsPointers(int x, int y, int width, int height);
 /* Shows HUD and Status screens. */
 void Gui_ShowDefault(void);
-#ifdef CC_BUILD_TOUCH
+#ifdef HC_BUILD_TOUCH
 /* Sets whether touch UI should be displayed or not */
-void Gui_SetTouchUI(cc_bool enabled);
+void Gui_SetTouchUI(hc_bool enabled);
 #endif
 
 /* (internal) Removes the screen from the screens list. */
 /* NOTE: This does NOT perform the usual 'screens changed' behaviour. */
 void Gui_RemoveCore(struct Screen* s);
 /* Removes the screen from the screens list. */
-CC_API void Gui_Remove(struct Screen* screen);
+HC_API void Gui_Remove(struct Screen* screen);
 /* Inserts a screen into the screen lists with the given priority. */
 /* NOTE: If there is an existing screen with the same priority, it is removed. */
-CC_API void Gui_Add(struct Screen* screen, int priority);
+HC_API void Gui_Add(struct Screen* screen, int priority);
 
 /* Returns highest priority screen that has grabbed input. */
-CC_API struct Screen* Gui_GetInputGrab(void);
+HC_API struct Screen* Gui_GetInputGrab(void);
 /* Returns highest priority screen that blocks world rendering. */
 struct Screen* Gui_GetBlocksWorld(void);
 /* Returns highest priority screen that is closable. */
 struct Screen* Gui_GetClosable(void);
 /* Returns screen with the given priority */
-CC_API struct Screen* Gui_GetScreen(int priority);
+HC_API struct Screen* Gui_GetScreen(int priority);
 void Gui_UpdateInputGrab(void);
 void Gui_ShowPauseMenu(void);
 
@@ -284,7 +284,7 @@ struct TextAtlas {
 	short widths[TEXTATLAS_MAX_WIDTHS];
 	short offsets[TEXTATLAS_MAX_WIDTHS];
 };
-void TextAtlas_Make(struct TextAtlas* atlas, const cc_string* chars, struct FontDesc* font, const cc_string* prefix);
+void TextAtlas_Make(struct TextAtlas* atlas, const hc_string* chars, struct FontDesc* font, const hc_string* prefix);
 void TextAtlas_Free(struct TextAtlas* atlas);
 void TextAtlas_Add(struct TextAtlas* atlas, int charI, struct VertexTextured** vertices);
 void TextAtlas_AddInt(struct TextAtlas* atlas, int value, struct VertexTextured** vertices);
@@ -307,5 +307,5 @@ void TextAtlas_AddInt(struct TextAtlas* atlas, int value, struct VertexTextured*
 #define Widget_Render2(widget, offset)     (widget)->VTABLE->Render2(widget, offset)
 #define Widget_Layout(widget) (widget)->VTABLE->Reposition(widget)
 
-CC_END_HEADER
+HC_END_HEADER
 #endif

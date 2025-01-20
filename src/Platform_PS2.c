@@ -40,16 +40,16 @@
 #include <libcdvd.h>
 #include "_PlatformConsole.h"
 
-const cc_result ReturnCode_FileShareViolation = 1000000000; // not used
-const cc_result ReturnCode_FileNotFound       = -4;
-const cc_result ReturnCode_DirectoryExists    = -8;
+const hc_result ReturnCode_FileShareViolation = 1000000000; // not used
+const hc_result ReturnCode_FileNotFound       = -4;
+const hc_result ReturnCode_DirectoryExists    = -8;
 
-const cc_result ReturnCode_SocketInProgess  = EINPROGRESS;
-const cc_result ReturnCode_SocketWouldBlock = EWOULDBLOCK;
-const cc_result ReturnCode_SocketDropped    = EPIPE;
+const hc_result ReturnCode_SocketInProgess  = EINPROGRESS;
+const hc_result ReturnCode_SocketWouldBlock = EWOULDBLOCK;
+const hc_result ReturnCode_SocketDropped    = EPIPE;
 
-const char* Platform_AppNameSuffix = " PS2";
-cc_bool Platform_ReadonlyFilesystem;
+const char* Platform_AppNameSuffix = " (PS2)";
+hc_bool Platform_ReadonlyFilesystem;
 
 // extern unsigned char DEV9_irx[];
 // extern unsigned int  size_DEV9_irx;
@@ -72,7 +72,7 @@ void Platform_Log(const char* msg, int len) {
 }
 
 // https://stackoverflow.com/a/42340213
-static CC_INLINE int UnBCD(unsigned char bcd) {
+static HC_INLINE int UnBCD(unsigned char bcd) {
     return bcd - 6 * (bcd >> 4);
 }
 
@@ -97,7 +97,7 @@ static time_t CurrentUnixTime(void) {
 
 TimeMS DateTime_CurrentUTC(void) {
 	time_t rtc_sec = CurrentUnixTime();
-	return (cc_uint64)rtc_sec + UNIX_EPOCH_SECONDS;
+	return (hc_uint64)rtc_sec + UNIX_EPOCH_SECONDS;
 }
 
 void DateTime_CurrentLocal(struct DateTime* t) {
@@ -119,11 +119,11 @@ void DateTime_CurrentLocal(struct DateTime* t) {
 *#########################################################################################################################*/
 #define US_PER_SEC 1000000ULL
 
-cc_uint64 Stopwatch_Measure(void) { 
+hc_uint64 Stopwatch_Measure(void) { 
 	return GetTimerSystemTime();
 }
 
-cc_uint64 Stopwatch_ElapsedMicroseconds(cc_uint64 beg, cc_uint64 end) {
+hc_uint64 Stopwatch_ElapsedMicroseconds(hc_uint64 beg, h_uint64 end) {
 	if (end < beg) return 0;
 	return (end - beg) * US_PER_SEC / kBUSCLK;
 }
@@ -132,20 +132,20 @@ cc_uint64 Stopwatch_ElapsedMicroseconds(cc_uint64 beg, cc_uint64 end) {
 /*########################################################################################################################*
 *-----------------------------------------------------Directory/File------------------------------------------------------*
 *#########################################################################################################################*/
-static const cc_string root_path = String_FromConst("mass:/ClassiCube/");
+static const hc_string root_path = String_FromConst("mass:/HarmonyClient/");
 
-void Platform_EncodePath(cc_filepath* dst, const cc_string* path) {
+void Platform_EncodePath(hc_filepath* dst, const hc_string* path) {
 	char* str = dst->buffer;
 	Mem_Copy(str, root_path.buffer, root_path.length);
 	str += root_path.length;
 	String_EncodeUtf8(str, path);
 }
 
-cc_result Directory_Create(const cc_filepath* path) {
+hc_result Directory_Create(const hc_filepath* path) {
 	return fioMkdir(path->buffer);
 }
 
-int File_Exists(const cc_filepath* path) {
+int File_Exists(const hc_filepath* path) {
 	io_stat_t sb;
 	return fioGetstat(path->buffer, &sb) >= 0 && (sb.mode & FIO_SO_IFREG);
 }
@@ -162,9 +162,10 @@ static char* GetEntryName(char* src) {
 	return NULL;
 }
 
-cc_result Directory_Enum(const cc_string* dirPath, void* obj, Directory_EnumCallback callback) {
-	cc_string path; char pathBuffer[FILENAME_SIZE];
-	cc_filepath str;
+hc_result Directory_Enum(const hc_string* dirPath, void* obj, Directory_EnumCallback callback) {
+	hc_string path; 
+	char pathBuffer[FILENAME_SIZE];
+	hc_filepath str;
 	io_dirent_t entry;
 	int fd, res;
 
@@ -198,53 +199,53 @@ cc_result Directory_Enum(const cc_string* dirPath, void* obj, Directory_EnumCall
 	return res;
 }
 
-static cc_result File_Do(cc_file* file, const char* path, int mode) {
+static hc_result File_Do(hc_file* file, const char* path, int mode) {
 	int res = fioOpen(path, mode);
 	*file   = res;
 	return res < 0 ? res : 0;
 }
 
-cc_result File_Open(cc_file* file, const cc_filepath* path) {
+hc_result File_Open(hc_file* file, const hc_filepath* path) {
 	return File_Do(file, path->buffer, FIO_O_RDONLY);
 }
-cc_result File_Create(cc_file* file, const cc_filepath* path) {
+hc_result File_Create(hc_file* file, const hc_filepath* path) {
 	return File_Do(file, path->buffer, FIO_O_RDWR | FIO_O_CREAT | FIO_O_TRUNC);
 }
-cc_result File_OpenOrCreate(cc_file* file, const cc_filepath* path) {
+hc_result File_OpenOrCreate(hc_file* file, const hc_filepath* path) {
 	return File_Do(file, path->buffer, FIO_O_RDWR | FIO_O_CREAT);
 }
 
-cc_result File_Read(cc_file file, void* data, cc_uint32 count, cc_uint32* bytesRead) {
+hc_result File_Read(hc_file file, void* data, hc_uint32 count, hc_uint32* bytesRead) {
 	int res    = fioRead(file, data, count);
 	*bytesRead = res;
 	return res < 0 ? res : 0;
 }
 
-cc_result File_Write(cc_file file, const void* data, cc_uint32 count, cc_uint32* bytesWrote) {
+hc_result File_Write(hc_file file, const void* data, hc_uint32 count, hc_uint32* bytesWrote) {
 	int res     = fioWrite(file, data, count);
 	*bytesWrote = res;
 	return res < 0 ? res : 0;
 }
 
-cc_result File_Close(cc_file file) {
+hc_result File_Close(hc_file file) {
 	int res = fioClose(file);
 	return res < 0 ? res : 0;
 }
 
-cc_result File_Seek(cc_file file, int offset, int seekType) {
-	static cc_uint8 modes[3] = { SEEK_SET, SEEK_CUR, SEEK_END };
+hc_result File_Seek(hc_file file, int offset, int seekType) {
+	static hc_uint8 modes[3] = { SEEK_SET, SEEK_CUR, SEEK_END };
 	
 	int res = fioLseek(file, offset, modes[seekType]);
 	return res < 0 ? res : 0;
 }
 
-cc_result File_Position(cc_file file, cc_uint32* pos) {
+hc_result File_Position(hc_file file, hc_uint32* pos) {
 	int res = fioLseek(file, 0, SEEK_CUR);
 	*pos    = res;
 	return res < 0 ? res : 0;
 }
 
-cc_result File_Length(cc_file file, cc_uint32* len) {
+hc_result File_Length(hc_file file, hc_uint32* len) {
 	int cur_pos = fioLseek(file, 0, SEEK_CUR);
 	if (cur_pos < 0) return cur_pos; // error occurred
 	
@@ -260,7 +261,7 @@ cc_result File_Length(cc_file file, cc_uint32* len) {
 /*########################################################################################################################*
 *--------------------------------------------------------Threading--------------------------------------------------------*
 *#########################################################################################################################*/
-void Thread_Sleep(cc_uint32 milliseconds) {
+void Thread_Sleep(hc_uint32 milliseconds) {
 	DelayThread(milliseconds * 1000);
 }
 
@@ -372,7 +373,7 @@ void Waitable_Wait(void* handle) {
 	if (res < 0) Logger_Abort2(res, "Signalling event");
 }
 
-void Waitable_WaitFor(void* handle, cc_uint32 milliseconds) {
+void Waitable_WaitFor(void* handle, hc_uint32 milliseconds) {
 	Logger_Abort("Can't wait for");
 	// TODO implement support
 }
@@ -492,8 +493,9 @@ int  lwip_getaddrinfo(const char *nodename, const char *servname, const struct a
 void lwip_freeaddrinfo(struct addrinfo *ai);
 int  ip4addr_aton(const char *cp, ip4_addr_t *addr);
 
-static cc_result ParseHost(const char* host, int port, cc_sockaddr* addrs, int* numValidAddrs) {
-	char portRaw[32]; cc_string portStr;
+static hc_result ParseHost(const char* host, int port, hc_sockaddr* addrs, int* numValidAddrs) {
+	char portRaw[32]; 
+	hc_string portStr;
 	struct addrinfo hints = { 0 };
 	struct addrinfo* result;
 	struct addrinfo* cur;
@@ -520,7 +522,7 @@ static cc_result ParseHost(const char* host, int port, cc_sockaddr* addrs, int* 
 	return i == 0 ? ERR_INVALID_ARGUMENT : 0;
 }
 
-cc_result Socket_ParseAddress(const cc_string* address, int port, cc_sockaddr* addrs, int* numValidAddrs) {
+hc_result Socket_ParseAddress(const hc_string* address, int port, hc_sockaddr* addrs, int* numValidAddrs) {
 	struct sockaddr_in* addr4 = (struct sockaddr_in*)addrs[0].data;
 	char str[NATIVE_STR_LEN];
 	
@@ -539,14 +541,14 @@ cc_result Socket_ParseAddress(const cc_string* address, int port, cc_sockaddr* a
 	return ParseHost(str, port, addrs, numValidAddrs);
 }
 
-static cc_result GetSocketError(cc_socket s) {
+static hc_result GetSocketError(hc_socket s) {
 	socklen_t resultSize = sizeof(socklen_t);
-	cc_result res = 0;
+	hc_result res = 0;
 	lwip_getsockopt(s, SOL_SOCKET, SO_ERROR, &res, &resultSize);
 	return res;
 }
 
-cc_result Socket_Create(cc_socket* s, cc_sockaddr* addr, cc_bool nonblocking) {
+hc_result Socket_Create(hc_socket* s, hc_sockaddr* addr, hc_bool nonblocking) {
 	struct sockaddr* raw = (struct sockaddr*)addr->data;
 
 	*s = lwip_socket(raw->sa_family, SOCK_STREAM, 0);
@@ -560,14 +562,14 @@ cc_result Socket_Create(cc_socket* s, cc_sockaddr* addr, cc_bool nonblocking) {
 	return 0;
 }
 
-cc_result Socket_Connect(cc_socket s, cc_sockaddr* addr) {
+hc_result Socket_Connect(hc_socket s, hc_sockaddr* addr) {
 	struct sockaddr* raw = (struct sockaddr*)addr->data;
 
 	int res = lwip_connect(s, raw, addr->size);
 	return res == -1 ? GetSocketError(s) : 0;
 }
 
-cc_result Socket_Read(cc_socket s, cc_uint8* data, cc_uint32 count, cc_uint32* modified) {
+hc_result Socket_Read(hc_socket s, hc_uint8* data, hc_uint32 count, hc_uint32* modified) {
 	//Platform_Log1("PREPARE TO READ: %i", &count);
 	int recvCount = lwip_recv(s, data, count, 0);
 	//Platform_Log1(" .. read %i", &recvCount);
@@ -578,7 +580,7 @@ cc_result Socket_Read(cc_socket s, cc_uint8* data, cc_uint32 count, cc_uint32* m
 	*modified = 0; return ERR;
 }
 
-cc_result Socket_Write(cc_socket s, const cc_uint8* data, cc_uint32 count, cc_uint32* modified) {
+hc_result Socket_Write(hc_socket s, const hc_uint8* data, hc_uint32 count, hc_uint32* modified) {
 	//Platform_Log1("PREPARE TO WRITE: %i", &count);
 	int sentCount = lwip_send(s, data, count, 0);
 	//Platform_Log1(" .. wrote %i", &sentCount);
@@ -589,12 +591,12 @@ cc_result Socket_Write(cc_socket s, const cc_uint8* data, cc_uint32 count, cc_ui
 	*modified = 0; return ERR;
 }
 
-void Socket_Close(cc_socket s) {
+void Socket_Close(hc_socket s) {
 	lwip_shutdown(s, SHUT_RDWR);
 	lwip_close(s);
 }
 
-static cc_result Socket_Poll(cc_socket s, int mode, cc_bool* success) {
+static hc_result Socket_Poll(hc_socket s, int mode, hc_bool* success) {
 	fd_set read_set, write_set, error_set;
 	struct timeval time = { 0 };
 	int selectCount;
@@ -613,14 +615,14 @@ static cc_result Socket_Poll(cc_socket s, int mode, cc_bool* success) {
 	*success = FD_ISSET(s, &write_set) != 0; return 0;
 }
 
-cc_result Socket_CheckReadable(cc_socket s, cc_bool* readable) {
+hc_result Socket_CheckReadable(hc_socket s, hc_bool* readable) {
 	//Platform_LogConst("POLL READ");
 	return Socket_Poll(s, SOCKET_POLL_READ, readable);
 }
 
 static int tries;
-cc_result Socket_CheckWritable(cc_socket s, cc_bool* writable) {
-	cc_result res = Socket_Poll(s, SOCKET_POLL_WRITE, writable);
+hc_result Socket_CheckWritable(hc_socket s, hc_bool* writable) {
+	hc_result res = Socket_Poll(s, SOCKET_POLL_WRITE, writable);
 	//Platform_Log1("POLL WRITE: %i", &res);
 	if (res || *writable) return res;
 
@@ -725,14 +727,14 @@ void Platform_Init(void) {
 	Networking_LoadIOPModules();
 	Networking_Setup();
 	
-	cc_filepath* root = FILEPATH_RAW("mass:/ClassiCube");
+	hc_filepath* root = FILEPATH_RAW("mass:/HarmonyClient");
 	int res = Directory_Create(root);
 	Platform_Log1("ROOT DIRECTORY CREATE %i", &res);
 }
 
 void Platform_Free(void) { }
 
-cc_bool Platform_DescribeError(cc_result res, cc_string* dst) {
+hc_bool Platform_DescribeError(hc_result res, hc_string* dst) {
 	char chars[NATIVE_STR_LEN];
 	int len;
 
@@ -749,8 +751,8 @@ cc_bool Platform_DescribeError(cc_result res, cc_string* dst) {
 	return true;
 }
 
-cc_bool Process_OpenSupported = false;
-cc_result Process_StartOpen(const cc_string* args) {
+hc_bool Process_OpenSupported = false;
+hc_result Process_StartOpen(const hc_string* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
@@ -760,7 +762,7 @@ cc_result Process_StartOpen(const cc_string* args) {
 *#########################################################################################################################*/
 #define MACHINE_KEY "PS2_PS2_PS2_PS2_"
 
-static cc_result GetMachineID(cc_uint32* key) {
+static hc_result GetMachineID(hc_uint32* key) {
 	Mem_Copy(key, MACHINE_KEY, sizeof(MACHINE_KEY) - 1);
 	return 0;
 }

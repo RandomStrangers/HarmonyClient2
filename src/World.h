@@ -1,8 +1,8 @@
-#ifndef CC_WORLD_H
-#define CC_WORLD_H
+#ifndef HC_WORLD_H
+#define HC_WORLD_H
 #include "Vectors.h"
 #include "PackedCol.h"
-CC_BEGIN_HEADER
+HC_BEGIN_HEADER
 
 /* 
 Represents a fixed size 3D array of blocks and associated metadata
@@ -21,7 +21,7 @@ extern struct IGameComponent World_Component;
 /* TODO: Swap Y and Z? Make sure to update MapRenderer's ResetChunkCache and ClearChunkCache methods! */
 
 
-CC_VAR extern struct _WorldData {
+HC_VAR extern struct _WorldData {
 	/* The blocks in the world. */
 	BlockRaw* Blocks;
 #ifdef EXTENDED_BLOCKS
@@ -40,7 +40,7 @@ CC_VAR extern struct _WorldData {
 	/* Adds one Y coordinate to a packed index. */
 	int OneY;
 	/* Unique identifier for this world. */
-	cc_uint8 Uuid[WORLD_UUID_LEN];
+	hc_uint8 Uuid[WORLD_UUID_LEN];
 
 #ifdef EXTENDED_BLOCKS
 	/* Masks access to World.Blocks/World.Blocks2 */
@@ -49,11 +49,11 @@ CC_VAR extern struct _WorldData {
 #endif
 	/* Whether the world has finished loading/generating. */
 	/* NOTE: Blocks may still be NULL. (e.g. error during loading) */
-	cc_bool Loaded;
+	hc_bool Loaded;
 	/* Point in time the current world was last saved at */
 	double LastSave;
 	/* Default name of the world when saving */
-	cc_string Name;
+	hc_string Name;
 	/* Number of chunks on each axis the world is subdivided into */
 	int ChunksX, ChunksY, ChunksZ;
 	/* Number of chunks in the world, or ChunksX * ChunksY * ChunksZ */
@@ -66,13 +66,13 @@ CC_VAR extern struct _WorldData {
 void World_Reset(void);
 /* Sets up state and raises WorldEvents.NewMap event */
 /* NOTE: This implicitly calls World_Reset. */
-CC_API void World_NewMap(void);
+HC_API void World_NewMap(void);
 /* Sets blocks array/dimensions of the map and raises WorldEvents.MapLoaded event */
 /* May also sets some environment settings like border/clouds height, if they are -1 */
-CC_API void World_SetNewMap(BlockRaw* blocks, int width, int height, int length);
+HC_API void World_SetNewMap(BlockRaw* blocks, int width, int height, int length);
 /* Sets the various dimension and max coordinate related variables. */
 /* NOTE: This is an internal API. Use World_SetNewMap instead. */
-CC_NOINLINE void World_SetDimensions(int width, int height, int length);
+HC_NOINLINE void World_SetDimensions(int width, int height, int length);
 void World_OutOfMemory(void);
 
 #ifdef EXTENDED_BLOCKS
@@ -83,7 +83,7 @@ void World_SetMapUpper(BlockRaw* blocks);
 
 /* Gets the block at the given coordinates. */
 /* NOTE: Does NOT check that the coordinates are inside the map. */
-static CC_INLINE BlockID World_GetBlock(int x, int y, int z) {
+static HC_INLINE BlockID World_GetBlock(int x, int y, int z) {
 	int i = World_Pack(x, y, z);
 	return (BlockID)World_GetRawBlock(i);
 }
@@ -104,13 +104,13 @@ void World_SetBlock(int x, int y, int z, BlockID block);
 BlockID World_SafeGetBlock(int x, int y, int z);
 
 /* Whether the given coordinates lie inside the map. */
-static CC_INLINE cc_bool World_Contains(int x, int y, int z) {
+static HC_INLINE hc_bool World_Contains(int x, int y, int z) {
 	return (unsigned)x < (unsigned)World.Width
 		&& (unsigned)y < (unsigned)World.Height
 		&& (unsigned)z < (unsigned)World.Length;
 }
 /* Whether the given coordinates lie horizontally inside the map. */
-static CC_INLINE cc_bool World_ContainsXZ(int x, int z) {
+static HC_INLINE hc_bool World_ContainsXZ(int x, int z) {
 	return (unsigned)x < (unsigned)World.Width 
 		&& (unsigned)z < (unsigned)World.Length;
 }
@@ -124,7 +124,7 @@ enum EnvVar {
 	ENV_VAR_LAVALIGHT_COLOR, ENV_VAR_LAMPLIGHT_COLOR
 };
 
-CC_VAR extern struct _EnvData {
+HC_VAR extern struct _EnvData {
 	BlockID EdgeBlock, SidesBlock;
 	int EdgeHeight, SidesOffset;
 	int CloudsHeight;
@@ -155,58 +155,58 @@ extern const char* const Weather_Names[3];
 
 /* Resets all environment settings to default. */
 /* NOTE: Unlike Env_Set functions, DOES NOT raise EnvVarChanged event. */
-CC_API void Env_Reset(void);
+HC_API void Env_Reset(void);
 
 /* Sets the edge/horizon block. (default water) */
-CC_API void Env_SetEdgeBlock(BlockID block);
+HC_API void Env_SetEdgeBlock(BlockID block);
 /* Sets the sides/border block. (default bedrock) */
-CC_API void Env_SetSidesBlock(BlockID block);
+HC_API void Env_SetSidesBlock(BlockID block);
 /* Sets the edge/horizon height. (default height/2) */
-CC_API void Env_SetEdgeHeight(int height);
+HC_API void Env_SetEdgeHeight(int height);
 /* Sets offset of sides/border from horizon. (default -2) */
-CC_API void Env_SetSidesOffset(int offset);
+HC_API void Env_SetSidesOffset(int offset);
 /* Sets clouds height. (default height+2)*/
-CC_API void Env_SetCloudsHeight(int height);
+HC_API void Env_SetCloudsHeight(int height);
 /* Sets how fast clouds move. (default 1) */
 /* Negative speeds move in opposite direction. */
-CC_API void Env_SetCloudsSpeed(float speed);
+HC_API void Env_SetCloudsSpeed(float speed);
 
 /* Sets how fast rain/snow falls. (default 1) */
 /* Negative speeds makes rain/snow fall upwards. */
-CC_API void Env_SetWeatherSpeed(float speed);
+HC_API void Env_SetWeatherSpeed(float speed);
 /* Sets how quickly rain/snow fades over distance. (default 1) */
-CC_API void Env_SetWeatherFade(float rate);
+HC_API void Env_SetWeatherFade(float rate);
 /* Sets the weather of the map. (default sun) */
 /* Can be sun/rain/snow, see WEATHER_ enum. */
-CC_API void Env_SetWeather(int weather);
+HC_API void Env_SetWeather(int weather);
 /* Sets whether exponential/smooth fog is used. (default false) */
-CC_API void Env_SetExpFog(cc_bool expFog);
+HC_API void Env_SetExpFog(hc_bool expFog);
 /* Sets how quickly skybox rotates/spins horizontally. (default 0) */
 /* speed is in rotations/second, so '2' completes two full spins per second. */
-CC_API void Env_SetSkyboxHorSpeed(float speed);
+HC_API void Env_SetSkyboxHorSpeed(float speed);
 /* Sets how quickly skybox rotates/spins vertically. (default 0) */
 /* speed is in rotations/second, so '2' completes two full spins per second. */
-CC_API void Env_SetSkyboxVerSpeed(float speed);
+HC_API void Env_SetSkyboxVerSpeed(float speed);
 
 /* Sets colour of the sky above clouds. (default #99CCFF) */
-CC_API void Env_SetSkyCol(PackedCol color);
+HC_API void Env_SetSkyCol(PackedCol color);
 /* Sets base colour of the horizon fog. (default #FFFFFF) */
 /* Actual fog colour is blended between sky and fog colours, based on view distance. */
-CC_API void Env_SetFogCol(PackedCol color);
+HC_API void Env_SetFogCol(PackedCol color);
 /* Sets colour of clouds. (default #FFFFFF) */
-CC_API void Env_SetCloudsCol(PackedCol color);
+HC_API void Env_SetCloudsCol(PackedCol color);
 /* Sets colour of the skybox. (default #FFFFFF) */
-CC_API void Env_SetSkyboxCol(PackedCol color);
+HC_API void Env_SetSkyboxCol(PackedCol color);
 /* Sets colour of sunlight. (default #FFFFFF) */
 /* This is the colour used for lighting when not underground. */
-CC_API void Env_SetSunCol(PackedCol color);
+HC_API void Env_SetSunCol(PackedCol color);
 /* Sets colour of shadow. (default #9B9B9B) */
 /* This is the colour used for lighting when underground. */
-CC_API void Env_SetShadowCol(PackedCol color);
+HC_API void Env_SetShadowCol(PackedCol color);
 /* Sets colour that bright natural blocks cast with fancy lighting. (default #FFEBC6) */
-CC_API void Env_SetLavaLightCol(PackedCol color);
+HC_API void Env_SetLavaLightCol(PackedCol color);
 /* Sets colour that bright artificial blocks cast with fancy lighting. (default #FFFFFF) */
-CC_API void Env_SetLampLightCol(PackedCol color);
+HC_API void Env_SetLampLightCol(PackedCol color);
 
 #define RESPAWN_NOT_FOUND -100000.0f
 /* Finds the highest Y coordinate of any solid block that intersects the given bounding box */
@@ -217,5 +217,5 @@ float Respawn_HighestSolidY(struct AABB* bb);
 /* Works by iterating downwards from top of world until solid ground is found. */
 Vec3 Respawn_FindSpawnPosition(float x, float z, Vec3 modelSize);
 
-CC_END_HEADER
+HC_END_HEADER
 #endif

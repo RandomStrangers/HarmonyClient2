@@ -1,5 +1,5 @@
 #include "Core.h"
-#if CC_WIN_BACKEND == CC_WIN_BACKEND_BEOS
+#if HC_WIN_BACKEND == HC_WIN_BACKEND_BEOS
 
 extern "C" {
 #include "_WindowBase.h"
@@ -33,23 +33,23 @@ static BView* view_handle;
 static BGLView* view_3D;
 
 // Event management
-enum CCEventType {
+enum HCEventType {
 	CC_NONE,
 	CC_MOUSE_SCROLL, CC_MOUSE_DOWN, CC_MOUSE_UP, CC_MOUSE_MOVE,
 	CC_KEY_DOWN, CC_KEY_UP, CC_KEY_INPUT,
 	CC_WIN_RESIZED, CC_WIN_FOCUS, CC_WIN_REDRAW, CC_WIN_QUIT,
 	CC_RAW_MOUSE
 };
-union CCEventValue { float f32; int i32; void* ptr; };
-struct CCEvent {
+union HCEventValue { float f32; int i32; void* ptr; };
+struct HCEvent {
 	int type;
-	CCEventValue v1, v2;
+	HCEventValue v1, v2;
 };
 
 #define EVENTS_DEFAULT_MAX 30
 static void* events_mutex;
 static int events_count, events_capacity;
-static CCEvent* events_list, events_default[EVENTS_DEFAULT_MAX];
+static HCEvent* events_list, events_default[EVENTS_DEFAULT_MAX];
 
 static void Events_Init(void) {
 	events_mutex    = Mutex_Create("BeOS events");
@@ -57,20 +57,20 @@ static void Events_Init(void) {
 	events_list     = events_default;
 }
 
-static void Events_Push(const CCEvent* event) {
+static void Events_Push(const HCEvent* event) {
 	Mutex_Lock(events_mutex);
 	{
 		if (events_count >= events_capacity) {
 			Utils_Resize((void**)&events_list, &events_capacity,
-						sizeof(CCEvent), EVENTS_DEFAULT_MAX, 20);
+						sizeof(HCEvent), EVENTS_DEFAULT_MAX, 20);
 		}
 		events_list[events_count++] = *event;
 	}
 	Mutex_Unlock(events_mutex);
 }
 
-static cc_bool Events_Pull(CCEvent* event) {
-	cc_bool found = false;
+static hc_bool Events_Pull(HCEvent* event) {
+	hc_bool found = false;
 	
 	Mutex_Lock(events_mutex);
 	{
@@ -88,16 +88,16 @@ static cc_bool Events_Pull(CCEvent* event) {
 }
 
 // BApplication implementation
-class CC_BApp : public BApplication
+class HC_BApp : public BApplication
 {
 public:
-	CC_BApp() : BApplication("application/x-ClassiCube") { }
+	HC_BApp() : BApplication("application/x-HarmonyClient") { }
 	void DispatchMessage(BMessage* msg, BHandler* handler);
 };
 
 static void CallOpenFileCallback(const char* path);
-void CC_BApp::DispatchMessage(BMessage* msg, BHandler* handler) {
-	CCEvent event = { 0 };
+void HC_BApp::DispatchMessage(BMessage* msg, BHandler* handler) {
+	HCEvent event = { 0 };
 	const char* filename;
 	entry_ref fileRef;
 	
@@ -134,13 +134,13 @@ void CC_BApp::DispatchMessage(BMessage* msg, BHandler* handler) {
 }
 
 // BWindow implementation
-class CC_BWindow : public BWindow
+class HC_BWindow : public BWindow
 {
 	public:
-		CC_BWindow(BRect frame) : BWindow(frame, "", B_TITLED_WINDOW, 0) { }
+		HC_BWindow(BRect frame) : BWindow(frame, "", B_TITLED_WINDOW, 0) { }
 		void DispatchMessage(BMessage* msg, BHandler* handler);
 		
-		virtual ~CC_BWindow() {
+		virtual ~HC_BWindow() {
 			if (!view_3D) return;
 			
 			// Fixes OpenGL related crashes on exit since Mesa 21
@@ -153,12 +153,12 @@ class CC_BWindow : public BWindow
 };
 
 static void ProcessKeyInput(BMessage* msg) {
-	CCEvent event;
+	HCEvent event;
 	const char* value;
-	cc_codepoint cp;
+	hc_codepoint cp;
 	
 	if (msg->FindString("bytes", &value) != B_OK) return;
-	if (!Convert_Utf8ToCodepoint(&cp, (const cc_uint8*)value, String_Length(value))) return;
+	if (!Convert_Utf8ToCodepoint(&cp, (const hc_uint8*)value, String_Length(value))) return;
 	
 	event.type = CC_KEY_INPUT;
 	event.v1.i32 = cp;
@@ -169,7 +169,7 @@ static int last_buttons;
 static int mouse_raw_delta, mouse_is_tablet;
 
 static void UpdateMouseButton(int btn, int pressed) {
-	CCEvent event;
+	HCEvent event;
 	event.type   = pressed ? CC_MOUSE_DOWN : CC_MOUSE_UP;
 	event.v1.i32 = btn;
 	Events_Push(&event);
@@ -202,7 +202,7 @@ static void HandleMouseMovement(BMessage* msg) {
 	if (msg->FindInt32("be:delta_x", &dx) == B_OK &&
 		msg->FindInt32("be:delta_y", &dy) == B_OK) {
 	
-		CCEvent event = { 0 };
+		HCEvent event = { 0 };
 		event.type   = CC_RAW_MOUSE;
 		event.v1.i32 =  dx;
 		event.v2.i32 = -dy;
@@ -214,8 +214,8 @@ static void HandleMouseMovement(BMessage* msg) {
 	}
 }
 
-void CC_BWindow::DispatchMessage(BMessage* msg, BHandler* handler) {
-	CCEvent event = { 0 };
+void HC_BWindow::DispatchMessage(BMessage* msg, BHandler* handler) {
+	HCEvent event = { 0 };
 	BPoint where;
 	float delta;
 	int32 value, width, height;
@@ -300,7 +300,7 @@ void CC_BWindow::DispatchMessage(BMessage* msg, BHandler* handler) {
 
 
 static void AppThread(void) {
-	app_handle = new CC_BApp();
+	app_handle = new HC_BApp();
 	// runs forever
 	app_handle->Run();
 	// because there are multiple other threads relying
@@ -350,7 +350,7 @@ static void DoCreateWindow(int width, int height) {
 	//  so need to subtract 1 to end up with correct width/height
 	int x = Display_CentreX(width), y = Display_CentreY(height);
 	BRect frame(x, y, x + width - 1, y + height - 1);
-	win_handle = new CC_BWindow(frame);
+	win_handle = new HC_BWindow(frame);
 	
 	Window_Main.Exists     = true;
 	Window_Main.Handle.ptr = win_handle;
@@ -364,14 +364,14 @@ static void DoCreateWindow(int width, int height) {
 
 void Window_Create2D(int width, int height) {
 	DoCreateWindow(width, height);
-	view_handle = new BView(win_handle->Bounds(), "CC_LAUNCHER",
+	view_handle = new BView(win_handle->Bounds(), "HC_LAUNCHER",
 						B_FOLLOW_ALL, 0);
 	win_handle->AddChild(view_handle);
 }
 
 void Window_Create3D(int width, int height) {
 	DoCreateWindow(width, height);
-	view_3D = new BGLView(win_handle->Bounds(), "CC_GAME",
+	view_3D = new BGLView(win_handle->Bounds(), "HC_GAME",
 						B_FOLLOW_ALL, B_FRAME_EVENTS,
 						BGL_RGB | BGL_ALPHA | BGL_DOUBLE | BGL_DEPTH);
 	view_handle = view_3D;
@@ -381,7 +381,7 @@ void Window_Create3D(int width, int height) {
 void Window_Destroy(void) {
 }
 
-void Window_SetTitle(const cc_string* title) {
+void Window_SetTitle(const hc_string* title) {
 	char raw[NATIVE_STR_LEN];
 	String_EncodeUtf8(raw, title);
 	
@@ -390,7 +390,7 @@ void Window_SetTitle(const cc_string* title) {
 	win_handle->Unlock();
 }
 
-void Clipboard_GetText(cc_string* value) {
+void Clipboard_GetText(hc_string* value) {
 	if (!be_clipboard->Lock()) return;
 	
 	BMessage* clip  = be_clipboard->Data();
@@ -403,7 +403,7 @@ void Clipboard_GetText(cc_string* value) {
 	be_clipboard->Unlock();
 }
 
-void Clipboard_SetText(const cc_string* value) {
+void Clipboard_SetText(const hc_string* value) {
 	char str[NATIVE_STR_LEN];
 	int str_len = String_EncodeUtf8(str, value);
 	
@@ -418,13 +418,13 @@ void Clipboard_SetText(const cc_string* value) {
 }
 
 static BRect win_rect;
-static cc_bool win_fullscreen;
+static hc_bool win_fullscreen;
 
 int Window_GetWindowState(void) {
 	return win_fullscreen ? WINDOW_STATE_FULLSCREEN : WINDOW_STATE_NORMAL;
 }
 
-cc_result Window_EnterFullscreen(void) {
+hc_result Window_EnterFullscreen(void) {
 	// TODO is there a better fullscreen API to use
 	win_fullscreen = true;
 	win_rect = win_handle->Frame();
@@ -440,7 +440,7 @@ cc_result Window_EnterFullscreen(void) {
 	win_handle->Unlock();
 	return 0;
 }
-cc_result Window_ExitFullscreen(void) {
+hc_result Window_ExitFullscreen(void) {
 	win_fullscreen = false;
 	
 	win_handle->Lock();
@@ -471,7 +471,7 @@ void Window_RequestClose(void) {
 	Event_RaiseVoid(&WindowEvents.Closing);
 }
 
-static const cc_uint8 key_map[] = {
+static const hc_uint8 key_map[] = {
 	/* 0x00 */ 0,CCKEY_ESCAPE,CCKEY_F1,CCKEY_F2, CCKEY_F3,CCKEY_F4,CCKEY_F5,CCKEY_F6, 
 	/* 0x08 */ CCKEY_F7,CCKEY_F8,CCKEY_F9,CCKEY_F10, CCKEY_F11,CCKEY_F12,CCKEY_PRINTSCREEN,CCKEY_SCROLLLOCK,
 	/* 0x10 */ CCKEY_PAUSE,CCKEY_TILDE,'1','2', '3','4','5','6',
@@ -495,7 +495,7 @@ static int MapNativeKey(int raw) {
 }
 
 void Window_ProcessEvents(float delta) {
-	CCEvent event;
+	HCEvent event;
 	int key;
 	
 	while (Events_Pull(&event))
@@ -574,7 +574,7 @@ void Cursor_SetPosition(int x, int y) {
 	set_mouse_position(frame.left + x, frame.top + y);
 }
 
-static void Cursor_DoSetVisible(cc_bool visible) {
+static void Cursor_DoSetVisible(hc_bool visible) {
 	if (visible) {
 		app_handle->ShowCursor();
 	} else {
@@ -594,18 +594,18 @@ static BFilePanel* save_panel;
 static FileDialogCallback file_callback;
 static const char* const* file_filters;
 
-class CC_BRefFilter : public BRefFilter
+class HC_BRefFilter : public BRefFilter
 {
 public:
-	CC_BRefFilter() : BRefFilter() { }
+	HC_BRefFilter() : BRefFilter() { }
 	
-#if defined CC_BUILD_BEOS
+#if defined HC_BUILD_BEOS
 	bool Filter(const entry_ref* ref, BNode* node, struct stat* st, const char* filetype) {
 #else
 	bool Filter(const entry_ref* ref, BNode* node, stat_beos* st, const char* filetype) override {
 #endif
 		BPath path(ref);
-		cc_string str;
+		hc_string str;
 		int i;
 		
 		if (node->IsDirectory()) return true;
@@ -613,7 +613,7 @@ public:
 		
 		for (i = 0; file_filters[i]; i++)
 		{
-			cc_string ext = String_FromReadonly(file_filters[i]);
+			hc_string ext = String_FromReadonly(file_filters[i]);
 			if (String_CaselessEnds(&str, &ext)) return true;
 		}
 		return false;
@@ -621,7 +621,7 @@ public:
 };
 
 static void CallOpenFileCallback(const char* rawPath) {
-	cc_string path; char pathBuffer[1024];
+	hc_string path; char pathBuffer[1024];
 	String_InitArray(path, pathBuffer);
 	if (!file_callback) return;
 	
@@ -630,11 +630,11 @@ static void CallOpenFileCallback(const char* rawPath) {
 	file_callback = NULL;
 }
 
-cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
+hc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 	if (!open_panel) {
 		open_panel = new BFilePanel(B_OPEN_PANEL);
-		open_panel->SetRefFilter(new CC_BRefFilter());
-		// NOTE: the CC_BRefFilter is NOT owned by the BFilePanel,
+		open_panel->SetRefFilter(new HC_BRefFilter());
+		// NOTE: the HC_BRefFilter is NOT owned by the BFilePanel,
 		//  so this is technically a memory leak.. but meh
 	}
 	
@@ -644,11 +644,11 @@ cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 	return 0;
 }
 
-cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
+hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
 	if (!save_panel) {
 		save_panel = new BFilePanel(B_SAVE_PANEL);
-		save_panel->SetRefFilter(new CC_BRefFilter());
-		// NOTE: the CC_BRefFilter is NOT owned by the BFilePanel,
+		save_panel->SetRefFilter(new HC_BRefFilter());
+		// NOTE: the HC_BRefFilter is NOT owned by the BFilePanel,
 		//  so this is technically a memory leak.. but meh
 	}
 	
@@ -683,7 +683,7 @@ void Window_FreeFramebuffer(struct Bitmap* bmp) {
 }
 
 void OnscreenKeyboard_Open(struct OpenKeyboardArgs* args) { }
-void OnscreenKeyboard_SetText(const cc_string* text) { }
+void OnscreenKeyboard_SetText(const hc_string* text) { }
 void OnscreenKeyboard_Close(void) {  }
 
 void Window_EnableRawMouse(void) {
@@ -709,8 +709,8 @@ void Window_DisableRawMouse(void) {
 /*########################################################################################################################*
 *-----------------------------------------------------OpenGL context------------------------------------------------------*
 *#########################################################################################################################*/
-#if CC_GFX_BACKEND_IS_GL() && !defined CC_BUILD_EGL
-static cc_bool win_vsync;
+#if HC_GFX_BACKEND_IS_GL() && !defined HC_BUILD_EGL
+static hc_bool win_vsync;
 
 void GLContext_Create(void) {
 	view_3D->LockGL();
@@ -725,28 +725,28 @@ void GLContext_Update(void) {
 	view_3D->LockGL();
 }
 
-cc_bool GLContext_TryRestore(void) { return true; }
+hc_bool GLContext_TryRestore(void) { return true; }
 void GLContext_Free(void) {
 	view_3D->UnlockGL();
 }
 
 void* GLContext_GetAddress(const char* function) {
-#if defined CC_BUILD_BEOS
+#if defined HC_BUILD_BEOS
 	return NULL;
 #else
 	return view_3D->GetGLProcAddress(function);
 #endif
 }
 
-cc_bool GLContext_SwapBuffers(void) {
+hc_bool GLContext_SwapBuffers(void) {
 	view_3D->SwapBuffers(win_vsync);
 	return true;
 }
 
-void GLContext_SetVSync(cc_bool vsync) {
+void GLContext_SetVSync(hc_bool vsync) {
 	win_vsync = vsync;
 }
-void GLContext_GetApiInfo(cc_string* info) { }
-#endif // CC_GFX_BACKEND_IS_GL() && !CC_BUILD_EGL
+void GLContext_GetApiInfo(hc_string* info) { }
+#endif // HC_GFX_BACKEND_IS_GL() && !HC_BUILD_EGL
 
 #endif

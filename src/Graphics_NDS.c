@@ -1,5 +1,5 @@
 #include "Core.h"
-#ifdef CC_BUILD_NDS
+#ifdef HC_BUILD_NDS
 #include "_GraphicsBase.h"
 #include "Errors.h"
 #include "Logger.h"
@@ -35,7 +35,7 @@ void Gfx_Create(void) {
     Gfx_SetFaceCulling(false);
 }
 
-cc_bool Gfx_TryRestoreContext(void) {
+hc_bool Gfx_TryRestoreContext(void) {
 	return true;
 }
 
@@ -51,16 +51,16 @@ void Gfx_Free(void) {
 /*########################################################################################################################*
 *-----------------------------------------------------------Misc----------------------------------------------------------*
 *#########################################################################################################################*/
-cc_result Gfx_TakeScreenshot(struct Stream* output) {
+hc_result Gfx_TakeScreenshot(struct Stream* output) {
 	return ERR_NOT_SUPPORTED;
 }
 
-void Gfx_GetApiInfo(cc_string* info) {
+void Gfx_GetApiInfo(hc_string* info) {
 	String_AppendConst(info, "-- Using Nintendo DS --\n");
 	PrintMaxTextureInfo(info);
 }
 
-void Gfx_SetVSync(cc_bool vsync) {
+void Gfx_SetVSync(hc_bool vsync) {
 	gfx_vsync = vsync;
 }
 
@@ -98,10 +98,10 @@ void Gfx_EndFrame(void) {
 /*########################################################################################################################*
 *---------------------------------------------------------Textures--------------------------------------------------------*
 *#########################################################################################################################*/
-static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8 flags, cc_bool mipmaps) {
+static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, hc_uint8 flags, hc_bool mipmaps) {
     vramSetBankA(VRAM_A_TEXTURE);
 
-    cc_uint16* tmp = Mem_TryAlloc(bmp->width * bmp->height, 2);
+    hc_uint16* tmp = Mem_TryAlloc(bmp->width * bmp->height, 2);
     if (!tmp) return 0;
 
 	// TODO: Only copy when rowWidth != bmp->width
@@ -122,7 +122,7 @@ static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8
     glTexImage2D(0, 0, GL_RGBA, bmp->width, bmp->height, 0, TEXGEN_TEXCOORD, tmp);
     glTexParameter(0, GL_TEXTURE_WRAP_S | GL_TEXTURE_WRAP_T);
 
-    cc_uint16* vram_ptr = glGetTexturePointer(textureID);
+    hc_uint16* vram_ptr = glGetTexturePointer(textureID);
     if (!vram_ptr) Platform_Log2("No VRAM for %i x %i texture", &bmp->width, &bmp->height);
 
     Mem_Free(tmp);
@@ -133,21 +133,21 @@ void Gfx_BindTexture(GfxResourceID texId) {
     glBindTexture(0, (int)texId);	
 }
 
-void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, cc_bool mipmaps) {
+void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, hc_bool mipmaps) {
     int texture = (int)texId;
     glBindTexture(0, texture);
     
     int width = 0;
     glGetInt(GL_GET_TEXTURE_WIDTH,  &width);
-    cc_uint16* vram_ptr = glGetTexturePointer(texture);
+    hc_uint16* vram_ptr = glGetTexturePointer(texture);
     return;
     // TODO doesn't work without VRAM bank changing to LCD and back maybe??
     // (see what glTeximage2D does ??)
 
     for (int yy = 0; yy < part->height; yy++)
 	{
-		cc_uint16* dst = vram_ptr + width * (y + yy) + x;
-		cc_uint16* src = part->scan0 + rowWidth * yy;
+		hc_uint16* dst = vram_ptr + width * (y + yy) + x;
+		hc_uint16* src = part->scan0 + rowWidth * yy;
 		
 		for (int xx = 0; xx < part->width; xx++)
 		{
@@ -169,11 +169,11 @@ void Gfx_DisableMipmaps(void) { }
 /*########################################################################################################################*
 *-----------------------------------------------------State management----------------------------------------------------*
 *#########################################################################################################################*/
-void Gfx_SetFaceCulling(cc_bool enabled) {
+void Gfx_SetFaceCulling(hc_bool enabled) {
 	glPolyFmt(POLY_ALPHA(31) | (enabled ? POLY_CULL_BACK : POLY_CULL_NONE));
 }
 
-static void SetAlphaBlend(cc_bool enabled) {
+static void SetAlphaBlend(hc_bool enabled) {
 	/*if (enabled) {
 		glEnable(GL_BLEND);
 	} else {
@@ -181,22 +181,22 @@ static void SetAlphaBlend(cc_bool enabled) {
 	}*/
 }
 
-void Gfx_SetAlphaArgBlend(cc_bool enabled) { }
+void Gfx_SetAlphaArgBlend(hc_bool enabled) { }
 
-static void SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a) {
+static void SetColorWrite(hc_bool r, hc_bool g, hc_bool b, hc_bool a) {
 	// TODO
 }
 
-void Gfx_SetDepthWrite(cc_bool enabled) { }
-void Gfx_SetDepthTest(cc_bool enabled)  { }
+void Gfx_SetDepthWrite(hc_bool enabled) { }
+void Gfx_SetDepthTest(hc_bool enabled)  { }
 
 static void Gfx_FreeState(void) { FreeDefaultResources(); }
 static void Gfx_RestoreState(void) {
 	InitDefaultResources();
 }
 
-cc_bool Gfx_WarnIfNecessary(void) { return true; }
-cc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
+hc_bool Gfx_WarnIfNecessary(void) { return true; }
+hc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
 
 
 /*########################################################################################################################*
@@ -357,9 +357,9 @@ void Gfx_DeleteDynamicVb(GfxResourceID* vb) { Gfx_DeleteVb(vb); }
 /*########################################################################################################################*
 *-----------------------------------------------------State management----------------------------------------------------*
 *#########################################################################################################################*/
-static cc_bool skipRendering;
+static hc_bool skipRendering;
 
-void Gfx_SetFog(cc_bool enabled) {
+void Gfx_SetFog(hc_bool enabled) {
 }
 
 void Gfx_SetFogCol(PackedCol color) {
@@ -374,7 +374,7 @@ void Gfx_SetFogEnd(float value) {
 void Gfx_SetFogMode(FogFunc func) {
 }
 
-static void SetAlphaTest(cc_bool enabled) {
+static void SetAlphaTest(hc_bool enabled) {
     if (enabled) {
         //glEnable(GL_ALPHA_TEST);
     } else {
@@ -382,7 +382,7 @@ static void SetAlphaTest(cc_bool enabled) {
     }
 }
 
-void Gfx_DepthOnlyRendering(cc_bool depthOnly) {
+void Gfx_DepthOnlyRendering(hc_bool depthOnly) {
 	skipRendering = depthOnly;
 }
 

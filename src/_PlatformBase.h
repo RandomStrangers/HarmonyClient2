@@ -7,9 +7,9 @@
 /*########################################################################################################################*
 *---------------------------------------------------------Memory----------------------------------------------------------*
 *#########################################################################################################################*/
-int Mem_Equal(const void* a, const void* b, cc_uint32 numBytes) {
-	const cc_uint8* src = (const cc_uint8*)a;
-	const cc_uint8* dst = (const cc_uint8*)b;
+int Mem_Equal(const void* a, const void* b, hc_uint32 numBytes) {
+	const hc_uint8* src = (const hc_uint8*)a;
+	const hc_uint8* dst = (const hc_uint8*)b;
 
 	while (numBytes--) { 
 		if (*src++ != *dst++) return false; 
@@ -17,8 +17,8 @@ int Mem_Equal(const void* a, const void* b, cc_uint32 numBytes) {
 	return true;
 }
 
-CC_NOINLINE static void AbortOnAllocFailed(const char* place) {	
-	cc_string log; char logBuffer[STRING_SIZE+20 + 1];
+HC_NOINLINE static void AbortOnAllocFailed(const char* place) {	
+	hc_string log; char logBuffer[STRING_SIZE+20 + 1];
 	String_InitArray_NT(log, logBuffer);
 
 	String_Format1(&log, "Out of memory! (when allocating %c)", place);
@@ -26,26 +26,26 @@ CC_NOINLINE static void AbortOnAllocFailed(const char* place) {
 	Logger_Abort(log.buffer);
 }
 
-void* Mem_Alloc(cc_uint32 numElems, cc_uint32 elemsSize, const char* place) {
+void* Mem_Alloc(hc_uint32 numElems, hc_uint32 elemsSize, const char* place) {
 	void* ptr = Mem_TryAlloc(numElems, elemsSize);
 	if (!ptr) AbortOnAllocFailed(place);
 	return ptr;
 }
 
-void* Mem_AllocCleared(cc_uint32 numElems, cc_uint32 elemsSize, const char* place) {
+void* Mem_AllocCleared(hc_uint32 numElems, hc_uint32 elemsSize, const char* place) {
 	void* ptr = Mem_TryAllocCleared(numElems, elemsSize);
 	if (!ptr) AbortOnAllocFailed(place);
 	return ptr;
 }
 
-void* Mem_Realloc(void* mem, cc_uint32 numElems, cc_uint32 elemsSize, const char* place) {
+void* Mem_Realloc(void* mem, hc_uint32 numElems, hc_uint32 elemsSize, const char* place) {
 	void* ptr = Mem_TryRealloc(mem, numElems, elemsSize);
 	if (!ptr) AbortOnAllocFailed(place);
 	return ptr;
 }
 
-static CC_NOINLINE cc_uint32 CalcMemSize(cc_uint32 numElems, cc_uint32 elemsSize) {
-	cc_uint32 numBytes;
+static HC_NOINLINE hc_uint32 CalcMemSize(hc_uint32 numElems, hc_uint32 elemsSize) {
+	hc_uint32 numBytes;
 	if (!numElems || !elemsSize) return 1; /* treat 0 size as 1 byte */
 	
 	numBytes = numElems * elemsSize;
@@ -68,7 +68,7 @@ void Platform_Log3(const char* format, const void* a1, const void* a2, const voi
 }
 
 void Platform_Log4(const char* format, const void* a1, const void* a2, const void* a3, const void* a4) {
-	cc_string msg; char msgBuffer[512];
+	hc_string msg; char msgBuffer[512];
 	String_InitArray(msg, msgBuffer);
 
 	String_Format4(&msg, format, a1, a2, a3, a4);
@@ -84,9 +84,9 @@ void Platform_LogConst(const char* message) {
 *#########################################################################################################################*/
 static char gameArgs[GAME_MAX_CMDARGS][STRING_SIZE];
 static int gameNumArgs;
-static cc_bool gameHasArgs;
+static hc_bool gameHasArgs;
 
-static cc_result SetGameArgs(const cc_string* args, int numArgs) {
+static hc_result SetGameArgs(const hc_string* args, int numArgs) {
 	int i;
 	for (i = 0; i < numArgs; i++) 
 	{
@@ -98,7 +98,7 @@ static cc_result SetGameArgs(const cc_string* args, int numArgs) {
 	return 0;
 }
 
-static int GetGameArgs(cc_string* args) {
+static int GetGameArgs(hc_string* args) {
 	int i, count = gameNumArgs;
 	for (i = 0; i < count; i++) 
 	{
@@ -114,22 +114,22 @@ static int GetGameArgs(cc_string* args) {
 /*########################################################################################################################*
 *----------------------------------------------------------Misc-----------------------------------------------------------*
 *#########################################################################################################################*/
-int Stopwatch_ElapsedMS(cc_uint64 beg, cc_uint64 end) {
-	cc_uint64 raw = Stopwatch_ElapsedMicroseconds(beg, end);
+int Stopwatch_ElapsedMS(hc_uint64 beg, hc_uint64 end) {
+	hc_uint64 raw = Stopwatch_ElapsedMicroseconds(beg, end);
 	if (raw > Int32_MaxValue) return Int32_MaxValue / 1000;
 	return (int)raw / 1000;
 }
 
-static CC_INLINE void SocketAddr_Set(cc_sockaddr* addr, const void* src, unsigned srcLen) {
-	if (srcLen > CC_SOCKETADDR_MAXSIZE) Logger_Abort("Attempted to copy too large socket");
+static HC_INLINE void SocketAddr_Set(hc_sockaddr* addr, const void* src, unsigned srcLen) {
+	if (srcLen > HC_SOCKETADDR_MAXSIZE) Logger_Abort("Attempted to copy too large socket");
 
 	Mem_Copy(addr->data, src, srcLen);
 	addr->size = srcLen;
 }
 
-cc_result Socket_WriteAll(cc_socket socket, const cc_uint8* data, cc_uint32 count) {
-	cc_uint32 sent;
-	cc_result res;
+hc_result Socket_WriteAll(hc_socket socket, const hc_uint8* data, hc_uint32 count) {
+	hc_uint32 sent;
+	hc_result res;
 
 	while (count)
 	{
@@ -146,17 +146,17 @@ cc_result Socket_WriteAll(cc_socket socket, const cc_uint8* data, cc_uint32 coun
 /*########################################################################################################################*
 *-------------------------------------------------------Dynamic lib-------------------------------------------------------*
 *#########################################################################################################################*/
-cc_result DynamicLib_Load(const cc_string* path, void** lib) {
+hc_result DynamicLib_Load(const hc_string* path, void** lib) {
 	*lib = DynamicLib_Load2(path);
 	return *lib == NULL;
 }
-cc_result DynamicLib_Get(void* lib, const char* name, void** symbol) {
+hc_result DynamicLib_Get(void* lib, const char* name, void** symbol) {
 	*symbol = DynamicLib_Get2(lib, name);
 	return *symbol == NULL;
 }
 
 
-cc_bool DynamicLib_LoadAll(const cc_string* path, const struct DynamicLibSym* syms, int count, void** _lib) {
+hc_bool DynamicLib_LoadAll(const hc_string* path, const struct DynamicLibSym* syms, int count, void** _lib) {
 	int i, loaded = 0;
 	void* addr;
 	void* lib;

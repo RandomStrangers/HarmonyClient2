@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_ANDROID
+#if defined HC_BUILD_ANDROID
 #include "Chat.h"
 #include "Constants.h"
 #include "Errors.h"
@@ -27,7 +27,7 @@ void Platform_Log(const char* msg, int len) {
 /*########################################################################################################################*
 *-----------------------------------------------------Process/Module------------------------------------------------------*
 *#########################################################################################################################*/
-cc_result Process_StartOpen(const cc_string* args) {
+hc_result Process_StartOpen(const hc_string* args) {
 	JavaCall_String_Void("startOpen", args);
 	return 0;
 }
@@ -39,18 +39,18 @@ cc_result Process_StartOpen(const cc_string* args) {
 const struct UpdaterInfo Updater_Info = {
 	"&eRedownload from github and reinstall to update", 0
 };
-cc_bool Updater_Clean(void) { return true; }
+hc_bool Updater_Clean(void) { return true; }
 
-cc_result Updater_GetBuildTime(cc_uint64* t) {
+hc_result Updater_GetBuildTime(hc_uint64* t) {
 	JNIEnv* env;
 	JavaGetCurrentEnv(env);
 	*t = JavaCallLong(env, "getApkUpdateTime", "()J", NULL);
 	return 0;
 }
 
-cc_result Updater_Start(const char** action)   { *action = "Updating game"; return ERR_NOT_SUPPORTED; }
-cc_result Updater_MarkExecutable(void)         { return 0; }
-cc_result Updater_SetNewBuildTime(cc_uint64 t) { return ERR_NOT_SUPPORTED; }
+hc_result Updater_Start(const char** action)   { *action = "Updating game"; return ERR_NOT_SUPPORTED; }
+hc_result Updater_MarkExecutable(void)         { return 0; }
+hc_result Updater_SetNewBuildTime(hc_uint64 t) { return ERR_NOT_SUPPORTED; }
 
 
 /*########################################################################################################################*
@@ -70,8 +70,8 @@ void Platform_TryLogJavaError(void) {
 	/* TODO actually do something */
 }
 
-void Platform_ShareScreenshot(const cc_string* filename) {
-	cc_string path; char pathBuffer[FILENAME_SIZE];
+void Platform_ShareScreenshot(const hc_string* filename) {
+	hc_string path; char pathBuffer[FILENAME_SIZE];
 	String_InitArray(path, pathBuffer);
 
 	JavaCall_String_String("shareScreenshot", filename, &path);
@@ -81,7 +81,7 @@ void Platform_ShareScreenshot(const cc_string* filename) {
 	Chat_Add1("  &c%s", &path);
 }
 
-void Directory_GetCachePath(cc_string* path) {
+void Directory_GetCachePath(hc_string* path) {
 	// TODO cache method ID
 	JavaCall_Void_String("getGameCacheDirectory", path);
 }
@@ -91,8 +91,8 @@ void Directory_GetCachePath(cc_string* path) {
 *-----------------------------------------------------Configuration-------------------------------------------------------*
 *#########################################################################################################################*/
 #include "Window.h"
-cc_result Platform_SetDefaultCurrentDirectory(int argc, char **argv) {
-	cc_string dir; char dirBuffer[FILENAME_SIZE + 1];
+hc_result Platform_SetDefaultCurrentDirectory(int argc, char **argv) {
+	hc_string dir; char dirBuffer[FILENAME_SIZE + 1];
 	String_InitArray_NT(dir, dirBuffer);
 
 	JavaCall_Void_String("getGameDataDirectory", &dir);
@@ -117,9 +117,9 @@ jobject App_Instance;
 JavaVM* VM_Ptr;
 
 /* JNI helpers */
-cc_string JavaGetString(JNIEnv* env, jstring str, char* buffer) {
+hc_string JavaGetString(JNIEnv* env, jstring str, char* buffer) {
 	const char* src; int len;
-	cc_string dst;
+	hc_string dst;
 	src = (*env)->GetStringUTFChars(env, str, NULL);
 	len = (*env)->GetStringUTFLength(env, str);
 
@@ -132,9 +132,9 @@ cc_string JavaGetString(JNIEnv* env, jstring str, char* buffer) {
 	return dst;
 }
 
-jobject JavaMakeString(JNIEnv* env, const cc_string* str) {
-	cc_uint8 tmp[2048 + 4];
-	cc_uint8* cur;
+jobject JavaMakeString(JNIEnv* env, const hc_string* str) {
+	hc_uint8 tmp[2048 + 4];
+	hc_uint8* cur;
 	int i, len = 0;
 
 	for (i = 0; i < str->length && len < 2048; i++) {
@@ -145,7 +145,7 @@ jobject JavaMakeString(JNIEnv* env, const cc_string* str) {
 	return (*env)->NewStringUTF(env, (const char*)tmp);
 }
 
-jbyteArray JavaMakeBytes(JNIEnv* env, const void* src, cc_uint32 len) {
+jbyteArray JavaMakeBytes(JNIEnv* env, const void* src, hc_uint32 len) {
 	if (!len) return NULL;
 	jbyteArray arr = (*env)->NewByteArray(env, len);
 	(*env)->SetByteArrayRegion(env, arr, 0, len, src);
@@ -167,7 +167,7 @@ jobject JavaCallObject(JNIEnv* env, const char* name, const char* sig, jvalue* a
 	return (*env)->CallObjectMethodA(env, App_Instance, method, args);
 }
 
-void JavaCall_String_Void(const char* name, const cc_string* value) {
+void JavaCall_String_Void(const char* name, const hc_string* value) {
 	JNIEnv* env;
 	jvalue args[1];
 	JavaGetCurrentEnv(env);
@@ -177,7 +177,7 @@ void JavaCall_String_Void(const char* name, const cc_string* value) {
 	(*env)->DeleteLocalRef(env, args[0].l);
 }
 
-static void ReturnString(JNIEnv* env, jobject obj, cc_string* dst) {
+static void ReturnString(JNIEnv* env, jobject obj, hc_string* dst) {
 	const jchar* src;
 	jsize len;
 	if (!obj) return;
@@ -189,7 +189,7 @@ static void ReturnString(JNIEnv* env, jobject obj, cc_string* dst) {
 	(*env)->DeleteLocalRef(env,     obj);
 }
 
-void JavaCall_Void_String(const char* name, cc_string* dst) {
+void JavaCall_Void_String(const char* name, hc_string* dst) {
 	JNIEnv* env;
 	jobject obj;
 	JavaGetCurrentEnv(env);
@@ -198,7 +198,7 @@ void JavaCall_Void_String(const char* name, cc_string* dst) {
 	ReturnString(env, obj, dst);
 }
 
-void JavaCall_String_String(const char* name, const cc_string* arg, cc_string* dst) {
+void JavaCall_String_String(const char* name, const hc_string* arg, hc_string* dst) {
 	JNIEnv* env;
 	jobject obj;
 	jvalue args[1];
@@ -238,14 +238,14 @@ static const JNINativeMethod methods[] = {
 };
 
 /* This method is automatically called by the Java VM when the */
-/*  activity java class calls 'System.loadLibrary("classicube");' */
-CC_API jint JNI_OnLoad(JavaVM* vm, void* reserved) {
+/*  activity java class calls 'System.loadLibrary("harmonyclient");' */
+HC_API jint JNI_OnLoad(JavaVM* vm, void* reserved) {
 	jclass klass;
 	JNIEnv* env;
 	VM_Ptr = vm;
 	JavaGetCurrentEnv(env);
 
-	klass     = (*env)->FindClass(env, "com/classicube/MainActivity");
+	klass     = (*env)->FindClass(env, "com/harmonyclient/MainActivity");
 	App_Class = (*env)->NewGlobalRef(env, klass);
 	JavaRegisterNatives(env, methods);
 	return JNI_VERSION_1_4;

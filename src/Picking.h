@@ -1,7 +1,7 @@
-#ifndef CC_PICKING_H
-#define CC_PICKING_H
+#ifndef HC_PICKING_H
+#define HC_PICKING_H
 #include "Vectors.h"
-CC_BEGIN_HEADER
+HC_BEGIN_HEADER
 
 /* 
 Provides ray tracer functionality for calculating picking/selecting intersection
@@ -28,7 +28,7 @@ struct RayTracer {
 	/* Result only data */
 	Vec3 intersect;      /* Coords at which the ray exactly intersected this block. */
 	IVec3 translatedPos; /* Coords of the neighbouring block that is closest to the player */
-	cc_bool valid;       /* Whether the ray tracer actually intersected with a block */
+	hc_bool valid;       /* Whether the ray tracer actually intersected with a block */
 	Face closest;        /* Face of the intersected block that is closet to the player */
 	Vec3 invDir;
 };
@@ -46,5 +46,5 @@ void RayTracer_Step(struct RayTracer* t);
 void Picking_CalcPickedBlock(const Vec3* origin, const Vec3* dir, float reach, struct RayTracer* t);
 void Picking_ClipCameraPos(const Vec3* origin, const Vec3* dir, float reach, struct RayTracer* t);
 
-CC_END_HEADER
+HC_END_HEADER
 #endif

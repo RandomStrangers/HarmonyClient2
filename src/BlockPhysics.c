@@ -16,7 +16,7 @@
 
 /* Data for a resizable queue, used for liquid physic tick entries. */
 struct TickQueue {
-	cc_uint32* entries; /* Buffer holding the items in the tick queue */
+	hc_uint32* entries; /* Buffer holding the items in the tick queue */
 	int capacity; /* Max number of elements in the buffer */
 	int mask;     /* capacity - 1, as capacity is always a power of two */
 	int count;    /* Number of used elements */
@@ -40,7 +40,7 @@ static void TickQueue_Clear(struct TickQueue* queue) {
 }
 
 static void TickQueue_Resize(struct TickQueue* queue) {
-	cc_uint32* entries;
+	hc_uint32* entries;
 	int i, idx, capacity;
 
 	if (queue->capacity >= (Int32_MaxValue / 4)) {
@@ -50,7 +50,7 @@ static void TickQueue_Resize(struct TickQueue* queue) {
 
 	capacity = queue->capacity * 2;
 	if (capacity < 32) capacity = 32;
-	entries = (cc_uint32*)Mem_Alloc(capacity, 4, "physics tick queue");
+	entries = (hc_uint32*)Mem_Alloc(capacity, 4, "physics tick queue");
 
 	/* Elements must be readjusted to avoid index wrapping issues */
 	/* https://stackoverflow.com/questions/55343683/resizing-of-the-circular-queue-using-dynamic-array */
@@ -68,7 +68,7 @@ static void TickQueue_Resize(struct TickQueue* queue) {
 }
 
 /* Appends an entry to the end of the queue, resizing if necessary. */
-static void TickQueue_Enqueue(struct TickQueue* queue, cc_uint32 item) {
+static void TickQueue_Enqueue(struct TickQueue* queue, hc_uint32 item) {
 	if (queue->count == queue->capacity)
 		TickQueue_Resize(queue);
 
@@ -78,8 +78,8 @@ static void TickQueue_Enqueue(struct TickQueue* queue, cc_uint32 item) {
 }
 
 /* Retrieves the entry from the front of the queue. */
-static cc_uint32 TickQueue_Dequeue(struct TickQueue* queue) {
-	cc_uint32 result = queue->entries[queue->head];
+static hc_uint32 TickQueue_Dequeue(struct TickQueue* queue) {
+	hc_uint32 result = queue->entries[queue->head];
 	queue->head = (queue->head + 1) & queue->mask;
 	queue->count--;
 	return result;
@@ -112,7 +112,7 @@ static void Physics_OnNewMapLoaded(void* obj) {
 	Tree_Rnd = &physics_rnd;
 }
 
-void Physics_SetEnabled(cc_bool enabled) {
+void Physics_SetEnabled(hc_bool enabled) {
 	Physics.Enabled = enabled;
 	Physics_OnNewMapLoaded(NULL);
 }
@@ -132,7 +132,7 @@ static void Physics_ActivateNeighbours(int x, int y, int z, int index) {
 	if (y < World.MaxY) Physics_Activate(index + World.OneY);
 }
 
-static cc_bool Physics_IsEdgeWater(int x, int y, int z) {
+static hc_bool Physics_IsEdgeWater(int x, int y, int z) {
 	return
 		(Env.EdgeBlock == BLOCK_WATER || Env.EdgeBlock == BLOCK_STILL_WATER)
 		&& (y >= Env_SidesHeight && y < Env.EdgeHeight)
@@ -224,8 +224,8 @@ static void Physics_DoFalling(int index, BlockID block) {
 	Physics_ActivateNeighbours(x, y, z, start);
 }
 
-static cc_bool Physics_CheckItem(struct TickQueue* queue, int* posIndex) {
-	cc_uint32 item = TickQueue_Dequeue(queue);
+static hc_bool Physics_CheckItem(struct TickQueue* queue, int* posIndex) {
+	hc_uint32 item = TickQueue_Dequeue(queue);
 	*posIndex     = (int)(item & PHYSICS_POS_MASK);
 
 	if (item >= PHYSICS_ONE_DELAY) {
@@ -479,7 +479,7 @@ static void Physics_HandleCobblestoneSlab(int index, BlockID block) {
 
 /* TODO: should this be moved into a precomputed lookup table, instead of calculating every time? */
 /*  performance difference probably isn't enough to really matter */
-static cc_bool BlocksTNT(BlockID b) {
+static hc_bool BlocksTNT(BlockID b) {
 	/* NOTE: A bit hacky, but works well enough */
 	return (b >= BLOCK_WATER && b <= BLOCK_STILL_LAVA) || 
 		(Blocks.ExtendedCollide[b] == COLLIDE_SOLID && (Blocks.DigSounds[b] == SOUND_METAL || Blocks.DigSounds[b] == SOUND_STONE));

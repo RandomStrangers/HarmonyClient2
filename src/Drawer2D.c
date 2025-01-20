@@ -19,13 +19,13 @@
 struct _Drawer2DData Drawer2D;
 #define Font_IsBitmap(font) (!(font)->handle)
 
-void DrawTextArgs_Make(struct DrawTextArgs* args, STRING_REF const cc_string* text, struct FontDesc* font, cc_bool useShadow) {
+void DrawTextArgs_Make(struct DrawTextArgs* args, STRING_REF const hc_string* text, struct FontDesc* font, hc_bool useShadow) {
 	args->text = *text;
 	args->font = font;
 	args->useShadow = useShadow;
 }
 
-void DrawTextArgs_MakeEmpty(struct DrawTextArgs* args, struct FontDesc* font, cc_bool useShadow) {
+void DrawTextArgs_MakeEmpty(struct DrawTextArgs* args, struct FontDesc* font, hc_bool useShadow) {
 	args->text = String_Empty;
 	args->font = font;
 	args->useShadow = useShadow;
@@ -100,18 +100,18 @@ static void FreeFontBitmap(void) {
 	Mem_Free(fontBitmap.scan0);
 }
 
-cc_bool Font_SetBitmapAtlas(struct Bitmap* bmp) {
+hc_bool Font_SetBitmapAtlas(struct Bitmap* bmp) {
 	/* If not all of these cases are accounted for, end up overwriting memory after tileWidths */
 	if (bmp->width != bmp->height) {
-		static const cc_string msg = String_FromConst("&cWidth of default.png must equal its height");
+		static const hc_string msg = String_FromConst("&cWidth of default.png must equal its height");
 		Logger_WarnFunc(&msg);
 		return false;
 	} else if (bmp->width < 16) {
-		static const cc_string msg = String_FromConst("&cdefault.png must be at least 16 pixels wide");
+		static const hc_string msg = String_FromConst("&cdefault.png must be at least 16 pixels wide");
 		Logger_WarnFunc(&msg);
 		return false;
 	} else if (!Math_IsPowOf2(bmp->width)) {
-		static const cc_string msg = String_FromConst("&cWidth of default.png must be a power of two");
+		static const hc_string msg = String_FromConst("&cWidth of default.png must be a power of two");
 		Logger_WarnFunc(&msg);
 		return false;
 	}
@@ -134,7 +134,7 @@ void Font_SetPadding(struct FontDesc* desc, int amount) {
 /*########################################################################################################################*
 *---------------------------------------------------Drawing functions-----------------------------------------------------*
 *#########################################################################################################################*/
-cc_bool Drawer2D_Clamp(struct Context2D* ctx, int* x, int* y, int* width, int* height) {
+hc_bool Drawer2D_Clamp(struct Context2D* ctx, int* x, int* y, int* width, int* height) {
 	if (*x >= ctx->width || *y >= ctx->height) return false;
 
 	/* origin is negative, move inside */
@@ -184,7 +184,7 @@ void Gradient_Noise(struct Context2D* ctx, BitmapCol color, int variation,
 	BitmapCol* dst;
 	int R, G, B, xx, yy, n;
 	int noise, delta;
-	cc_uint32 alpha;
+	hc_uint32 alpha;
 
 	if (!Drawer2D_Clamp(ctx, &x, &y, &width, &height)) return;
 	alpha = color & BITMAPCOLOR_A_MASK;
@@ -327,12 +327,12 @@ void Context2D_MakeTexture(struct Texture* tex, struct Context2D* ctx) {
 	tex->uv.v2  = (float)ctx->height / (float)ctx->bmp.height;
 }
 
-cc_bool Drawer2D_ValidColorCodeAt(const cc_string* text, int i) {
+hc_bool Drawer2D_ValidColorCodeAt(const hc_string* text, int i) {
 	if (i >= text->length) return false;
 	return BitmapCol_A(Drawer2D_GetColor(text->buffer[i])) != 0;
 }
 
-cc_bool Drawer2D_UNSAFE_NextPart(cc_string* left, cc_string* part, char* colorCode) {
+hc_bool Drawer2D_UNSAFE_NextPart(hc_string* left, hc_string* part, char* colorCode) {
 	BitmapCol color;
 	char cur;
 	int i;
@@ -363,8 +363,8 @@ cc_bool Drawer2D_UNSAFE_NextPart(cc_string* left, cc_string* part, char* colorCo
 	return part->length > 0 || left->length > 0;
 }
 
-cc_bool Drawer2D_IsEmptyText(const cc_string* text) {
-	cc_string left = *text, part;
+hc_bool Drawer2D_IsEmptyText(const hc_string* text) {
+	hc_string left = *text, part;
 	char colorCode;
 
 	while (Drawer2D_UNSAFE_NextPart(&left, &part, &colorCode))
@@ -374,8 +374,8 @@ cc_bool Drawer2D_IsEmptyText(const cc_string* text) {
 	return true;
 }
 
-void Drawer2D_WithoutColors(cc_string* str, const cc_string* src) {
-	cc_string left = *src, part;
+void Drawer2D_WithoutColors(hc_string* str, const hc_string* src) {
+	hc_string left = *src, part;
 	char colorCode;
 
 	while (Drawer2D_UNSAFE_NextPart(&left, &part, &colorCode))
@@ -384,7 +384,7 @@ void Drawer2D_WithoutColors(cc_string* str, const cc_string* src) {
 	}
 }
 
-char Drawer2D_LastColor(const cc_string* text, int start) {
+char Drawer2D_LastColor(const hc_string* text, int start) {
 	int i;
 	if (start >= text->length) start = text->length - 1;
 	
@@ -396,13 +396,13 @@ char Drawer2D_LastColor(const cc_string* text, int start) {
 	}
 	return '\0';
 }
-cc_bool Drawer2D_IsWhiteColor(char c) { return c == '\0' || c == 'f' || c == 'F'; }
+hc_bool Drawer2D_IsWhiteColor(char c) { return c == '\0' || c == 'f' || c == 'F'; }
 
 /* TODO: Needs to account for DPI */
 #define Drawer2D_ShadowOffset(point) (point / 8)
 #define Drawer2D_XPadding(point) (Math_CeilDiv(point, 8))
 static int Drawer2D_Width(int point, char c) {
-	return Math_CeilDiv(tileWidths[(cc_uint8)c] * point, tileSize);
+	return Math_CeilDiv(tileWidths[(hc_uint8)c] * point, tileSize);
 }
 
 void Drawer2D_ReducePadding_Tex(struct Texture* tex, int point, int scale) {
@@ -413,7 +413,7 @@ void Drawer2D_ReducePadding_Tex(struct Texture* tex, int point, int scale) {
 	padding = (tex->height - point) / scale;
 	vAdj    = (float)padding / Math_NextPowOf2(tex->height);
 	tex->uv.v1 += vAdj; tex->uv.v2 -= vAdj;
-	tex->height -= (cc_uint16)(padding * 2);
+	tex->height -= (hc_uint16)(padding * 2);
 }
 
 void Drawer2D_ReducePadding_Height(int* height, int point, int scale) {
@@ -439,9 +439,9 @@ void Drawer2D_Fill(struct Bitmap* bmp, int x, int y, int width, int height, Bitm
 	}
 }
 
-static void DrawBitmappedTextCore(struct Bitmap* bmp, struct DrawTextArgs* args, int x, int y, cc_bool shadow) {
+static void DrawBitmappedTextCore(struct Bitmap* bmp, struct DrawTextArgs* args, int x, int y, hc_bool shadow) {
 	BitmapCol color;
-	cc_string text = args->text;
+	hc_string text = args->text;
 	int i, point   = args->font->size, count = 0;
 
 	int xPadding;
@@ -454,9 +454,9 @@ static void DrawBitmappedTextCore(struct Bitmap* bmp, struct DrawTextArgs* args,
 	BitmapCol* srcRow, src;
 	BitmapCol* dstRow;
 
-	cc_uint8 coords[DRAWER2D_MAX_TEXT_LENGTH];
+	hc_uint8 coords[DRAWER2D_MAX_TEXT_LENGTH];
 	BitmapCol colors[DRAWER2D_MAX_TEXT_LENGTH];
-	cc_uint16 dstWidths[DRAWER2D_MAX_TEXT_LENGTH];
+	hc_uint16 dstWidths[DRAWER2D_MAX_TEXT_LENGTH];
 
 	color = Drawer2D.Colors['f'];
 	if (shadow) color = GetShadowColor(color);
@@ -555,7 +555,7 @@ static void DrawBitmappedText(struct Bitmap* bmp, struct DrawTextArgs* args, int
 static int MeasureBitmappedWidth(const struct DrawTextArgs* args) {
 	int i, point = args->font->size;
 	int xPadding, width;
-	cc_string text;
+	hc_string text;
 
 	if (!fontBitmap.scan0) return FallbackFont_TextWidth(args);
 
@@ -598,7 +598,7 @@ int Drawer2D_TextHeight(struct DrawTextArgs* args) {
 	return Font_CalcHeight(args->font, args->useShadow);
 }
 
-int Font_CalcHeight(const struct FontDesc* font, cc_bool useShadow) {
+int Font_CalcHeight(const struct FontDesc* font, hc_bool useShadow) {
 	int height = font->height;
 	if (Font_IsBitmap(font)) {
 		if (useShadow) { height += Drawer2D_ShadowOffset(font->size); }
@@ -644,9 +644,9 @@ void Drawer2D_DrawClippedText(struct Context2D* ctx, struct DrawTextArgs* args,
 /*########################################################################################################################*
 *---------------------------------------------------Drawer2D component----------------------------------------------------*
 *#########################################################################################################################*/
-static void DefaultPngProcess(struct Stream* stream, const cc_string* name) {
+static void DefaultPngProcess(struct Stream* stream, const hc_string* name) {
 	struct Bitmap bmp;
-	cc_result res;
+	hc_result res;
 
 	if ((res = Png_Decode(&bmp, stream))) {
 		Logger_SysWarn2(res, "decoding", name);

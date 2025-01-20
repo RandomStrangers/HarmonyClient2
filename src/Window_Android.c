@@ -1,5 +1,5 @@
 #include "Core.h"
-#if CC_WIN_BACKEND == CC_WIN_BACKEND_ANDROID
+#if HC_WIN_BACKEND == HC_WIN_BACKEND_ANDROID
 #include "_WindowBase.h"
 #include "String.h"
 #include "Funcs.h"
@@ -12,7 +12,7 @@
 #include <android/keycodes.h>
 
 static ANativeWindow* win_handle;
-static cc_bool winCreated;
+static hc_bool winCreated;
 static jmethodID JAVA_openKeyboard, JAVA_setKeyboardText, JAVA_closeKeyboard;
 static jmethodID JAVA_getWindowState, JAVA_enterFullscreen, JAVA_exitFullscreen;
 static jmethodID JAVA_showAlert, JAVA_setRequestedOrientation;
@@ -31,7 +31,7 @@ static void RefreshWindowBounds(void) {
 static int MapNativeKey(int code) {
 	if (code >= AKEYCODE_0  && code <= AKEYCODE_9)   return (code - AKEYCODE_0)  + '0';
 	if (code >= AKEYCODE_A  && code <= AKEYCODE_Z)   return (code - AKEYCODE_A)  + 'A';
-	if (code >= AKEYCODE_F1 && code <= AKEYCODE_F12) return (code - AKEYCODE_F1) + CCKEY_F1;
+	if (code >= AKEYCODE_F1 && code <= AKEYCODE_F12) return (code - AKEYCODE_F1) + HCKEY_F1;
 	if (code >= AKEYCODE_NUMPAD_0 && code <= AKEYCODE_NUMPAD_9) return (code - AKEYCODE_NUMPAD_0) + CCKEY_KP0;
 
 	switch (code) {
@@ -140,7 +140,7 @@ static void JNICALL java_processKeyChar(JNIEnv* env, jobject o, jint code) {
 
 static void JNICALL java_processKeyText(JNIEnv* env, jobject o, jstring str) {
 	char buffer[NATIVE_STR_LEN];
-	cc_string text = JavaGetString(env, str, buffer);
+	hc_string text = JavaGetString(env, str, buffer);
 	Platform_Log1("KEY - TEXT %s", &text);
 	Event_RaiseString(&InputEvents.TextChanged, &text);
 }
@@ -361,15 +361,15 @@ void Window_Create3D(int width, int height) { DoCreateWindow(); }
 
 void Window_Destroy(void) { }
 
-void Window_SetTitle(const cc_string* title) {
+void Window_SetTitle(const hc_string* title) {
 	/* TODO: Implement this somehow */
 	/* Maybe https://stackoverflow.com/questions/2198410/how-to-change-title-of-activity-in-android */
 }
 
-void Clipboard_GetText(cc_string* value) {
+void Clipboard_GetText(hc_string* value) {
 	JavaCall_Void_String("getClipboardText", value);
 }
-void Clipboard_SetText(const cc_string* value) {
+void Clipboard_SetText(const hc_string* value) {
 	JavaCall_String_Void("setClipboardText", value);
 }
 
@@ -379,14 +379,14 @@ int Window_GetWindowState(void) {
 	return JavaICall_Int(env, JAVA_getWindowState, NULL);
 }
 
-cc_result Window_EnterFullscreen(void) {
+hc_result Window_EnterFullscreen(void) {
 	JNIEnv* env;
 	JavaGetCurrentEnv(env);
 	JavaICall_Void(env, JAVA_enterFullscreen, NULL);
 	return 0; 
 }
 
-cc_result Window_ExitFullscreen(void) {
+hc_result Window_ExitFullscreen(void) {
 	JNIEnv* env;
 	JavaGetCurrentEnv(env);
 	JavaICall_Void(env, JAVA_exitFullscreen, NULL);
@@ -421,7 +421,7 @@ void Gamepads_Process(float delta) { }
 /* No actual mouse cursor */
 static void Cursor_GetRawPos(int* x, int* y) { *x = 0; *y = 0; }
 void Cursor_SetPosition(int x, int y) { }
-static void Cursor_DoSetVisible(cc_bool visible) { }
+static void Cursor_DoSetVisible(hc_bool visible) { }
 
 static void ShowDialogCore(const char* title, const char* msg) {
 	JNIEnv* env;
@@ -446,7 +446,7 @@ static void JNICALL java_processOFDResult(JNIEnv* env, jobject o, jstring str) {
     const char* raw;
 
     char buffer[NATIVE_STR_LEN];
-	cc_string path = JavaGetString(env, str, buffer);
+	hc_string path = JavaGetString(env, str, buffer);
 	ofd_callback(&path);
 
 	if (ofd_action == OFD_UPLOAD_DELETE) {
@@ -458,7 +458,7 @@ static void JNICALL java_processOFDResult(JNIEnv* env, jobject o, jstring str) {
     ofd_callback = NULL;
 }
 
-cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* open_args) {
+hc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* open_args) {
     JNIEnv* env;
     jvalue args[1];
     JavaGetCurrentEnv(env);
@@ -474,7 +474,7 @@ cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* open_args) {
     return OK ? 0 : ERR_INVALID_ARGUMENT;
 }
 
-cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* save_args) {
+hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* save_args) {
     JNIEnv* env;
     jvalue args[2];
     JavaGetCurrentEnv(env);
@@ -483,12 +483,12 @@ cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* save_args) {
     // save the item to a temp file, which is then (usually) later deleted by intent callback
     Directory_Create(FILEPATH_RAW("Exported"));
 
-    cc_string path; char pathBuffer[FILENAME_SIZE];
+    hc_string path; char pathBuffer[FILENAME_SIZE];
     String_InitArray(path, pathBuffer);
     String_Format2(&path, "Exported/%s%c", &save_args->defaultName, save_args->filters[0]);
     save_args->Callback(&path);
     // TODO kinda ugly, maybe a better way?
-    cc_string file = String_UNSAFE_SubstringAt(&path, String_IndexOf(&path, '/') + 1);
+    hc_string file = String_UNSAFE_SubstringAt(&path, String_IndexOf(&path, '/') + 1);
 
     args[0].l = JavaMakeString(env, &path);
     args[1].l = JavaMakeString(env, &file);
@@ -507,8 +507,8 @@ void Window_AllocFramebuffer(struct Bitmap* bmp, int width, int height) {
 
 void Window_DrawFramebuffer(Rect2D r, struct Bitmap* bmp) {
 	ANativeWindow_Buffer buffer;
-	cc_uint32* src;
-	cc_uint32* dst;
+	hc_uint32* src;
+	hc_uint32* dst;
 	ARect b;
 	int y, res, size;
 
@@ -528,8 +528,8 @@ void Window_DrawFramebuffer(Rect2D r, struct Bitmap* bmp) {
 	b.left = min(b.left, bmp->width);  b.right  = min(b.right,  bmp->width);
 	b.top  = min(b.top,  bmp->height); b.bottom = min(b.bottom, bmp->height);
 
-	src  = (cc_uint32*)bmp->scan0  + b.left;
-	dst  = (cc_uint32*)buffer.bits + b.left;
+	src  = (hc_uint32*)bmp->scan0  + b.left;
+	dst  = (hc_uint32*)buffer.bits + b.left;
 	size = (b.right - b.left) * 4;
 
 	for (y = b.top; y < b.bottom; y++) 
@@ -556,7 +556,7 @@ void OnscreenKeyboard_Open(struct OpenKeyboardArgs* kArgs) {
 	(*env)->DeleteLocalRef(env, args[0].l);
 }
 
-void OnscreenKeyboard_SetText(const cc_string* text) {
+void OnscreenKeyboard_SetText(const hc_string* text) {
 	JNIEnv* env;
 	jvalue args[1];
 	JavaGetCurrentEnv(env);
@@ -574,7 +574,7 @@ void OnscreenKeyboard_Close(void) {
 	JavaICall_Void(env, JAVA_closeKeyboard, NULL);
 }
 
-void Window_LockLandscapeOrientation(cc_bool lock) {
+void Window_LockLandscapeOrientation(hc_bool lock) {
 	JNIEnv* env;
 	jvalue args[1];
 	JavaGetCurrentEnv(env);

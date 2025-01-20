@@ -1,5 +1,5 @@
 #include "Resources.h"
-#ifdef CC_BUILD_RESOURCES
+#ifdef HC_BUILD_RESOURCES
 #include "Funcs.h"
 #include "String.h"
 #include "Constants.h"
@@ -34,37 +34,37 @@ struct AssetSet {
 };
 
 int Resources_MissingCount, Resources_MissingSize;
-cc_bool Resources_MissingRequired;
+hc_bool Resources_MissingRequired;
 
 union ResourceValue {
-	cc_uint8* data;
+	hc_uint8* data;
 	struct Bitmap bmp;
 };
 struct ResourceZipEntry {
 	const char* filename;
 	/* zip data */
-	cc_uint32 type : 3;
-	cc_uint32 size : 29;
+	hc_uint32 type : 3;
+	hc_uint32 size : 29;
 	union ResourceValue value;
-	cc_uint32 offset, crc32;
+	hc_uint32 offset, crc32;
 };
 #define RESOURCE_TYPE_DATA  1
 #define RESOURCE_TYPE_PNG   2
 #define RESOURCE_TYPE_CONST 3
 #define RESOURCE_TYPE_SOUND 4
 
-static CC_NOINLINE cc_bool Fetcher_Get(int reqID, struct HttpRequest* item);
-CC_NOINLINE static struct ResourceZipEntry* ZipEntries_Find(const cc_string* name);
-static cc_result ZipEntry_ExtractData(struct ResourceZipEntry* e, struct Stream* data, struct ZipEntry* source);
+static HC_NOINLINE hc_bool Fetcher_Get(int reqID, struct HttpRequest* item);
+HC_NOINLINE static struct ResourceZipEntry* ZipEntries_Find(const hc_string* name);
+static hc_result ZipEntry_ExtractData(struct ResourceZipEntry* e, struct Stream* data, struct ZipEntry* source);
 
 
 /*########################################################################################################################*
 *------------------------------------------------------Utility functions -------------------------------------------------*
 *#########################################################################################################################*/
-static void ZipFile_InspectEntries(const cc_string* path, Zip_SelectEntry selector) {
+static void ZipFile_InspectEntries(const hc_string* path, Zip_SelectEntry selector) {
 	struct ZipEntry entries[64];
 	struct Stream stream;
-	cc_result res;
+	hc_result res;
 
 	res = Stream_OpenFile(&stream, path);
 	if (res == ReturnCode_FileNotFound) return;
@@ -78,8 +78,8 @@ static void ZipFile_InspectEntries(const cc_string* path, Zip_SelectEntry select
 	(void)stream.Close(&stream);
 }
 
-static cc_result ZipEntry_ExtractData(struct ResourceZipEntry* e, struct Stream* data, struct ZipEntry* source) {
-	cc_uint32 size = source->UncompressedSize;
+static hc_result ZipEntry_ExtractData(struct ResourceZipEntry* e, struct Stream* data, struct ZipEntry* source) {
+	hc_uint32 size = source->UncompressedSize;
 	e->value.data  = Mem_TryAlloc(size, 1);
 	e->size        = size;
 
@@ -99,10 +99,10 @@ static void GetCurrentZipDate(int* modTime, int* modDate) {
 	*modDate = (now.day) | (now.month << 5) | ((now.year - 1980) << 9);
 }
 
-static cc_result ZipWriter_LocalFile(struct Stream* s, struct ResourceZipEntry* e) {
+static hc_result ZipWriter_LocalFile(struct Stream* s, struct ResourceZipEntry* e) {
 	int filenameLen = String_Length(e->filename);
-	cc_uint8 header[30 + STRING_SIZE];
-	cc_result res;
+	hc_uint8 header[30 + STRING_SIZE];
+	hc_result res;
 	int modTime, modDate;
 
 	GetCurrentZipDate(&modTime, &modDate);
@@ -126,9 +126,9 @@ static cc_result ZipWriter_LocalFile(struct Stream* s, struct ResourceZipEntry* 
 	return Stream_Write(s, header, 30 + filenameLen);
 }
 
-static cc_result ZipWriter_CentralDir(struct Stream* s, struct ResourceZipEntry* e) {
+static hc_result ZipWriter_CentralDir(struct Stream* s, struct ResourceZipEntry* e) {
 	int filenameLen = String_Length(e->filename);
-	cc_uint8 header[46 + STRING_SIZE];
+	hc_uint8 header[46 + STRING_SIZE];
 	int modTime, modDate;
 	GetCurrentZipDate(&modTime, &modDate);
 
@@ -156,9 +156,9 @@ static cc_result ZipWriter_CentralDir(struct Stream* s, struct ResourceZipEntry*
 	return Stream_Write(s, header, 46 + filenameLen);
 }
 
-static cc_result ZipWriter_EndOfCentralDir(struct Stream* s, int numEntries,
-											cc_uint32 centralDirBeg, cc_uint32 centralDirEnd) {
-	cc_uint8 header[22];
+static hc_result ZipWriter_EndOfCentralDir(struct Stream* s, int numEntries,
+											hc_uint32 centralDirBeg, hc_uint32 centralDirEnd) {
+	hc_uint8 header[22];
 
 	Stream_SetU32_LE(header + 0,  0x06054b50); /* signature */
 	Stream_SetU16_LE(header + 4,  0);          /* disk number */
@@ -171,12 +171,12 @@ static cc_result ZipWriter_EndOfCentralDir(struct Stream* s, int numEntries,
 	return Stream_Write(s, header, 22);
 }
 
-static cc_result ZipWriter_FixupLocalFile(struct Stream* s, struct ResourceZipEntry* e) {
+static hc_result ZipWriter_FixupLocalFile(struct Stream* s, struct ResourceZipEntry* e) {
 	int filenameLen = String_Length(e->filename);
-	cc_uint8 tmp[2048];
-	cc_uint32 dataBeg, dataEnd;
-	cc_uint32 i, crc, toRead, read;
-	cc_result res;
+	hc_uint8 tmp[2048];
+	hc_uint32 dataBeg, dataEnd;
+	hc_uint32 i, crc, toRead, read;
+	hc_result res;
 
 	dataBeg = e->offset + 30 + filenameLen;
 	if ((res = s->Position(s, &dataEnd))) return res;
@@ -205,27 +205,27 @@ static cc_result ZipWriter_FixupLocalFile(struct Stream* s, struct ResourceZipEn
 	return s->Seek(s, dataEnd);
 }
 
-static cc_result ZipWriter_WriteData(struct Stream* dst, struct ResourceZipEntry* e) {
-	cc_uint8* data = e->value.data;
-	cc_result res;
+static hc_result ZipWriter_WriteData(struct Stream* dst, struct ResourceZipEntry* e) {
+	hc_uint8* data = e->value.data;
+	hc_result res;
 	e->crc32 = Utils_CRC32(data, e->size);
 
 	if ((res = ZipWriter_LocalFile(dst, e))) return res;
 	return Stream_Write(dst, data, e->size);
 }
 
-static cc_result ZipWriter_WritePng(struct Stream* dst, struct ResourceZipEntry* e) {
+static hc_result ZipWriter_WritePng(struct Stream* dst, struct ResourceZipEntry* e) {
 	struct Bitmap* src = &e->value.bmp;
-	cc_result res;
+	hc_result res;
 
 	if ((res = ZipWriter_LocalFile(dst, e)))            return res;
 	if ((res = Png_Encode(src, dst, NULL, true, NULL))) return res;
 	return ZipWriter_FixupLocalFile(dst, e);
 }
 
-static cc_result SoundPatcher_Save(struct Stream* s, struct ResourceZipEntry* e);
-static cc_result ZipWriter_WriteWav(struct Stream* dst, struct ResourceZipEntry* e) {
-	cc_result res;
+static hc_result SoundPatcher_Save(struct Stream* s, struct ResourceZipEntry* e);
+static hc_result ZipWriter_WriteWav(struct Stream* dst, struct ResourceZipEntry* e) {
+	hc_result res;
 	
 	if ((res = ZipWriter_LocalFile(dst, e))) return res;
 	if ((res = SoundPatcher_Save(dst,   e))) return res;
@@ -236,11 +236,11 @@ static cc_result ZipWriter_WriteWav(struct Stream* dst, struct ResourceZipEntry*
 /*########################################################################################################################*
 *------------------------------------------------------Zip file writer----------------------------------------------------*
 *#########################################################################################################################*/
-static cc_result ZipFile_WriteEntries(struct Stream* s, struct ResourceZipEntry* entries, int numEntries) {
+static hc_result ZipFile_WriteEntries(struct Stream* s, struct ResourceZipEntry* entries, int numEntries) {
 	struct ResourceZipEntry* e;
-	cc_uint32 beg, end;
+	hc_uint32 beg, end;
 	int i;
-	cc_result res;
+	hc_result res;
 
 	for (i = 0; i < numEntries; i++)
 	{
@@ -265,9 +265,9 @@ static cc_result ZipFile_WriteEntries(struct Stream* s, struct ResourceZipEntry*
 	return ZipWriter_EndOfCentralDir(s, numEntries, beg, end);
 }
 
-static void ZipFile_Create(const cc_string* path, struct ResourceZipEntry* entries, int numEntries) {
+static void ZipFile_Create(const hc_string* path, struct ResourceZipEntry* entries, int numEntries) {
 	struct Stream s;
-	cc_result res;
+	hc_result res;
 
 	res = Stream_CreateFile(&s, path);
 	if (res) {
@@ -282,7 +282,7 @@ static void ZipFile_Create(const cc_string* path, struct ResourceZipEntry* entri
 }
 
 
-#ifndef CC_BUILD_NOMUSIC
+#ifndef HC_BUILD_NOMUSIC
 /*########################################################################################################################*
 *---------------------------------------------------------Music assets----------------------------------------------------*
 *#########################################################################################################################*/
@@ -290,7 +290,7 @@ static struct MusicAsset {
 	const char* name;
 	const char* hash;
 	short size;
-	cc_bool downloaded;
+	hc_bool downloaded;
 	int reqID;
 } musicAssets[] = {
 	{ "calm1.ogg", "50a59a4f56e4046701b758ddbb1c1587efa4cadf", 2472 },
@@ -303,8 +303,8 @@ static struct MusicAsset {
 };
 
 static void MusicAssets_CheckExistence(void) {
-	cc_string path; char pathBuffer[FILENAME_SIZE];
-	cc_filepath str;
+	hc_string path; char pathBuffer[FILENAME_SIZE];
+	hc_filepath str;
 	int i;
 	String_InitArray(path, pathBuffer);
 
@@ -333,8 +333,8 @@ static void MusicAssets_CountMissing(void) {
 /*########################################################################################################################*
 *-----------------------------------------------------Music asset fetching -----------------------------------------------*
 *#########################################################################################################################*/
-CC_NOINLINE static int MusicAsset_Download(const char* hash) {
-	cc_string url; char urlBuffer[URL_MAX_SIZE];
+HC_NOINLINE static int MusicAsset_Download(const char* hash) {
+	hc_string url; char urlBuffer[URL_MAX_SIZE];
 
 	String_InitArray(url, urlBuffer);
 	String_Format3(&url, "https://resources.download.minecraft.net/%r%r/%c", 
@@ -365,8 +365,8 @@ static const char* MusicAssets_GetRequestName(int reqID) {
 *----------------------------------------------------Music asset processing ----------------------------------------------*
 *#########################################################################################################################*/
 static void MusicAsset_Save(const char* name, struct HttpRequest* req) {
-	cc_string path; char pathBuffer[STRING_SIZE];
-	cc_result res;
+	hc_string path; char pathBuffer[STRING_SIZE];
+	hc_result res;
 
 	String_InitArray(path, pathBuffer);
 	String_Format1(&path, "audio/%c", name);
@@ -407,19 +407,19 @@ static const struct AssetSet mccMusicAssetSet = {
 #endif
 
 
-#ifdef CC_BUILD_NOSOUNDS
-static cc_result SoundPatcher_Save(struct Stream* s, struct ResourceZipEntry* e) { return ERR_NOT_SUPPORTED; }
+#ifdef HC_BUILD_NOSOUNDS
+static hc_result SoundPatcher_Save(struct Stream* s, struct ResourceZipEntry* e) { return ERR_NOT_SUPPORTED; }
 #else
 /*########################################################################################################################*
 *-----------------------------------------------------Sound asset writing ------------------------------------------------*
 *#########################################################################################################################*/
-#define WAV_FourCC(a, b, c, d) (((cc_uint32)a << 24) | ((cc_uint32)b << 16) | ((cc_uint32)c << 8) | (cc_uint32)d)
+#define WAV_FourCC(a, b, c, d) (((hc_uint32)a << 24) | ((hc_uint32)b << 16) | ((hc_uint32)c << 8) | (hc_uint32)d)
 #define WAV_HDR_SIZE 44
 
 /* Fixes up the .WAV header after having written all samples */
-static cc_result SoundPatcher_FixupHeader(struct Stream* s, struct VorbisState* ctx, cc_uint32 offset, cc_uint32 len) {
-	cc_uint8 header[WAV_HDR_SIZE];
-	cc_result res = s->Seek(s, offset);
+static hc_result SoundPatcher_FixupHeader(struct Stream* s, struct VorbisState* ctx, hc_uint32 offset, hc_uint32 len) {
+	hc_uint8 header[WAV_HDR_SIZE];
+	hc_result res = s->Seek(s, offset);
 	if (res) return res;
 
 	Stream_SetU32_BE(header +  0, WAV_FourCC('R','I','F','F'));
@@ -441,20 +441,20 @@ static cc_result SoundPatcher_FixupHeader(struct Stream* s, struct VorbisState* 
 }
 
 /* Decodes all samples, then produces a .WAV file from them */
-static cc_result SoundPatcher_WriteWav(struct Stream* s, struct VorbisState* ctx) {
-	cc_int16* samples;
-	cc_uint32 begOffset;
-	cc_uint32 len = WAV_HDR_SIZE;
-	cc_result res;
+static hc_result SoundPatcher_WriteWav(struct Stream* s, struct VorbisState* ctx) {
+	hc_int16* samples;
+	hc_uint32 begOffset;
+	hc_uint32 len = WAV_HDR_SIZE;
+	hc_result res;
 	int count;
 
 	if ((res = s->Position(s, &begOffset))) return res;
 
 	/* reuse context here for a temp garbage header */
-	if ((res = Stream_Write(s, (const cc_uint8*)ctx, WAV_HDR_SIZE))) return res;
+	if ((res = Stream_Write(s, (const hc_uint8*)ctx, WAV_HDR_SIZE))) return res;
 	if ((res = Vorbis_DecodeHeaders(ctx))) return res;
 
-	samples = (cc_int16*)Mem_TryAlloc(ctx->blockSizes[1] * ctx->channels, 2);
+	samples = (hc_int16*)Mem_TryAlloc(ctx->blockSizes[1] * ctx->channels, 2);
 	if (!samples) return ERR_OUT_OF_MEMORY;
 
 	for (;;) {
@@ -469,10 +469,10 @@ static cc_result SoundPatcher_WriteWav(struct Stream* s, struct VorbisState* ctx
 		count = Vorbis_OutputFrame(ctx, samples);
 		len  += count * 2;
 
-#ifdef CC_BUILD_BIGENDIAN
+#ifdef HC_BUILD_BIGENDIAN
 		Utils_SwapEndian16(samples, count);
 #endif
-		res = Stream_Write(s, (cc_uint8*)samples, count * 2);
+		res = Stream_Write(s, (hc_uint8*)samples, count * 2);
 		if (res) break;
 	}
 
@@ -482,11 +482,11 @@ static cc_result SoundPatcher_WriteWav(struct Stream* s, struct VorbisState* ctx
 }
 
 /* Converts an OGG sound to a WAV sound for faster decoding later */
-static cc_result SoundPatcher_Save(struct Stream* s, struct ResourceZipEntry* e) {
+static hc_result SoundPatcher_Save(struct Stream* s, struct ResourceZipEntry* e) {
 	struct OggState* ogg    = NULL;
 	struct VorbisState* ctx = NULL;
 	struct Stream src;
-	cc_result res;
+	hc_result res;
 
 	ogg = (struct OggState*)Mem_TryAlloc(1,    sizeof(struct OggState));
 	if (!ogg) { res = ERR_OUT_OF_MEMORY; goto cleanup; }
@@ -550,7 +550,7 @@ static struct SoundAsset {
 	{ "step_wood1.wav",   "9bc2a84d0aa98113fc52609976fae8fc88ea6333" }, { "step_wood2.wav",   "98102533e6085617a2962157b4f3658f59aea018" },
 	{ "step_wood3.wav",   "45b2aef7b5049e81b39b58f8d631563fadcc778b" }, { "step_wood4.wav",   "dc66978374a46ab2b87db6472804185824868095" }
 };
-static cc_bool allSoundsExist;
+static hc_bool allSoundsExist;
 
 static void SoundAssets_ResetState(void) {
 	int i;
@@ -570,7 +570,7 @@ static void SoundAssets_ResetState(void) {
 *#########################################################################################################################*/
 static int soundEntriesFound;
 
-static struct SoundAsset* SoundAssest_Find(const cc_string* name) {
+static struct SoundAsset* SoundAssest_Find(const hc_string* name) {
 	struct SoundAsset* a;
 	int i;
 
@@ -582,8 +582,8 @@ static struct SoundAsset* SoundAssest_Find(const cc_string* name) {
 	return NULL;
 }
 
-static cc_bool SoundAssets_CheckEntry(const cc_string* path) {
-	cc_string name = *path;
+static hc_bool SoundAssets_CheckEntry(const hc_string* path) {
+	hc_string name = *path;
 	Utils_UNSAFE_GetFilename(&name);
 
 	if (SoundAssest_Find(&name)) soundEntriesFound++;
@@ -683,21 +683,21 @@ static const struct AssetSet mccSoundAssetSet = {
 
 
 /*########################################################################################################################*
-*------------------------------------------------------CC texture assets--------------------------------------------------*
+*------------------------------------------------------HC texture assets--------------------------------------------------*
 *#########################################################################################################################*/
-static const cc_string ccTexPack = String_FromConst("texpacks/classicube.zip");
-static cc_bool ccTexturesExist, ccTexturesDownloaded;
-static int ccTexturesReqID;
+static const hc_string hcTexPack = String_FromConst("texpacks/classicube.zip");
+static hc_bool hcTexturesExist, hcTexturesDownloaded;
+static int hcTexturesReqID;
 
-static void CCTextures_CheckExistence(void) {
-	cc_filepath path;
-	Platform_EncodePath(&path, &ccTexPack);
+static void HCTextures_CheckExistence(void) {
+	hc_filepath path;
+	Platform_EncodePath(&path, &hcTexPack);
 	
-	ccTexturesExist = File_Exists(&path);
+	hcTexturesExist = File_Exists(&path);
 }
 
-static void CCTextures_CountMissing(void) {
-	if (ccTexturesExist) return;
+static void HCTextures_CountMissing(void) {
+	if (hcTexturesExist) return;
 
 	Resources_MissingCount++;
 	Resources_MissingSize += 83;
@@ -706,74 +706,74 @@ static void CCTextures_CountMissing(void) {
 
 
 /*########################################################################################################################*
-*--------------------------------------------------CC texture assets fetching --------------------------------------------*
+*--------------------------------------------------HC texture assets fetching --------------------------------------------*
 *#########################################################################################################################*/
-static void CCTextures_DownloadAssets(void) {
-	static cc_string url = String_FromConst(RESOURCE_SERVER "/default.zip");
-	if (ccTexturesExist) return;
+static void HCTextures_DownloadAssets(void) {
+	static hc_string url = String_FromConst(RESOURCE_SERVER "/default.zip");
+	if (hcTexturesExist) return;
 
-	ccTexturesReqID = Http_AsyncGetData(&url, 0);
+	hcTexturesReqID = Http_AsyncGetData(&url, 0);
 }
 
-static const char* CCTextures_GetRequestName(int reqID) {
-	return reqID == ccTexturesReqID ? "ClassiCube textures" : NULL;
+static const char* HCTextures_GetRequestName(int reqID) {
+	return reqID == hcTexturesReqID ? "ClassiCube textures" : NULL;
 }
 
 
 /*########################################################################################################################*
-*-------------------------------------------------CC texture assets processing -------------------------------------------*
+*-------------------------------------------------HC texture assets processing -------------------------------------------*
 *#########################################################################################################################*/
 /* Android needs the touch.png */
 /* TODO: Unify both android and desktop platforms to both just extract from default.zip */
-static cc_bool CCTextures_SelectEntry(const cc_string* path) {
+static hc_bool HCTextures_SelectEntry(const hc_string* path) {
 	return String_CaselessEqualsConst(path, "touch.png");
 }
 
-static cc_result CCTextures_ProcessEntry(const cc_string* path, struct Stream* data, struct ZipEntry* source) {
+static hc_result HCTextures_ProcessEntry(const hc_string* path, struct Stream* data, struct ZipEntry* source) {
 	struct ResourceZipEntry* e = ZipEntries_Find(path);
 	if (!e) return 0; /* TODO exteact on PC too */
 
 	return ZipEntry_ExtractData(e, data, source);
 }
 
-static cc_result CCTextures_ExtractZip(struct HttpRequest* req) {
+static hc_result HCTextures_ExtractZip(struct HttpRequest* req) {
 	struct ZipEntry entries[64];
 	struct Stream src;
-	cc_result res;
+	hc_result res;
 
 	Stream_ReadonlyMemory(&src, req->data, req->size);
-	if ((res = Zip_Extract(&src, CCTextures_SelectEntry, CCTextures_ProcessEntry,
+	if ((res = Zip_Extract(&src, HCTextures_SelectEntry, HCTextures_ProcessEntry,
 							entries, Array_Elems(entries)))) return res;
 
-	return Stream_WriteAllTo(&ccTexPack, req->data, req->size);
+	return Stream_WriteAllTo(&hcTexPack, req->data, req->size);
 }
 
-static void CCTextures_CheckStatus(void) {
+static void HCTextures_CheckStatus(void) {
 	struct HttpRequest item;
-	cc_result res;
+	hc_result res;
 
-	if (ccTexturesDownloaded) return;
-	if (!Fetcher_Get(ccTexturesReqID, &item)) return;
+	if (hcTexturesDownloaded) return;
+	if (!Fetcher_Get(hcTexturesReqID, &item)) return;
 
-	ccTexturesDownloaded = true;
-	res = CCTextures_ExtractZip(&item);
+	hcTexturesDownloaded = true;
+	res = HCTextures_ExtractZip(&item);
 	if (res) Logger_SysWarn(res, "saving ClassiCube textures");
 
 	HttpRequest_Free(&item);
 }
 
-static void CCTextures_ResetState(void) {
-	ccTexturesExist      = false;
-	ccTexturesDownloaded = false;
+static void HCTextures_ResetState(void) {
+	hcTexturesExist      = false;
+	hcTexturesDownloaded = false;
 }
 
-static const struct AssetSet ccTexsAssetSet = {
-	CCTextures_CheckExistence,
-	CCTextures_CountMissing,
-	CCTextures_DownloadAssets,
-	CCTextures_GetRequestName,
-	CCTextures_CheckStatus,
-	CCTextures_ResetState
+static const struct AssetSet hcTexsAssetSet = {
+	HCTextures_CheckExistence,
+	HCTextures_CountMissing,
+	HCTextures_DownloadAssets,
+	HCTextures_GetRequestName,
+	HCTextures_CheckStatus,
+	HCTextures_ResetState
 };
 
 
@@ -813,13 +813,13 @@ static struct ResourceZipEntry defaultZipEntries[] = {
 	/* other files */
 	{ "snow.png", RESOURCE_TYPE_DATA }, { "chicken.png",    RESOURCE_TYPE_DATA },
 	{ "gui.png",  RESOURCE_TYPE_DATA }, { "animations.png", RESOURCE_TYPE_PNG  }, 
-	{ "animations.txt", RESOURCE_TYPE_CONST, sizeof(ANIMS_TXT) - 1, (cc_uint8*)ANIMS_TXT },
-#ifdef CC_BUILD_MOBILE
+	{ "animations.txt", RESOURCE_TYPE_CONST, sizeof(ANIMS_TXT) - 1, (hc_uint8*)ANIMS_TXT },
+#ifdef HC_BUILD_MOBILE
 	{ "touch.png", RESOURCE_TYPE_DATA }
 #endif
 };
 
-CC_NOINLINE static struct ResourceZipEntry* ZipEntries_Find(const cc_string* name) {
+HC_NOINLINE static struct ResourceZipEntry* ZipEntries_Find(const hc_string* name) {
 	struct ResourceZipEntry* e;
 	int i;
 
@@ -832,23 +832,23 @@ CC_NOINLINE static struct ResourceZipEntry* ZipEntries_Find(const cc_string* nam
 }
 
 
-static cc_result ClassicPatcher_ExtractFiles(struct HttpRequest* req);
-static cc_result ModernPatcher_ExtractFiles(struct HttpRequest* req);
-static cc_result TerrainPatcher_Process(struct HttpRequest* req);
-static cc_result NewTextures_ExtractGui(struct HttpRequest* req);
+static hc_result ClassicPatcher_ExtractFiles(struct HttpRequest* req);
+static hc_result ModernPatcher_ExtractFiles(struct HttpRequest* req);
+static hc_result TerrainPatcher_Process(struct HttpRequest* req);
+static hc_result NewTextures_ExtractGui(struct HttpRequest* req);
 
-static cc_result Classic0023Patcher_OldGoldBlock(struct HttpRequest* req);
-static cc_result Classic0023Patcher_OldGoldOre(  struct HttpRequest* req);
-static cc_result Classic0023Patcher_OldBlackWool(struct HttpRequest* req);
-static cc_result Classic0023Patcher_OldGrayWool( struct HttpRequest* req);
+static hc_result Classic0023Patcher_OldGoldBlock(struct HttpRequest* req);
+static hc_result Classic0023Patcher_OldGoldOre(  struct HttpRequest* req);
+static hc_result Classic0023Patcher_OldBlackWool(struct HttpRequest* req);
+static hc_result Classic0023Patcher_OldGrayWool( struct HttpRequest* req);
 
 /* URLs which data is downloaded from in order to generate the entries in default.zip */
 struct ZipfileSource {
 	const char* name;
 	const char* url;
-	cc_result (*Process)(struct HttpRequest* req);
+	hc_result (*Process)(struct HttpRequest* req);
 	short size;
-	cc_bool downloaded;
+	hc_bool downloaded;
 	int reqID;
 };
 
@@ -884,16 +884,16 @@ static void MCCTextures_ResetState(void) {
 /*########################################################################################################################*
 *------------------------------------------------default.zip entry generators---------------------------------------------*
 *#########################################################################################################################*/
-static cc_bool ClassicPatcher_SelectEntry(const cc_string* path) {
-	cc_string name = *path;
+static hc_bool ClassicPatcher_SelectEntry(const hc_string* path) {
+	hc_string name = *path;
 	Utils_UNSAFE_GetFilename(&name);
 	return ZipEntries_Find(&name) != NULL;
 }
 
-static cc_result ClassicPatcher_ProcessEntry(const cc_string* path, struct Stream* data, struct ZipEntry* source) {
-	static const cc_string guiClassicPng = String_FromConst("gui_classic.png");
+static hc_result ClassicPatcher_ProcessEntry(const hc_string* path, struct Stream* data, struct ZipEntry* source) {
+	static const hc_string guiClassicPng = String_FromConst("gui_classic.png");
 	struct ResourceZipEntry* e;
-	cc_string name;
+	hc_string name;
 
 	name = *path;
 	Utils_UNSAFE_GetFilename(&name);
@@ -908,7 +908,7 @@ static cc_result ClassicPatcher_ProcessEntry(const cc_string* path, struct Strea
 	return ZipEntry_ExtractData(e, data, source);
 }
 
-static cc_result ClassicPatcher_ExtractFiles(struct HttpRequest* req) {
+static hc_result ClassicPatcher_ExtractFiles(struct HttpRequest* req) {
 	struct ZipEntry entries[64];
 	struct Stream src;
 	Stream_ReadonlyMemory(&src, req->data, req->size);
@@ -919,7 +919,7 @@ static cc_result ClassicPatcher_ExtractFiles(struct HttpRequest* req) {
 }
 
 static void PatchTerrainTile(struct Bitmap* src, int srcX, int srcY, int tileX, int tileY) {
-	static const cc_string terrainPng = String_FromConst("terrain.png");
+	static const hc_string terrainPng = String_FromConst("terrain.png");
 	struct ResourceZipEntry* entry    = ZipEntries_Find(&terrainPng);
 	struct Bitmap* dst = &entry->value.bmp;
 
@@ -928,7 +928,7 @@ static void PatchTerrainTile(struct Bitmap* src, int srcX, int srcY, int tileX, 
 
 
 /* the x,y of tiles in terrain.png which get patched */
-static const struct TilePatch { const char* name; cc_uint8 x1,y1, x2,y2; } modern_tiles[12] = {
+static const struct TilePatch { const char* name; hc_uint8 x1,y1, x2,y2; } modern_tiles[12] = {
 	{ "assets/minecraft/textures/blocks/sandstone_bottom.png", 9,3 },
 	{ "assets/minecraft/textures/blocks/sandstone_normal.png", 9,2 },
 	{ "assets/minecraft/textures/blocks/sandstone_top.png", 9,1, },
@@ -943,7 +943,7 @@ static const struct TilePatch { const char* name; cc_uint8 x1,y1, x2,y2; } moder
 	{ "assets/minecraft/textures/blocks/wool_colored_pink.png",  0,5 }
 };
 
-CC_NOINLINE static const struct TilePatch* ModernPatcher_GetTile(const cc_string* path) {
+HC_NOINLINE static const struct TilePatch* ModernPatcher_GetTile(const hc_string* path) {
 	int i;
 	for (i = 0; i < Array_Elems(modern_tiles); i++) {
 		if (String_CaselessEqualsConst(path, modern_tiles[i].name)) return &modern_tiles[i];
@@ -951,9 +951,9 @@ CC_NOINLINE static const struct TilePatch* ModernPatcher_GetTile(const cc_string
 	return NULL;
 }
 
-static cc_result ModernPatcher_PatchTile(struct Stream* data, const struct TilePatch* tile) {
+static hc_result ModernPatcher_PatchTile(struct Stream* data, const struct TilePatch* tile) {
 	struct Bitmap bmp;
-	cc_result res;
+	hc_result res;
 
 	if ((res = Png_Decode(&bmp, data))) return res;
 	PatchTerrainTile(&bmp, 0, 0, tile->x1, tile->y1);
@@ -966,7 +966,7 @@ static cc_result ModernPatcher_PatchTile(struct Stream* data, const struct TileP
 }
 
 
-static cc_bool ModernPatcher_SelectEntry(const cc_string* path) {
+static hc_bool ModernPatcher_SelectEntry(const hc_string* path) {
 	return
 		String_CaselessEqualsConst(path, "assets/minecraft/textures/environment/snow.png") ||
 		String_CaselessEqualsConst(path, "assets/minecraft/textures/entity/chicken.png")   ||
@@ -974,12 +974,12 @@ static cc_bool ModernPatcher_SelectEntry(const cc_string* path) {
 		ModernPatcher_GetTile(path) != NULL;
 }
 
-static cc_result ModernPatcher_MakeAnimations(struct Stream* data) {
-	static const cc_string animsPng = String_FromConst("animations.png");
+static hc_result ModernPatcher_MakeAnimations(struct Stream* data) {
+	static const hc_string animsPng = String_FromConst("animations.png");
 	struct ResourceZipEntry* entry;
 	struct Bitmap* anim;
 	struct Bitmap bmp;
-	cc_result res;
+	hc_result res;
 	int i;
 
 	entry = ZipEntries_Find(&animsPng);
@@ -997,10 +997,10 @@ static cc_result ModernPatcher_MakeAnimations(struct Stream* data) {
 	return 0;
 }
 
-static cc_result ModernPatcher_ProcessEntry(const cc_string* path, struct Stream* data, struct ZipEntry* source) {
+static hc_result ModernPatcher_ProcessEntry(const hc_string* path, struct Stream* data, struct ZipEntry* source) {
 	struct ResourceZipEntry* e;
 	const struct TilePatch* tile;
-	cc_string name;
+	hc_string name;
 
 	if (String_CaselessEqualsConst(path, "assets/minecraft/textures/environment/snow.png")
 		|| String_CaselessEqualsConst(path, "assets/minecraft/textures/entity/chicken.png")) {
@@ -1019,7 +1019,7 @@ static cc_result ModernPatcher_ProcessEntry(const cc_string* path, struct Stream
 	return ModernPatcher_PatchTile(data, tile);
 }
 
-static cc_result ModernPatcher_ExtractFiles(struct HttpRequest* req) {
+static hc_result ModernPatcher_ExtractFiles(struct HttpRequest* req) {
 	struct ZipEntry entries[64];
 	struct Stream src;
 	Stream_ReadonlyMemory(&src, req->data, req->size);
@@ -1030,10 +1030,10 @@ static cc_result ModernPatcher_ExtractFiles(struct HttpRequest* req) {
 }
 
 
-static cc_result TerrainPatcher_Process(struct HttpRequest* req) {
+static hc_result TerrainPatcher_Process(struct HttpRequest* req) {
 	struct Bitmap bmp;
 	struct Stream src;
-	cc_result res;
+	hc_result res;
 
 	Stream_ReadonlyMemory(&src, req->data, req->size);
 	if ((res = Png_Decode(&bmp, &src))) return res;
@@ -1050,8 +1050,8 @@ static cc_result TerrainPatcher_Process(struct HttpRequest* req) {
 	return 0;
 }
 
-static cc_result NewTextures_ExtractGui(struct HttpRequest* req) {
-	static const cc_string guiPng = String_FromConst("gui.png");
+static hc_result NewTextures_ExtractGui(struct HttpRequest* req) {
+	static const hc_string guiPng = String_FromConst("gui.png");
 	struct ResourceZipEntry* entry = ZipEntries_Find(&guiPng);
 
 	entry->value.data = req->data;
@@ -1061,10 +1061,10 @@ static cc_result NewTextures_ExtractGui(struct HttpRequest* req) {
 	return 0;
 }
 
-static cc_result Classic0023Patcher_PatchBlocks(struct HttpRequest* req, const int* targets) {
+static hc_result Classic0023Patcher_PatchBlocks(struct HttpRequest* req, const int* targets) {
 	struct Bitmap bmp;
 	struct Stream src;
-	cc_result res;
+	hc_result res;
 
 	Stream_ReadonlyMemory(&src, req->data, req->size);
 	if ((res = Png_Decode(&bmp, &src))) return res;
@@ -1079,25 +1079,25 @@ static cc_result Classic0023Patcher_PatchBlocks(struct HttpRequest* req, const i
 	return 0;
 }
 
-static cc_result Classic0023Patcher_OldGoldBlock(struct HttpRequest* req) {
+static hc_result Classic0023Patcher_OldGoldBlock(struct HttpRequest* req) {
 	static const int targets[] = { (8 << 8) | 1, (8 << 8) | 2, (8 << 8) | 3, 0 };
 
 	return Classic0023Patcher_PatchBlocks(req, targets);
 }
 
-static cc_result Classic0023Patcher_OldGoldOre(struct HttpRequest* req) {
+static hc_result Classic0023Patcher_OldGoldOre(struct HttpRequest* req) {
 	static const int targets[] = { (0 << 8) | 2, 0 };
 
 	return Classic0023Patcher_PatchBlocks(req, targets);
 }
 
-static cc_result Classic0023Patcher_OldBlackWool(struct HttpRequest* req) {
+static hc_result Classic0023Patcher_OldBlackWool(struct HttpRequest* req) {
 	static const int targets[] = { (13 << 8) | 4, 0 };
 
 	return Classic0023Patcher_PatchBlocks(req, targets);
 }
 
-static cc_result Classic0023Patcher_OldGrayWool(struct HttpRequest* req) {
+static hc_result Classic0023Patcher_OldGrayWool(struct HttpRequest* req) {
 	static const int targets[] = { (14 << 8) | 4, 0 };
 
 	return Classic0023Patcher_PatchBlocks(req, targets);
@@ -1107,11 +1107,11 @@ static cc_result Classic0023Patcher_OldGrayWool(struct HttpRequest* req) {
 /*########################################################################################################################*
 *-----------------------------------------------Minecraft Classic texture assets------------------------------------------*
 *#########################################################################################################################*/
-static cc_bool allZipEntriesExist;
+static hc_bool allZipEntriesExist;
 static int zipEntriesFound;
 
-static cc_bool DefaultZip_SelectEntry(const cc_string* path) {
-	cc_string name = *path;
+static hc_bool DefaultZip_SelectEntry(const hc_string* path) {
+	hc_string name = *path;
 	Utils_UNSAFE_GetFilename(&name);
 
 	if (ZipEntries_Find(&name)) zipEntriesFound++;
@@ -1119,7 +1119,7 @@ static cc_bool DefaultZip_SelectEntry(const cc_string* path) {
 }
 
 static void MCCTextures_CheckExistence(void) {
-	cc_string path  = String_FromReadonly(Game_Version.DefaultTexpack);
+	hc_string path  = String_FromReadonly(Game_Version.DefaultTexpack);
 	zipEntriesFound = 0;
 
 	ZipFile_InspectEntries(&path, DefaultZip_SelectEntry);
@@ -1127,7 +1127,7 @@ static void MCCTextures_CheckExistence(void) {
 	allZipEntriesExist = zipEntriesFound >= Array_Elems(defaultZipEntries);
 
 	/* Need touch.png from ClassiCube textures */
-	if (!allZipEntriesExist) ccTexturesExist = false;
+	if (!allZipEntriesExist) hcTexturesExist = false;
 }
 
 static void MCCTextures_CountMissing(void) {
@@ -1154,7 +1154,7 @@ static void MCCTextures_CountMissing(void) {
 *------------------------------------------Minecraft Classic texture assets fetching -------------------------------------*
 *#########################################################################################################################*/
 static void MCCTextures_DownloadAssets(void) {
-	cc_string url;
+	hc_string url;
 	int i;
 	if (allZipEntriesExist) return;
 	numDefaultZipProcessed = 0;
@@ -1181,21 +1181,21 @@ static const char* MCCTextures_GetRequestName(int reqID) {
 *------------------------------------------Minecraft Classic texture assets processing -----------------------------------*
 *#########################################################################################################################*/
 static void MCCTextures_CreateDefaultZip(void) {
-	cc_string path = String_FromReadonly(Game_Version.DefaultTexpack);
+	hc_string path = String_FromReadonly(Game_Version.DefaultTexpack);
 	ZipFile_Create(&path, defaultZipEntries, Array_Elems(defaultZipEntries));
 	MCCTextures_ResetState();
 }
 
 static void MCCTextures_CheckSource(struct ZipfileSource* source) {
 	struct HttpRequest item;
-	cc_result res;
+	hc_result res;
 	if (!Fetcher_Get(source->reqID, &item)) return;
 	
 	source->downloaded = true;
 	res = source->Process(&item);
 
 	if (res) {
-		cc_string name = String_FromReadonly(source->name);
+		hc_string name = String_FromReadonly(source->name);
 		Logger_SysWarn2(res, "making", &name);
 	}
 	HttpRequest_Free(&item);
@@ -1226,17 +1226,17 @@ static const struct AssetSet mccTexsAssetSet = {
 /*########################################################################################################################*
 *-----------------------------------------------------------Fetcher-------------------------------------------------------*
 *#########################################################################################################################*/
-cc_bool Fetcher_Working, Fetcher_Completed, Fetcher_Failed;
+hc_bool Fetcher_Working, Fetcher_Completed, Fetcher_Failed;
 int Fetcher_Downloaded;
 FetcherErrorCallback Fetcher_ErrorCallback;
 
 static const struct AssetSet* const asset_sets[] = {
-	&ccTexsAssetSet,
+	&hcTexsAssetSet,
 	&mccTexsAssetSet,
-#ifndef CC_BUILD_NOMUSIC
+#ifndef HC_BUILD_NOMUSIC
 	&mccMusicAssetSet,
 #endif
-#ifndef CC_BUILD_NOSOUNDS
+#ifndef HC_BUILD_NOSOUNDS
 	&mccSoundAssetSet
 #endif
 };
@@ -1306,7 +1306,7 @@ static void Fetcher_Fail(struct HttpRequest* item) {
 	Fetcher_Failed = true;
 }
 
-CC_NOINLINE static cc_bool Fetcher_Get(int reqID, struct HttpRequest* item) {
+HC_NOINLINE static hc_bool Fetcher_Get(int reqID, struct HttpRequest* item) {
 	if (!Http_GetResult(reqID, item)) return false;
 
 	if (item->success) {

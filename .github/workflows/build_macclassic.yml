@@ -35,13 +35,13 @@ jobs:
       - uses: ./.github/actions/upload_build
         if: ${{ always() && steps.compile.outcome == 'success' }}
         with:
-          SOURCE_FILE: 'ClassiCube-68k.dsk'
+          SOURCE_FILE: 'HarmonyClient-68k.dsk'
           DEST_NAME: 'HarmonyClient-68k.dsk'
 
       - uses: ./.github/actions/upload_build
         if: ${{ always() && steps.compile.outcome == 'success' }}
         with:
-          SOURCE_FILE: 'ClassiCube-ppc.dsk'
+          SOURCE_FILE: 'HarmonyClient-ppc.dsk'
           DEST_NAME: 'HarmonyClient-ppc.dsk'
 
       - uses: ./.github/actions/notify_success

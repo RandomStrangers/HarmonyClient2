@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_DREAMCAST
+#if defined HC_BUILD_DREAMCAST
 #include "_GraphicsBase.h"
 #include "Errors.h"
 #include "Logger.h"
@@ -10,7 +10,7 @@
 #include <dc/pvr.h>
 #include "../third_party/gldc/src/gldc.h"
 
-static cc_bool renderingDisabled;
+static hc_bool renderingDisabled;
 #define VERTEX_BUFFER_SIZE 32 * 40000
 #define PT_ALPHA_REF 0x011c
 
@@ -19,8 +19,8 @@ static cc_bool renderingDisabled;
 *---------------------------------------------------------General---------------------------------------------------------*
 *#########################################################################################################################*/
 static void InitPowerVR(void) {
-	cc_bool autosort = false; // Turn off auto sorting to match traditional GPU behaviour
-	cc_bool fsaa     = false;
+	hc_bool autosort = false; // Turn off auto sorting to match traditional GPU behaviour
+	hc_bool fsaa     = false;
 	AUTOSORT_ENABLED = autosort;
 
 	pvr_init_params_t params = {
@@ -65,7 +65,7 @@ void Gfx_Create(void) {
 	Gfx_RestoreState();
 }
 
-cc_bool Gfx_TryRestoreContext(void) {
+hc_bool Gfx_TryRestoreContext(void) {
 	return true;
 }
 
@@ -79,16 +79,16 @@ void Gfx_Free(void) {
 *#########################################################################################################################*/
 static PackedCol gfx_clearColor;
 
-void Gfx_SetFaceCulling(cc_bool enabled) { 
+void Gfx_SetFaceCulling(hc_bool enabled) { 
 	CULLING_ENABLED = enabled;
 	STATE_DIRTY     = true;
 }
 
-static void SetAlphaBlend(cc_bool enabled) { 
+static void SetAlphaBlend(hc_bool enabled) { 
 	BLEND_ENABLED = enabled;
 	STATE_DIRTY   = true;
 }
-void Gfx_SetAlphaArgBlend(cc_bool enabled) { }
+void Gfx_SetAlphaArgBlend(hc_bool enabled) { }
 
 void Gfx_ClearColor(PackedCol color) {
 	if (color == gfx_clearColor) return;
@@ -100,30 +100,30 @@ void Gfx_ClearColor(PackedCol color) {
 	pvr_set_bg_color(r, g, b); // TODO: not working ?
 }
 
-static void SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a) {
+static void SetColorWrite(hc_bool r, hc_bool g, hc_bool b, hc_bool a) {
 	// TODO: Doesn't work
 }
 
-void Gfx_SetDepthWrite(cc_bool enabled) { 
+void Gfx_SetDepthWrite(hc_bool enabled) { 
 	if (DEPTH_MASK_ENABLED == enabled) return;
 	
 	DEPTH_MASK_ENABLED = enabled;
 	STATE_DIRTY        = true;
 }
 
-void Gfx_SetDepthTest(cc_bool enabled) { 
+void Gfx_SetDepthTest(hc_bool enabled) { 
 	if (DEPTH_TEST_ENABLED == enabled) return;
 	
 	DEPTH_TEST_ENABLED = enabled;
 	STATE_DIRTY        = true;
 }
 
-static void SetAlphaTest(cc_bool enabled) {
+static void SetAlphaTest(hc_bool enabled) {
 	ALPHA_TEST_ENABLED = enabled;
 	STATE_DIRTY        = true;
 }
 
-void Gfx_DepthOnlyRendering(cc_bool depthOnly) {
+void Gfx_DepthOnlyRendering(hc_bool depthOnly) {
 	// don't need a fake second pass in this case
 	renderingDisabled = depthOnly;
 }
@@ -311,7 +311,7 @@ static unsigned Interleave(unsigned x) {
 #define BGRA8_to_BGRA4(src) \
 	((src[0] & 0xF0) >> 4) | (src[1] & 0xF0) | ((src[2] & 0xF0) << 4) | ((src[3] & 0xF0) << 8);	
 
-static void ConvertTexture(cc_uint16* dst, struct Bitmap* bmp, int rowWidth) {
+static void ConvertTexture(hc_uint16* dst, struct Bitmap* bmp, int rowWidth) {
 	unsigned min_dimension;
 	unsigned interleave_mask, interleaved_bits;
 	unsigned shifted_mask, shift_bits;
@@ -322,7 +322,7 @@ static void ConvertTexture(cc_uint16* dst, struct Bitmap* bmp, int rowWidth) {
 	for (int y = 0; y < bmp->height; y++)
 	{
 		Twiddle_CalcY(y);
-		cc_uint8* src = (cc_uint8*)(bmp->scan0 + y * rowWidth);
+		hc_uint8* src = (hc_uint8*)(bmp->scan0 + y * rowWidth);
 		
 		for (int x = 0; x < bmp->width; x++, src += 4)
 		{
@@ -332,7 +332,7 @@ static void ConvertTexture(cc_uint16* dst, struct Bitmap* bmp, int rowWidth) {
 	}
 }
 
-static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8 flags, cc_bool mipmaps) {
+static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, hc_uint8 flags, hc_bool mipmaps) {
 	GLuint texId = gldcGenTexture();
 	gldcBindTexture(texId);
 	
@@ -347,7 +347,7 @@ static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8
 }
 
 // TODO: struct GPUTexture ??
-static void ConvertSubTexture(cc_uint16* dst, int texWidth, int texHeight,
+static void ConvertSubTexture(hc_uint16* dst, int texWidth, int texHeight,
 				int originX, int originY, 
 				struct Bitmap* bmp, int rowWidth) {
 	unsigned min_dimension;
@@ -361,7 +361,7 @@ static void ConvertSubTexture(cc_uint16* dst, int texWidth, int texHeight,
 	{
 		int dstY = y + originY;
 		Twiddle_CalcY(dstY);
-		cc_uint8* src = (cc_uint8*)(bmp->scan0 + rowWidth * y);
+		hc_uint8* src = (hc_uint8*)(bmp->scan0 + rowWidth * y);
 		
 		for (int x = 0; x < bmp->width; x++, src += 4)
 		{
@@ -372,7 +372,7 @@ static void ConvertSubTexture(cc_uint16* dst, int texWidth, int texHeight,
 	}
 }
 
-void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, cc_bool mipmaps) {
+void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, hc_bool mipmaps) {
 	gldcBindTexture((GLuint)texId);
 				
 	void* pixels;
@@ -392,7 +392,7 @@ static PackedCol gfx_fogColor;
 static float gfx_fogEnd = 16.0f, gfx_fogDensity = 1.0f;
 static FogFunc gfx_fogMode = -1;
 
-void Gfx_SetFog(cc_bool enabled) {
+void Gfx_SetFog(hc_bool enabled) {
 	gfx_fogEnabled = enabled;
 	if (FOG_ENABLED == enabled) return;
 	
@@ -483,7 +483,7 @@ void Gfx_DisableTextureOffset(void) {
 	textureOffset  = false;
 }
 
-static CC_NOINLINE void ShiftTextureCoords(int count) {
+static HC_NOINLINE void ShiftTextureCoords(int count) {
 	for (int i = 0; i < count; i++) 
 	{
 		struct VertexTextured* v = (struct VertexTextured*)gfx_vertices + i;
@@ -492,7 +492,7 @@ static CC_NOINLINE void ShiftTextureCoords(int count) {
 	}
 }
 
-static CC_NOINLINE void UnshiftTextureCoords(int count) {
+static HC_NOINLINE void UnshiftTextureCoords(int count) {
 	for (int i = 0; i < count; i++) 
 	{
 		struct VertexTextured* v = (struct VertexTextured*)gfx_vertices + i;
@@ -511,15 +511,15 @@ static void Gfx_RestoreState(void) {
 	gfx_format = -1;
 }
 
-cc_bool Gfx_WarnIfNecessary(void) { return false; }
-cc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
+hc_bool Gfx_WarnIfNecessary(void) { return false; }
+hc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
 
 
 /*########################################################################################################################*
 *----------------------------------------------------------Drawing--------------------------------------------------------*
 *#########################################################################################################################*/
 extern void apply_poly_header(pvr_poly_hdr_t* header, int list_type);
-static cc_bool loggedNoVRAM;
+static hc_bool loggedNoVRAM;
 
 extern Vertex* DrawColouredQuads(const void* src, Vertex* dst, int numQuads);
 extern Vertex* DrawTexturedQuads(const void* src, Vertex* dst, int numQuads);
@@ -607,11 +607,11 @@ void Gfx_DrawIndexedTris_T2fC4b(int verticesCount, int startVertex) {
 /*########################################################################################################################*
 *-----------------------------------------------------------Misc----------------------------------------------------------*
 *#########################################################################################################################*/
-cc_result Gfx_TakeScreenshot(struct Stream* output) {
+hc_result Gfx_TakeScreenshot(struct Stream* output) {
 	return ERR_NOT_SUPPORTED;
 }
 
-void Gfx_GetApiInfo(cc_string* info) {
+void Gfx_GetApiInfo(hc_string* info) {
 	int freeMem = _glFreeTextureMemory();
 	int usedMem = _glUsedTextureMemory();
 	
@@ -625,7 +625,7 @@ void Gfx_GetApiInfo(cc_string* info) {
 	PrintMaxTextureInfo(info);
 }
 
-void Gfx_SetVSync(cc_bool vsync) {
+void Gfx_SetVSync(hc_bool vsync) {
 	gfx_vsync = vsync;
 }
 

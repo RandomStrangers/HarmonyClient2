@@ -15,15 +15,15 @@
 
 const char* const LightingMode_Names[LIGHTING_MODE_COUNT] = { "Classic", "Fancy" };
 
-cc_uint8 Lighting_Mode;
-cc_bool  Lighting_ModeLockedByServer;
-cc_bool  Lighting_ModeSetByServer;
-cc_uint8 Lighting_ModeUserCached;
+hc_uint8 Lighting_Mode;
+hc_bool  Lighting_ModeLockedByServer;
+hc_bool  Lighting_ModeSetByServer;
+hc_uint8 Lighting_ModeUserCached;
 struct _Lighting Lighting;
 #define Lighting_Pack(x, z) ((x) + World.Width * (z))
 
-void Lighting_SetMode(cc_uint8 mode, cc_bool fromServer) {
-	cc_uint8 oldMode = Lighting_Mode;
+void Lighting_SetMode(hc_uint8 mode, hc_bool fromServer) {
+	hc_uint8 oldMode = Lighting_Mode;
 	Lighting_Mode    = mode;
 
 	Event_RaiseLightingMode(&WorldEvents.LightingModeChanged, oldMode, fromServer);
@@ -33,7 +33,7 @@ void Lighting_SetMode(cc_uint8 mode, cc_bool fromServer) {
 /*########################################################################################################################*
 *----------------------------------------------------Classic lighting-----------------------------------------------------*
 *#########################################################################################################################*/
-static cc_int16* classic_heightmap;
+static hc_int16* classic_heightmap;
 #define HEIGHT_UNCALCULATED Int16_MaxValue
 
 #define ClassicLighting_CalcBody(get_block)\
@@ -73,11 +73,11 @@ int ClassicLighting_GetLightHeight(int x, int z) {
 }
 
 /* Outside color is same as sunlight color, so we reuse when possible */
-cc_bool ClassicLighting_IsLit(int x, int y, int z) {
+hc_bool ClassicLighting_IsLit(int x, int y, int z) {
 	return y > ClassicLighting_GetLightHeight(x, z);
 }
 
-cc_bool ClassicLighting_IsLit_Fast(int x, int y, int z) {
+hc_bool ClassicLighting_IsLit_Fast(int x, int y, int z) {
 	return y > classic_heightmap[Lighting_Pack(x, z)];
 }
 
@@ -129,8 +129,8 @@ void ClassicLighting_Refresh(void) {
 *----------------------------------------------------Lighting update------------------------------------------------------*
 *#########################################################################################################################*/
 static void ClassicLighting_UpdateLighting(int x, int y, int z, BlockID oldBlock, BlockID newBlock, int index, int lightH) {
-	cc_bool didBlock  = Blocks.BlocksLight[oldBlock];
-	cc_bool nowBlocks = Blocks.BlocksLight[newBlock];
+	hc_bool didBlock  = Blocks.BlocksLight[oldBlock];
+	hc_bool nowBlocks = Blocks.BlocksLight[newBlock];
 	int oldOffset     = (Blocks.LightOffset[oldBlock] >> LIGHT_FLAG_SHADES_FROM_BELOW) & 1;
 	int newOffset     = (Blocks.LightOffset[newBlock] >> LIGHT_FLAG_SHADES_FROM_BELOW) & 1;
 	BlockID above;
@@ -163,7 +163,7 @@ static void ClassicLighting_UpdateLighting(int x, int y, int z, BlockID oldBlock
 	}
 }
 
-static cc_bool ClassicLighting_Needs(BlockID block, BlockID other) {
+static hc_bool ClassicLighting_Needs(BlockID block, BlockID other) {
 	return Blocks.Draw[block] != DRAW_OPAQUE || Blocks.Draw[other] != DRAW_GAS;
 }
 
@@ -175,9 +175,9 @@ for (; y >= minY; y--, i -= World.OneY) {\
 	if (affected) return true;\
 }
 
-static cc_bool ClassicLighting_NeedsNeighour(BlockID block, int i, int minY, int y, int nY) {
+static hc_bool ClassicLighting_NeedsNeighour(BlockID block, int i, int minY, int y, int nY) {
 	BlockID other;
-	cc_bool affected;
+	hc_bool affected;
 
 #ifndef EXTENDED_BLOCKS
 	ClassicLighting_NeedsNeighourBody(World.Blocks[i]);
@@ -312,7 +312,7 @@ for (y = World.Height - 1; y >= 0; y--) {\
 \
 			if (x < xCount && Blocks.BlocksLight[get_block]) {\
 				lightOffset = (Blocks.LightOffset[get_block] >> LIGHT_FLAG_SHADES_FROM_BELOW) & 1;\
-				classic_heightmap[hIndex + x] = (cc_int16)(y - lightOffset);\
+				classic_heightmap[hIndex + x] = (hc_int16)(y - lightOffset);\
 				elemsLeft--;\
 				skip[index] = 0;\
 \
@@ -340,7 +340,7 @@ for (y = World.Height - 1; y >= 0; y--) {\
 	}\
 }
 
-static cc_bool Heightmap_CalculateCoverage(int x1, int z1, int xCount, int zCount, int elemsLeft, int* skip) {
+static hc_bool Heightmap_CalculateCoverage(int x1, int z1, int xCount, int zCount, int elemsLeft, int* skip) {
 	int prevRunCount = 0, curRunCount, newRunCount, oldRunCount;
 	int lightOffset, offset;
 	int mapIndex, hIndex, baseIndex, index;
@@ -392,7 +392,7 @@ void ClassicLighting_FreeState(void) {
 }
 
 void ClassicLighting_AllocState(void) {
-	classic_heightmap = (cc_int16*)Mem_TryAlloc(World.Width * World.Length, 2);
+	classic_heightmap = (hc_int16*)Mem_TryAlloc(World.Width * World.Length, 2);
 	if (classic_heightmap) {
 		ClassicLighting_Refresh();
 	} else {
@@ -401,7 +401,7 @@ void ClassicLighting_AllocState(void) {
 }
 
 static void ClassicLighting_SetActive(void) {
-	cc_bool smoothLighting = false;
+	hc_bool smoothLighting = false;
 	if (!Game_ClassicMode) smoothLighting = Options_GetBool(OPT_SMOOTH_LIGHTING, false);
 
 	Lighting.OnBlockChanged = ClassicLighting_OnBlockChanged;
@@ -440,7 +440,7 @@ static void Lighting_SwitchActive(void) {
 	Lighting.AllocState();
 }
 
-static void Lighting_HandleModeChanged(void* obj, cc_uint8 oldMode, cc_bool fromServer) {
+static void Lighting_HandleModeChanged(void* obj, hc_uint8 oldMode, hc_bool fromServer) {
 	if (Lighting_Mode == oldMode) return;
 	Builder_ApplyActive();
 

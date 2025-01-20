@@ -1,5 +1,5 @@
 #include "Launcher.h"
-#ifndef CC_BUILD_WEB
+#ifndef HC_BUILD_WEB
 #include "String.h"
 #include "LScreens.h"
 #include "LWidgets.h"
@@ -25,13 +25,13 @@
 #include "Gui.h"
 
 struct LScreen* Launcher_Active;
-cc_bool Launcher_ShouldExit, Launcher_ShouldUpdate;
+hc_bool Launcher_ShouldExit, Launcher_ShouldUpdate;
 static char hashBuffer[STRING_SIZE], userBuffer[STRING_SIZE];
-cc_string Launcher_AutoHash = String_FromArray(hashBuffer);
-cc_string Launcher_Username = String_FromArray(userBuffer);
-cc_bool Launcher_ShowEmptyServers;
+hc_string Launcher_AutoHash = String_FromArray(hashBuffer);
+hc_string Launcher_Username = String_FromArray(userBuffer);
+hc_bool Launcher_ShowEmptyServers;
 
-static cc_bool useBitmappedFont, hasBitmappedFont;
+static hc_bool useBitmappedFont, hasBitmappedFont;
 static struct Bitmap dirtBmp, stoneBmp;
 #define TILESIZE 48
 
@@ -58,8 +58,8 @@ void Launcher_SetScreen(struct LScreen* screen) {
 	LBackend_Redraw();
 }
 
-void Launcher_DisplayHttpError(struct HttpRequest* req, const char* action, cc_string* dst) {
-	cc_result res = req->result;
+void Launcher_DisplayHttpError(struct HttpRequest* req, const char* action, hc_string* dst) {
+	hc_result res = req->result;
 	int status    = req->statusCode;
 
 	if (res) {
@@ -77,11 +77,11 @@ void Launcher_DisplayHttpError(struct HttpRequest* req, const char* action, cc_s
 /*########################################################################################################################*
 *--------------------------------------------------------Starter/Updater--------------------------------------------------*
 *#########################################################################################################################*/
-static cc_uint64 lastJoin;
-cc_bool Launcher_StartGame(const cc_string* user, const cc_string* mppass, const cc_string* ip, const cc_string* port, const cc_string* server, int numStates) {
-	cc_string args[4]; int numArgs;
-	cc_uint64 now;
-	cc_result res;
+static hc_uint64 lastJoin;
+hc_bool Launcher_StartGame(const hc_string* user, const hc_string* mppass, const hc_string* ip, const hc_string* port, const hc_string* server, int numStates) {
+	hc_string args[4]; int numArgs;
+	hc_uint64 now;
+	hc_result res;
 	
 	now = Stopwatch_Measure();
 	if (Stopwatch_ElapsedMS(lastJoin, now) < 1000) return false;
@@ -110,7 +110,7 @@ cc_bool Launcher_StartGame(const cc_string* user, const cc_string* mppass, const
 		numArgs = 4;
 	}
 
-#ifdef CC_BUILD_SPLITSCREEN
+#ifdef HC_BUILD_SPLITSCREEN
 	Game_NumStates = numStates;
 #endif
 
@@ -122,8 +122,8 @@ cc_bool Launcher_StartGame(const cc_string* user, const cc_string* mppass, const
 	return true;
 }
 
-CC_NOINLINE static void StartFromInfo(struct ServerInfo* info) {
-	cc_string port; char portBuffer[STRING_INT_CHARS];
+HC_NOINLINE static void StartFromInfo(struct ServerInfo* info) {
+	hc_string port; char portBuffer[STRING_INT_CHARS];
 	String_InitArray(port, portBuffer);
 
 	String_AppendInt(&port, info->port);
@@ -131,11 +131,11 @@ CC_NOINLINE static void StartFromInfo(struct ServerInfo* info) {
 }
 
 static void ConnectToServerError(struct HttpRequest* req) {
-	cc_string logMsg = String_Init(NULL, 0, 0);
+	hc_string logMsg = String_Init(NULL, 0, 0);
 	Launcher_DisplayHttpError(req, "fetching server info", &logMsg);
 }
 
-cc_bool Launcher_ConnectToServer(const cc_string* hash) {
+hc_bool Launcher_ConnectToServer(const hc_string* hash) {
 	struct ServerInfo* info;
 	int i;
 	if (!hash->length) return false;
@@ -178,18 +178,18 @@ static void OnResize(void* obj) {
 	LBackend_Redraw();
 }
 
-static cc_bool IsShutdown(int key) {
+static hc_bool IsShutdown(int key) {
 	if (key == CCKEY_F4 && Input_IsAltPressed()) return true;
 
 	/* On macOS, Cmd+Q should also end the process */
-#ifdef CC_BUILD_DARWIN
+#ifdef HC_BUILD_DARWIN
 	return key == 'Q' && Input_IsWinPressed();
 #else
 	return false;
 #endif
 }
 
-static void OnInputDown(void* obj, int key, cc_bool was, struct InputDevice* device) {
+static void OnInputDown(void* obj, int key, hc_bool was, struct InputDevice* device) {
 	if (Input.DownHook) { Input.DownHook(key, device); return; }
 
 	if (IsShutdown(key)) Launcher_ShouldExit = true;
@@ -231,16 +231,16 @@ static void Launcher_Free(void) {
 }
 
 void Launcher_Run(void) {
-	static const cc_string title = String_FromConst(GAME_APP_TITLE);
+	static const hc_string title = String_FromConst(GAME_APP_TITLE);
 	Window_Create2D(640, 400);
-#ifdef CC_BUILD_MOBILE
+#ifdef HC_BUILD_MOBILE
 	Window_LockLandscapeOrientation(Options_GetBool(OPT_LANDSCAPE_MODE, false));
 #endif
 	Window_SetTitle(&title);
 	Window_Show();
 	LWidget_CalcOffsets();
 
-#ifdef CC_BUILD_WIN
+#ifdef HC_BUILD_WIN
 	/* clean leftover exe from updating */
 	if (Options_GetBool("update-dirty", false) && Updater_Clean()) {
 		Options_Set("update-dirty", NULL);
@@ -269,7 +269,7 @@ void Launcher_Run(void) {
 	Http_Component.Init();
 	CheckUpdateTask_Run();
 
-#ifdef CC_BUILD_RESOURCES
+#ifdef HC_BUILD_RESOURCES
 	Resources_CheckExistence();
 
 	if (Resources_MissingCount) {
@@ -295,7 +295,7 @@ void Launcher_Run(void) {
 	Launcher_Free();
 	Launcher_ShouldExit = false;
 
-#ifdef CC_BUILD_MOBILE
+#ifdef HC_BUILD_MOBILE
 	/* Reset components */
 	Platform_LogConst("undoing components");
 	Drawer2D_Component.Free();
@@ -304,7 +304,7 @@ void Launcher_Run(void) {
 
 	if (Launcher_ShouldUpdate) {
 		const char* action;
-		cc_result res = Updater_Start(&action);
+		hc_result res = Updater_Start(&action);
 		if (res) Logger_SysWarn(res, action);
 	}
 	Window_Destroy();
@@ -347,8 +347,8 @@ const struct LauncherTheme Launcher_CoreTheme = {
 	BitmapColor_RGB(64, 0, 64), /* button foreground */
 	BitmapColor_RGB(64, 0, 0), /* button highlight*/
 };
-CC_NOINLINE static void ParseColor(const char* key, BitmapCol* color) {
-	cc_uint8 rgb[3];
+HC_NOINLINE static void ParseColor(const char* key, BitmapCol* color) {
+	hc_uint8 rgb[3];
 	if (!Options_GetColor(key, rgb)) return;
 
 	*color = BitmapColor_RGB(rgb[0], rgb[1], rgb[2]);
@@ -369,8 +369,8 @@ void Launcher_LoadTheme(void) {
 	ParseColor("launcher-btn-highlight-inactive-col", &Launcher_Theme.ButtonHighlightColor);
 }
 
-CC_NOINLINE static void SaveColor(const char* key, BitmapCol color) {
-	cc_string value; char valueBuffer[6];
+HC_NOINLINE static void SaveColor(const char* key, BitmapCol color) {
+	hc_string value; char valueBuffer[6];
 	
 	String_InitArray(value, valueBuffer);
 	String_AppendHex(&value, BitmapCol_R(color));
@@ -396,14 +396,14 @@ void Launcher_SaveTheme(void) {
 *#########################################################################################################################*/
 /* Tints the given area, linearly interpolating from a to b */
 /*  Note that this only tints RGB, A is not tinted */
-static void TintBitmap(struct Bitmap* bmp, cc_uint8 tintA, cc_uint8 tintB, int width, int height) {
+static void TintBitmap(struct Bitmap* bmp, hc_uint8 tintA, hc_uint8 tintB, int width, int height) {
 	BitmapCol* row;
-	cc_uint8 tint;
+	hc_uint8 tint;
 	int xx, yy;
 
 	for (yy = 0; yy < height; yy++) {
 		row  = Bitmap_GetRow(bmp, yy);
-		tint = (cc_uint8)Math_Lerp(tintA, tintB, (float)yy / height);
+		tint = (hc_uint8)Math_Lerp(tintA, tintB, (float)yy / height);
 
 		for (xx = 0; xx < width; xx++) {
 			/* TODO: Not shift when multiplying */
@@ -428,15 +428,15 @@ static void ExtractTerrainTiles(struct Bitmap* bmp) {
 	TintBitmap(&stoneBmp, 96, 96, TILESIZE, TILESIZE);
 }
 
-static cc_bool Launcher_SelectZipEntry(const cc_string* path) {
+static hc_bool Launcher_SelectZipEntry(const hc_string* path) {
 	return
 		String_CaselessEqualsConst(path, "default.png") ||
 		String_CaselessEqualsConst(path, "terrain.png");
 }
 
-static cc_result Launcher_ProcessZipEntry(const cc_string* path, struct Stream* data, struct ZipEntry* source) {
+static hc_result Launcher_ProcessZipEntry(const hc_string* path, struct Stream* data, struct ZipEntry* source) {
 	struct Bitmap bmp;
-	cc_result res;
+	hc_result res;
 
 
 	if (String_CaselessEqualsConst(path, "default.png")) {
@@ -465,10 +465,10 @@ static cc_result Launcher_ProcessZipEntry(const cc_string* path, struct Stream* 
 	return 0;
 }
 
-static cc_result ExtractTexturePack(const cc_string* path) {
+static hc_result ExtractTexturePack(const hc_string* path) {
 	struct ZipEntry entries[32];
 	struct Stream stream;
-	cc_result res;
+	hc_result res;
 
 	res = Stream_OpenFile(&stream, path);
 	if (res == ReturnCode_FileNotFound) return res;
@@ -484,8 +484,8 @@ static cc_result ExtractTexturePack(const cc_string* path) {
 }
 
 void Launcher_TryLoadTexturePack(void) {
-	cc_string path; char pathBuffer[FILENAME_SIZE];
-	cc_string texPack;
+	hc_string path; char pathBuffer[FILENAME_SIZE];
+	hc_string texPack;
 
 	/* TODO: Not duplicate TexturePack functionality */
 	if (Options_UNSAFE_Get(OPT_DEFAULT_TEX_PACK, &texPack)) {
@@ -506,7 +506,7 @@ void Launcher_TryLoadTexturePack(void) {
 *----------------------------------------------------------Background-----------------------------------------------------*
 *#########################################################################################################################*/
 /* Fills the given area using pixels from the source bitmap, by repeatedly tiling the bitmap */
-CC_NOINLINE static void ClearTile(int x, int y, int width, int height, 
+HC_NOINLINE static void ClearTile(int x, int y, int width, int height, 
 								struct Context2D* ctx, struct Bitmap* src) {
 	struct Bitmap* dst = (struct Bitmap*)ctx;
 	BitmapCol* dstRow;
@@ -541,13 +541,13 @@ void Launcher_DrawBackgroundAll(struct Context2D* ctx) {
 	}
 }
 
-cc_bool Launcher_BitmappedText(void) {
+hc_bool Launcher_BitmappedText(void) {
 	return (useBitmappedFont || Launcher_Theme.ClassicBackground) && hasBitmappedFont;
 }
 
 static void DrawTitleText(struct FontDesc* font, const char* text, struct Context2D* ctx, 
-				cc_uint8 horAnchor, cc_uint8 verAnchor) {
-	cc_string title = String_FromReadonly(text);
+				hc_uint8 horAnchor, hc_uint8 verAnchor) {
+	hc_string title = String_FromReadonly(text);
 	struct DrawTextArgs args;
 	int x, y;
 	
@@ -561,8 +561,8 @@ static void DrawTitleText(struct FontDesc* font, const char* text, struct Contex
 	Context2D_DrawText(ctx, &args, x, 0);
 }
 
-#ifdef CC_BUILD_DUALSCREEN
-extern cc_bool launcherTop;
+#ifdef HC_BUILD_DUALSCREEN
+extern hc_bool launcherTop;
 
 void Launcher_DrawTitle(struct FontDesc* font, const char* text, struct Context2D* ctx) {
 	/* Put title on top screen */

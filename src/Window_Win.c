@@ -1,5 +1,5 @@
 #include "Core.h"
-#if CC_WIN_BACKEND == CC_WIN_BACKEND_WIN32
+#if HC_WIN_BACKEND == HC_WIN_BACKEND_WIN32
 /*
    The Open Toolkit Library License
   
@@ -50,8 +50,8 @@
 #include <commdlg.h>
 
 /* https://docs.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-setpixelformat */
-#define CC_WIN_STYLE WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN
-#define CC_WIN_CLASSNAME TEXT("ClassiCube_Window")
+#define HC_WIN_STYLE WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN
+#define HC_WIN_CLASSNAME TEXT("HarmonyClient_Window")
 #define Rect_Width(rect)  (rect.right  - rect.left)
 #define Rect_Height(rect) (rect.bottom - rect.top)
 
@@ -75,11 +75,11 @@ static BOOL (WINAPI* _SetProcessDPIAware)(void);
 
 static HINSTANCE win_instance;
 static HDC win_DC;
-static cc_bool suppress_resize;
-static cc_bool is_ansiWindow, grabCursor;
+static hc_bool suppress_resize;
+static hc_bool is_ansiWindow, grabCursor;
 static int windowX, windowY;
 
-static const cc_uint8 key_map[] = {
+static const hc_uint8 key_map[] = {
 /* 00 */ 0, 0, 0, 0, 0, 0, 0, 0, 
 /* 08 */ CCKEY_BACKSPACE, CCKEY_TAB, 0, 0, CCKEY_F5, CCKEY_ENTER, 0, 0,
 /* 10 */ 0, 0, 0, CCKEY_PAUSE, CCKEY_CAPSLOCK, 0, 0, 0, 
@@ -131,7 +131,7 @@ static int MapNativeKey(WPARAM vk_key, LPARAM meta) {
 	return key;
 }
 
-static cc_bool RefreshWindowDimensions(void) {
+static hc_bool RefreshWindowDimensions(void) {
 	HWND hwnd = Window_Main.Handle.ptr;
 	RECT rect;
 	int width = Window_Main.Width, height = Window_Main.Height;
@@ -162,7 +162,7 @@ static void GrabCursor(void) {
 
 static LRESULT CALLBACK Window_Procedure(HWND handle, UINT message, WPARAM wParam, LPARAM lParam) {
 	float wheelDelta;
-	cc_bool sized;
+	hc_bool sized;
 	HWND hwnd;
 
 	switch (message) {
@@ -195,7 +195,7 @@ static LRESULT CALLBACK Window_Procedure(HWND handle, UINT message, WPARAM wPara
 
 	case WM_CHAR:
 		/* TODO: Use WM_UNICHAR instead, as WM_CHAR is just utf16 */
-		Event_RaiseInt(&InputEvents.Press, (cc_unichar)wParam);
+		Event_RaiseInt(&InputEvents.Press, (hc_unichar)wParam);
 		break;
 
 	case WM_MOUSEMOVE:
@@ -274,14 +274,14 @@ static LRESULT CALLBACK Window_Procedure(HWND handle, UINT message, WPARAM wPara
 	case WM_SYSKEYDOWN:
 	case WM_SYSKEYUP:
 	{
-		cc_bool pressed = message == WM_KEYDOWN || message == WM_SYSKEYDOWN;
+		hc_bool pressed = message == WM_KEYDOWN || message == WM_SYSKEYDOWN;
 		/* Shift/Control/Alt behave strangely when e.g. ShiftRight is held down and ShiftLeft is pressed
 		and released. It looks like neither key is released in this case, or that the wrong key is
 		released in the case of Control and Alt.
 		To combat this, we are going to release both keys when either is released. Hacky, but should work.
 		Win95 does not distinguish left/right key constants (GetAsyncKeyState returns 0).
 		In this case, both keys will be reported as pressed. */
-		cc_bool lShiftDown, rShiftDown;
+		hc_bool lShiftDown, rShiftDown;
 		int key;
 
 		if (wParam == VK_SHIFT) {
@@ -316,7 +316,7 @@ static LRESULT CALLBACK Window_Procedure(HWND handle, UINT message, WPARAM wPara
 		return 0;
 
 	case WM_DESTROY:
-		UnregisterClassW(CC_WIN_CLASSNAME, win_instance);
+		UnregisterClassW(HC_WIN_CLASSNAME, win_instance);
 		break;
 	}
 	return is_ansiWindow ? DefWindowProcA(handle, message, wParam, lParam)
@@ -337,7 +337,7 @@ void Window_Init(void) {
 		DynamicLib_Sym(GetRawInputData),
 		DynamicLib_Sym(SetProcessDPIAware)
 	};
-	static const cc_string user32 = String_FromConst("USER32.DLL");
+	static const hc_string user32 = String_FromConst("USER32.DLL");
 	void* lib;
 	HDC hdc;
 
@@ -372,7 +372,7 @@ static ATOM DoRegisterClass(void) {
 	wc.style      = CS_OWNDC; /* https://stackoverflow.com/questions/48663815/getdc-releasedc-cs-owndc-with-opengl-and-gdi */
 	wc.hInstance  = win_instance;
 	wc.lpfnWndProc   = Window_Procedure;
-	wc.lpszClassName = CC_WIN_CLASSNAME;
+	wc.lpszClassName = HC_WIN_CLASSNAME;
 
 	wc.hIcon   = (HICON)LoadImageA(win_instance, MAKEINTRESOURCEA(1), IMAGE_ICON,
 			GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), 0);
@@ -386,22 +386,22 @@ static ATOM DoRegisterClass(void) {
 }
 
 static HWND CreateWindowHandle(ATOM atom, int width, int height) {
-	cc_result res;
+	hc_result res;
 	HWND hwnd;
 	RECT r;
 	/* Calculate final window rectangle after window decorations are added (titlebar, borders etc) */
 	r.left = Display_CentreX(width);  r.right  = r.left + width;
 	r.top  = Display_CentreY(height); r.bottom = r.top  + height;
-	AdjustWindowRect(&r, CC_WIN_STYLE, false);
+	AdjustWindowRect(&r, HC_WIN_STYLE, false);
 
-	if ((hwnd = CreateWindowExW(0, MAKEINTATOM(atom), NULL, CC_WIN_STYLE,
+	if ((hwnd = CreateWindowExW(0, MAKEINTATOM(atom), NULL, HC_WIN_STYLE,
 		r.left, r.top, Rect_Width(r), Rect_Height(r), NULL, NULL, win_instance, NULL))) return hwnd;
 	res = GetLastError();
 
 	/* Windows 9x does not support W API functions */
 	if (res == ERROR_CALL_NOT_IMPLEMENTED) {
 		is_ansiWindow = true;
-		if ((hwnd = CreateWindowExA(0, (LPCSTR)MAKEINTATOM(atom), NULL, CC_WIN_STYLE,
+		if ((hwnd = CreateWindowExA(0, (LPCSTR)MAKEINTATOM(atom), NULL, HC_WIN_STYLE,
 			r.left, r.top, Rect_Width(r), Rect_Height(r), NULL, NULL, win_instance, NULL))) return hwnd;
 		res = GetLastError();
 	}
@@ -442,9 +442,9 @@ void Window_Destroy(void) {
 	DestroyWindow(hwnd);
 }
 
-void Window_SetTitle(const cc_string* title) {
+void Window_SetTitle(const hc_string* title) {
 	HWND hwnd = Window_Main.Handle.ptr;
-	cc_winstring str;
+	hc_winstring str;
 	Platform_EncodeString(&str, title);
 	if (SetWindowTextW(hwnd, str.uni)) return;
 
@@ -452,9 +452,9 @@ void Window_SetTitle(const cc_string* title) {
 	SetWindowTextA(hwnd, str.ansi);
 }
 
-void Clipboard_GetText(cc_string* value) {
+void Clipboard_GetText(hc_string* value) {
 	HWND hwnd = Window_Main.Handle.ptr;
-	cc_bool unicode;
+	hc_bool unicode;
 	HANDLE hGlobal;
 	LPVOID src;
 	SIZE_T size;
@@ -492,9 +492,9 @@ void Clipboard_GetText(cc_string* value) {
 	}
 }
 
-void Clipboard_SetText(const cc_string* value) {
+void Clipboard_SetText(const hc_string* value) {
 	HWND hwnd = Window_Main.Handle.ptr;
-	cc_unichar* text;
+	hc_unichar* text;
 	HANDLE hGlobal;
 	int i;
 
@@ -508,7 +508,7 @@ void Clipboard_SetText(const cc_string* value) {
 		hGlobal = GlobalAlloc(GMEM_MOVEABLE, (value->length + 1) * 2);
 		if (!hGlobal) { CloseClipboard(); return; }
 
-		text = (cc_unichar*)GlobalLock(hGlobal);
+		text = (hc_unichar*)GlobalLock(hGlobal);
 		for (i = 0; i < value->length; i++, text++) {
 			*text = Convert_CP437ToUnicode(value->buffer[i]);
 		}
@@ -531,7 +531,7 @@ int Window_GetWindowState(void) {
 	return WINDOW_STATE_NORMAL;
 }
 
-static void ToggleFullscreen(HWND hwnd, cc_bool fullscreen, UINT finalShow) {
+static void ToggleFullscreen(HWND hwnd, hc_bool fullscreen, UINT finalShow) {
 	DWORD style = WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
 	style |= (fullscreen ? WS_POPUP : WS_OVERLAPPEDWINDOW);
 
@@ -551,7 +551,7 @@ static void ToggleFullscreen(HWND hwnd, cc_bool fullscreen, UINT finalShow) {
 }
 
 static UINT win_show;
-cc_result Window_EnterFullscreen(void) {
+hc_result Window_EnterFullscreen(void) {
 	HWND hwnd = Window_Main.Handle.ptr;
 	WINDOWPLACEMENT w = { 0 };
 	w.length = sizeof(WINDOWPLACEMENT);
@@ -562,7 +562,7 @@ cc_result Window_EnterFullscreen(void) {
 	return 0;
 }
 
-cc_result Window_ExitFullscreen(void) {
+hc_result Window_ExitFullscreen(void) {
 	HWND hwnd = Window_Main.Handle.ptr;
 	ToggleFullscreen(hwnd, false, win_show);
 	return 0;
@@ -628,7 +628,7 @@ static void Cursor_GetRawPos(int* x, int* y) {
 void Cursor_SetPosition(int x, int y) { 
 	SetCursorPos(x + windowX, y + windowY);
 }
-static void Cursor_DoSetVisible(cc_bool visible) {
+static void Cursor_DoSetVisible(hc_bool visible) {
 	int i;
 	/* ShowCursor actually is a counter (returns > 0 if visible, <= 0 if not) */
 	/* Try multiple times in case cursor count was changed by something else */
@@ -645,18 +645,18 @@ static void ShowDialogCore(const char* title, const char* msg) {
 	MessageBoxA(hwnd, msg, title, 0);
 }
 
-static cc_result OpenSaveFileDialog(const cc_string* filters, FileDialogCallback callback, cc_bool load,
-									const char* const* fileExts, const cc_string* defaultName) {
+static hc_result OpenSaveFileDialog(const hc_string* filters, FileDialogCallback callback, hc_bool load,
+									const char* const* fileExts, const hc_string* defaultName) {
 	union OPENFILENAME_union {
 		OPENFILENAMEW wide;
 		OPENFILENAMEA ansi;
 	} ofn = { 0 }; // less compiler warnings this way
 	HWND hwnd = Window_Main.Handle.ptr;
 	
-	cc_string path; char pathBuffer[NATIVE_STR_LEN];
-	cc_winstring str  = { 0 };
-	cc_winstring filter;
-	cc_result res;
+	hc_string path; char pathBuffer[NATIVE_STR_LEN];
+	hc_winstring str  = { 0 };
+	hc_winstring filter;
+	hc_result res;
 	BOOL ok;
 	int i;
 
@@ -710,9 +710,9 @@ static cc_result OpenSaveFileDialog(const cc_string* filters, FileDialogCallback
 	return 0;
 }
 
-cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
+hc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 	const char* const* fileExts = args->filters;
-	cc_string filters; char buffer[NATIVE_STR_LEN];
+	hc_string filters; char buffer[NATIVE_STR_LEN];
 	int i;
 
 	/* Filter tokens are \0 separated - e.g. "Maps (*.cw;*.dat)\0*.cw;*.dat\0 */
@@ -736,10 +736,10 @@ cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 	return OpenSaveFileDialog(&filters, args->Callback, true, fileExts, &String_Empty);
 }
 
-cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
+hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
 	const char* const* titles   = args->titles;
 	const char* const* fileExts = args->filters;
-	cc_string filters; char buffer[NATIVE_STR_LEN];
+	hc_string filters; char buffer[NATIVE_STR_LEN];
 	int i;
 
 	/* Filter tokens are \0 separated - e.g. "Map (*.cw)\0*.cw\0 */
@@ -783,7 +783,7 @@ void Window_FreeFramebuffer(struct Bitmap* bmp) {
 	DeleteObject(draw_DIB);
 }
 
-static cc_bool rawMouseInited, rawMouseSupported;
+static hc_bool rawMouseInited, rawMouseSupported;
 static void InitRawMouse(void) {
 	HWND hwnd = Window_Main.Handle.ptr;
 	RAWINPUTDEVICE rid;
@@ -803,7 +803,7 @@ static void InitRawMouse(void) {
 }
 
 void OnscreenKeyboard_Open(struct OpenKeyboardArgs* args) { }
-void OnscreenKeyboard_SetText(const cc_string* text) { }
+void OnscreenKeyboard_SetText(const hc_string* text) { }
 void OnscreenKeyboard_Close(void) { }
 
 void Window_EnableRawMouse(void) {
@@ -832,7 +832,7 @@ void Window_DisableRawMouse(void) {
 /*########################################################################################################################*
 *-------------------------------------------------------WGL OpenGL--------------------------------------------------------*
 *#########################################################################################################################*/
-#if CC_GFX_BACKEND_IS_GL() && !defined CC_BUILD_EGL
+#if HC_GFX_BACKEND_IS_GL() && !defined HC_BUILD_EGL
 static HGLRC ctx_handle;
 static HDC ctx_DC;
 typedef BOOL (WINAPI *FP_SWAPINTERVAL)(int interval);
@@ -872,7 +872,7 @@ void GLContext_Create(void) {
 	InitGraphicsMode(&mode);
 	GLContext_SelectGraphicsMode(&mode);
 
-	static const cc_string glPath = String_FromConst("OPENGL32.dll");
+	static const hc_string glPath = String_FromConst("OPENGL32.dll");
 	gl_lib = DynamicLib_Load2(&glPath);
 
 	ctx_handle = wglCreateContext(win_DC);
@@ -889,7 +889,7 @@ void GLContext_Create(void) {
 }
 
 void GLContext_Update(void) { }
-cc_bool GLContext_TryRestore(void) { return true; }
+hc_bool GLContext_TryRestore(void) { return true; }
 void GLContext_Free(void) {
 	if (!ctx_handle) return;
 	wglDeleteContext(ctx_handle);
@@ -912,15 +912,15 @@ void* GLContext_GetAddress(const char* function) {
 	return DynamicLib_Get2(gl_lib, function);
 }
 
-cc_bool GLContext_SwapBuffers(void) {
+hc_bool GLContext_SwapBuffers(void) {
 	if (!SwapBuffers(ctx_DC)) Logger_Abort2(GetLastError(), "Failed to swap buffers");
 	return true;
 }
 
-void GLContext_SetVSync(cc_bool vsync) {
+void GLContext_SetVSync(hc_bool vsync) {
 	if (!wglSwapIntervalEXT) return;
 	wglSwapIntervalEXT(vsync);
 }
-void GLContext_GetApiInfo(cc_string* info) { }
+void GLContext_GetApiInfo(hc_string* info) { }
 #endif
 #endif

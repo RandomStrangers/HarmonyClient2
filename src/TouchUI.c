@@ -1,5 +1,5 @@
 #include "Screens.h"
-#ifdef CC_BUILD_TOUCH
+#ifdef HC_BUILD_TOUCH
 #include "Widgets.h"
 #include "Game.h"
 #include "Event.h"
@@ -82,7 +82,7 @@ static void TouchOnscreen_UpdateButton(struct TouchOnscreenScreen* s, struct But
 	int haligns = GetOnscreenHAligns();
 	const char* label;
 	char buffer[64];
-	cc_string str;
+	hc_string str;
 	int bit;
 
 	bit        = 1 << btn->meta.val;
@@ -261,7 +261,7 @@ static void TouchCtrls_UpdateHoldText(void* screen) {
 }
 
 static void TouchCtrls_UpdateSensitivity(void* screen) {
-	cc_string value; char valueBuffer[STRING_SIZE];
+	hc_string value; char valueBuffer[STRING_SIZE];
 	struct TouchCtrlsScreen* s = (struct TouchCtrlsScreen*)screen;
 	String_InitArray(value, valueBuffer);
 
@@ -271,7 +271,7 @@ static void TouchCtrls_UpdateSensitivity(void* screen) {
 }
 
 static void TouchCtrls_UpdateScale(void* screen) {
-	cc_string value; char valueBuffer[STRING_SIZE];
+	hc_string value; char valueBuffer[STRING_SIZE];
 	struct TouchCtrlsScreen* s = (struct TouchCtrlsScreen*)screen;
 	String_InitArray(value, valueBuffer);
 
@@ -293,7 +293,7 @@ static void TouchCtrls_Hold(void* s, void* w) {
 	TouchCtrls_UpdateHoldText(s);
 }
 
-static void TouchCtrls_SensitivityDone(const cc_string* value, cc_bool valid) {
+static void TouchCtrls_SensitivityDone(const hc_string* value, hc_bool valid) {
 	int sensitivity;
 	if (!valid) return;
 	
@@ -306,7 +306,7 @@ static void TouchCtrls_SensitivityDone(const cc_string* value, cc_bool valid) {
 static void TouchCtrls_Sensitivity(void* screen, void* w) {
 	struct TouchCtrlsScreen* s = (struct TouchCtrlsScreen*)screen;
 	static struct MenuInputDesc desc;
-	cc_string value; char valueBuffer[STRING_SIZE];
+	hc_string value; char valueBuffer[STRING_SIZE];
 	String_InitArray(value, valueBuffer);
 
 	MenuInput_Int(desc, 1, 200, 30);
@@ -317,7 +317,7 @@ static void TouchCtrls_Sensitivity(void* screen, void* w) {
 	s->btns[2].active = 0;
 }
 
-static void TouchCtrls_ScaleDone(const cc_string* value, cc_bool valid) {
+static void TouchCtrls_ScaleDone(const hc_string* value, hc_bool valid) {
 	if (!valid) return;
 	Convert_ParseFloat(value, &Gui.RawTouchScale);
 	Options_Set(OPT_TOUCH_SCALE, value);
@@ -329,7 +329,7 @@ static void TouchCtrls_ScaleDone(const cc_string* value, cc_bool valid) {
 static void TouchCtrls_Scale(void* screen, void* w) {
 	struct TouchCtrlsScreen* s = (struct TouchCtrlsScreen*)screen;
 	static struct MenuInputDesc desc;
-	cc_string value; char valueBuffer[STRING_SIZE];
+	hc_string value; char valueBuffer[STRING_SIZE];
 	String_InitArray(value, valueBuffer);
 
 	MenuInput_Float(desc, 0.25f, 5.0f, 1.0f);
@@ -498,9 +498,9 @@ void TouchMoreScreen_Show(void) {
 #define TOUCH_MAX_BTNS (ONSCREEN_MAX_BTNS + TOUCH_EXTRA_BTNS + 1)
 struct TouchButtonDesc {
 	const char* text;
-	cc_uint8 bind, x, y;
+	hc_uint8 bind, x, y;
 	Widget_LeftClick OnClick;
-	cc_bool* enabled;
+	hc_bool* enabled;
 };
 
 static struct TouchScreen {
@@ -690,10 +690,10 @@ static void TouchScreen_PointerUp(void* screen, int id, int x, int y) {
 	}
 }
 
-static void TouchScreen_LayoutOnscreen(struct TouchScreen* s, cc_uint8 alignment) {
+static void TouchScreen_LayoutOnscreen(struct TouchScreen* s, hc_uint8 alignment) {
 	struct TouchButtonDesc* desc;
 	int i, x, y;
-	cc_uint8 halign;
+	hc_uint8 halign;
 
 	for (i = 0, x = 10, y = 10; i < s->numOnscreen; i++) 
 	{

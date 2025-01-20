@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_PSVITA
+#if defined HC_BUILD_PSVITA
 #include "_GraphicsBase.h"
 #include "Errors.h"
 #include "Logger.h"
@@ -7,7 +7,7 @@
 #include <vitasdk.h>
 
 // TODO track last frame used on
-static cc_bool gfx_depthOnly;
+static hc_bool gfx_depthOnly;
 static int frontBufferIndex, backBufferIndex;
 // Inspired from
 // https://github.com/xerpi/gxmfun/blob/master/source/main.c
@@ -22,8 +22,8 @@ static int frontBufferIndex, backBufferIndex;
 
 static void GPUBuffers_DeleteUnreferenced(void);
 static void GPUTextures_DeleteUnreferenced(void);
-static cc_uint32 frameCounter;
-static cc_bool in_scene;
+static hc_uint32 frameCounter;
+static hc_bool in_scene;
 
 static SceGxmContext* gxm_context;
 
@@ -79,7 +79,7 @@ static SceGxmProgram* gxm_colored_alpha_FP = (SceGxmProgram *)&colored_alpha_f;
 static SceGxmProgram* gxm_textured_alpha_FP = (SceGxmProgram *)&textured_alpha_f;
 
 
-typedef struct CCVertexProgram {
+typedef struct HCVertexProgram {
 	SceGxmVertexProgram* programPatched;
 	const SceGxmProgramParameter* param_in_position;
 	const SceGxmProgramParameter* param_in_color;
@@ -89,7 +89,7 @@ typedef struct CCVertexProgram {
 } VertexProgram;
 #define VP_UNI_MATRIX 0x01
 
-typedef struct CCFragmentProgram {
+typedef struct HCFragmentProgram {
 	SceGxmFragmentProgram* programPatched;
 } FragmentProgram;
 
@@ -101,7 +101,7 @@ typedef struct CCFragmentProgram {
 
 void* AllocGPUMemory(int size, int type, int gpu_access, SceUID* ret_uid, const char* memType) {
 	char buffer[128];
-	cc_string str;
+	hc_string str;
 	void* addr;
 	
 	if (type == SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW) {
@@ -588,7 +588,7 @@ void Gfx_Free(void) {
 	Gfx_FreeState();
 }
 
-cc_bool Gfx_TryRestoreContext(void) { return true; }
+hc_bool Gfx_TryRestoreContext(void) { return true; }
 
 void Gfx_RestoreState(void) {
 	InitDefaultResources();
@@ -612,11 +612,11 @@ void Gfx_FreeState(void) {
 *#########################################################################################################################*/
 struct GPUTexture;
 struct GPUTexture {
-	cc_uint32* data;
+	hc_uint32* data;
 	SceUID uid;
 	SceGxmTexture texture;
 	struct GPUTexture* next;
-	cc_uint32 lastFrame;
+	hc_uint32 lastFrame;
 };
 static struct GPUTexture* del_textures_head;
 static struct GPUTexture* del_textures_tail;
@@ -679,7 +679,7 @@ static void GPUTextures_DeleteUnreferenced(void) {
 /*########################################################################################################################*
 *---------------------------------------------------------Textures--------------------------------------------------------*
 *#########################################################################################################################*/
-static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8 flags, cc_bool mipmaps) {
+static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, hc_uint8 flags, hc_bool mipmaps) {
 	int size = bmp->width * bmp->height * 4;
 	struct GPUTexture* tex = GPUTexture_Alloc(size);
 	CopyTextureData(tex->data, bmp->width * BITMAPCOLOR_SIZE,
@@ -693,7 +693,7 @@ static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8
 	return tex;
 }
 
-void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, cc_bool mipmaps) {
+void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, hc_bool mipmaps) {
 	struct GPUTexture* tex = (struct GPUTexture*)texId;
 	int texWidth = sceGxmTextureGetWidth(&tex->texture);
 	
@@ -763,16 +763,16 @@ void Gfx_CalcPerspectiveMatrix(struct Matrix* matrix, float fov, float aspect, f
 /*########################################################################################################################*
 *-----------------------------------------------------------Misc----------------------------------------------------------*
 *#########################################################################################################################*/
-cc_result Gfx_TakeScreenshot(struct Stream* output) {
+hc_result Gfx_TakeScreenshot(struct Stream* output) {
 	return ERR_NOT_SUPPORTED;
 }
 
-void Gfx_GetApiInfo(cc_string* info) {
+void Gfx_GetApiInfo(hc_string* info) {
 	String_AppendConst(info, "-- Using PS Vita --\n");
 	PrintMaxTextureInfo(info);
 }
 
-void Gfx_SetVSync(cc_bool vsync) {
+void Gfx_SetVSync(hc_bool vsync) {
 	gfx_vsync = vsync;
 }
 
@@ -832,7 +832,7 @@ struct GPUBuffer;
 struct GPUBuffer {
 	void* data;
 	SceUID uid;
-	cc_uint32 lastFrame;
+	hc_uint32 lastFrame;
 	struct GPUBuffer* next;
 };
 static struct GPUBuffer* del_buffers_head;
@@ -897,7 +897,7 @@ static void GPUBuffers_DeleteUnreferenced(void) {
 /*########################################################################################################################*
 *-------------------------------------------------------Index buffers-----------------------------------------------------*
 *#########################################################################################################################*/
-static cc_uint16* gfx_indices;
+static hc_uint16* gfx_indices;
 
 GfxResourceID Gfx_CreateIb2(int count, Gfx_FillIBFunc fillFunc, void* obj) {
 	struct GPUBuffer* buffer = GPUBuffer_Alloc(count * 2);
@@ -955,7 +955,7 @@ void Gfx_DeleteDynamicVb(GfxResourceID* vb) { Gfx_DeleteVb(vb); }
 /*########################################################################################################################*
 *-----------------------------------------------------State management----------------------------------------------------*
 *#########################################################################################################################*/
-void Gfx_SetFog(cc_bool enabled) {
+void Gfx_SetFog(hc_bool enabled) {
  // TODO
 }
 
@@ -975,43 +975,43 @@ void Gfx_SetFogMode(FogFunc func) {
  // TODO
 }
 
-static void SetAlphaTest(cc_bool enabled) {
+static void SetAlphaTest(hc_bool enabled) {
 	FP_SwitchActive();
 }
  
-static void SetAlphaBlend(cc_bool enabled) {
+static void SetAlphaBlend(hc_bool enabled) {
 	FP_SwitchActive();
 }
 
-void Gfx_DepthOnlyRendering(cc_bool depthOnly) {
+void Gfx_DepthOnlyRendering(hc_bool depthOnly) {
 	// TODO
 	gfx_depthOnly = depthOnly;
 	FP_SwitchActive();
 }
 
-void Gfx_SetFaceCulling(cc_bool enabled) { 
+void Gfx_SetFaceCulling(hc_bool enabled) { 
 	sceGxmSetCullMode(gxm_context, enabled ? SCE_GXM_CULL_CW : SCE_GXM_CULL_NONE);
 }
 
 
-void Gfx_SetAlphaArgBlend(cc_bool enabled) { }
+void Gfx_SetAlphaArgBlend(hc_bool enabled) { }
 
 static PackedCol clear_color;
 void Gfx_ClearColor(PackedCol color) {
 	clear_color = color;
 }
 
-static void SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a) {
+static void SetColorWrite(hc_bool r, hc_bool g, hc_bool b, hc_bool a) {
  // TODO
 }
 
-void Gfx_SetDepthWrite(cc_bool enabled) {
+void Gfx_SetDepthWrite(hc_bool enabled) {
 	int mode = enabled ? SCE_GXM_DEPTH_WRITE_ENABLED : SCE_GXM_DEPTH_WRITE_DISABLED;
 	sceGxmSetFrontDepthWriteEnable(gxm_context, mode);
 	sceGxmSetBackDepthWriteEnable(gxm_context,  mode);
 }
 
-void Gfx_SetDepthTest(cc_bool enabled) {
+void Gfx_SetDepthTest(hc_bool enabled) {
 	int func = enabled ? SCE_GXM_DEPTH_FUNC_LESS_EQUAL : SCE_GXM_DEPTH_FUNC_ALWAYS;
 	sceGxmSetFrontDepthFunc(gxm_context, func);
 	sceGxmSetBackDepthFunc(gxm_context,  func);
@@ -1063,8 +1063,8 @@ void Gfx_DisableTextureOffset(void) {
 /*########################################################################################################################*
 *---------------------------------------------------------Drawing---------------------------------------------------------*
 *#########################################################################################################################*/
-cc_bool Gfx_WarnIfNecessary(void) { return false; }
-cc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
+hc_bool Gfx_WarnIfNecessary(void) { return false; }
+hc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
 
 void Gfx_SetVertexFormat(VertexFormat fmt) {
 	if (fmt == gfx_format) return;

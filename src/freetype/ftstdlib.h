@@ -77,29 +77,29 @@
 
 #include <string.h>
 /* ClassiCube functions to avoid stdlib */
-extern int   cc_strncmp(const char* a, const char* b, size_t maxCount);
-extern int    cc_strcmp(const char* a, const char* b);
-extern size_t cc_strlen(const char* a);
-extern char*  cc_strstr(const char* str, const char* substr);
+extern int   hc_strncmp(const char* a, const char* b, size_t maxCount);
+extern int    hc_strcmp(const char* a, const char* b);
+extern size_t hc_strlen(const char* a);
+extern char*  hc_strstr(const char* str, const char* substr);
 
-extern int   cc_memcmp(const void* ptrA, const void* ptrB, size_t num);
-extern void* cc_memchr(const void* ptr, int ch, size_t num);
+extern int   hc_memcmp(const void* ptrA, const void* ptrB, size_t num);
+extern void* hc_memchr(const void* ptr, int ch, size_t num);
 extern void* Mem_Copy(void* dst, const void* src,  unsigned size);
 extern void* Mem_Move(void* dst, const void* src,  unsigned size);
 extern void* Mem_Set(void* dst, unsigned char val, unsigned size);
 
-extern void cc_qsort(void* v, size_t count, size_t size,
+extern void hc_qsort(void* v, size_t count, size_t size,
 					int (*comp)(const void*, const void*));
 
-#define ft_memchr   cc_memchr
-#define ft_memcmp   cc_memcmp
+#define ft_memchr   hc_memchr
+#define ft_memcmp   hc_memcmp
 #define ft_memcpy   Mem_Copy
 #define ft_memmove  Mem_Move
 #define ft_memset   Mem_Set
-#define ft_strcmp   cc_strcmp
-#define ft_strlen   cc_strlen
-#define ft_strncmp  cc_strncmp
-#define ft_strstr   cc_strstr
+#define ft_strcmp   hc_strcmp
+#define ft_strlen   hc_strlen
+#define ft_strncmp  hc_strncmp
+#define ft_strstr   hc_strstr
 
 
   /**********************************************************************/
@@ -111,7 +111,7 @@ extern void cc_qsort(void* v, size_t count, size_t size,
 
 #include <stdlib.h>
 
-#define ft_qsort  cc_qsort
+#define ft_qsort  hc_qsort
 
 
   /**********************************************************************/

@@ -107,7 +107,7 @@ void RayTracer_Step(struct RayTracer* t) {
 }
 
 #define BORDER BLOCK_BEDROCK
-typedef cc_bool (*IntersectTest)(struct RayTracer* t);
+typedef hc_bool (*IntersectTest)(struct RayTracer* t);
 
 static BlockID Picking_GetInside(int x, int y, int z) {
 	int floorY;
@@ -125,7 +125,7 @@ static BlockID Picking_GetInside(int x, int y, int z) {
 }
 
 static BlockID Picking_GetOutside(int x, int y, int z, IVec3 origin) {
-	cc_bool sides = Env.SidesBlock != BLOCK_AIR;
+	hc_bool sides = Env.SidesBlock != BLOCK_AIR;
 	if (World_ContainsXZ(x, z)) {
 		if (y >= World.Height) return BLOCK_AIR;
 
@@ -155,9 +155,9 @@ static BlockID Picking_GetOutside(int x, int y, int z, IVec3 origin) {
 	return BLOCK_AIR;
 }
 
-static cc_bool RayTrace(struct RayTracer* t, const Vec3* origin, const Vec3* dir, float reach, IntersectTest intersect) {
+static hc_bool RayTrace(struct RayTracer* t, const Vec3* origin, const Vec3* dir, float reach, IntersectTest intersect) {
 	IVec3 pOrigin;
-	cc_bool insideMap;
+	hc_bool insideMap;
 	float reachSq;
 	Vec3 v;
 
@@ -200,7 +200,7 @@ static cc_bool RayTrace(struct RayTracer* t, const Vec3* origin, const Vec3* dir
 	return false;
 }
 
-static cc_bool ClipBlock(struct RayTracer* t) {
+static hc_bool ClipBlock(struct RayTracer* t) {
 	Vec3 scaledDir;
 	float lenSq, reach;
 	float t0, t1;
@@ -226,7 +226,7 @@ static cc_bool ClipBlock(struct RayTracer* t) {
 }
 
 static const Vec3 picking_adjust = { 0.1f, 0.1f, 0.1f };
-static cc_bool ClipCamera(struct RayTracer* t) {
+static hc_bool ClipCamera(struct RayTracer* t) {
 	Vec3 intersect;
 	float t0, t1;
 
@@ -251,7 +251,7 @@ void Picking_CalcPickedBlock(const Vec3* origin, const Vec3* dir, float reach, s
 }
 
 void Picking_ClipCameraPos(const Vec3* origin, const Vec3* dir, float reach, struct RayTracer* t) {
-	cc_bool noClip = (!Camera.Clipping || Entities.CurPlayer->Hacks.Noclip)
+	hc_bool noClip = (!Camera.Clipping || Entities.CurPlayer->Hacks.Noclip)
 						&& Entities.CurPlayer->Hacks.CanNoclip;
 	if (noClip || !World.Loaded || !RayTrace(t, origin, dir, reach, ClipCamera)) {
 		RayTracer_SetInvalid(t);

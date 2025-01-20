@@ -1,5 +1,5 @@
 #include "Core.h"
-#ifdef CC_BUILD_N64
+#ifdef HC_BUILD_N64
 #include "_GraphicsBase.h"
 #include "Errors.h"
 #include "Logger.h"
@@ -38,7 +38,7 @@ void Gfx_Create(void) {
 	Gfx_RestoreState();
 }
 
-cc_bool Gfx_TryRestoreContext(void) {
+hc_bool Gfx_TryRestoreContext(void) {
 	return true;
 }
 
@@ -55,18 +55,18 @@ void Gfx_Free(void) {
 *#########################################################################################################################*/
 static color_t gfx_clearColor;
 
-cc_result Gfx_TakeScreenshot(struct Stream* output) {
+hc_result Gfx_TakeScreenshot(struct Stream* output) {
 	return ERR_NOT_SUPPORTED;
 }
 
-void Gfx_GetApiInfo(cc_string* info) {
+void Gfx_GetApiInfo(hc_string* info) {
 	String_AppendConst(info, "-- Using Nintendo 64 --\n");
 	String_AppendConst(info, "GPU: Nintendo 64 RDP (LibDragon OpenGL)\n");
 	String_AppendConst(info, "T&L: Nintendo 64 RSP (LibDragon OpenGL)\n");
 	PrintMaxTextureInfo(info);
 }
 
-void Gfx_SetVSync(cc_bool vsync) {
+void Gfx_SetVSync(hc_bool vsync) {
 	gfx_vsync = vsync; // TODO update vsync
 }
 
@@ -115,10 +115,10 @@ void Gfx_EndFrame(void) {
 /*########################################################################################################################*
 *---------------------------------------------------------Textures--------------------------------------------------------*
 *#########################################################################################################################*/
-typedef struct CCTexture {
+typedef struct HCTexture {
 	surface_t surface;
 	GLuint textureID;
-} CCTexture;
+} HCTexture;
 
 #define ALIGNUP8(size) (((size) + 7) & ~0x07)
 
@@ -126,14 +126,14 @@ typedef struct CCTexture {
 #define To16BitPixel(src) \
 	((src & 0x80) >> 7) | ((src & 0xF800) >> 10) | ((src & 0xF80000) >> 13) | ((src & 0xF8000000) >> 16);	
 
-static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8 flags, cc_bool mipmaps) {
-	cc_bool bit16  = flags & TEXTURE_FLAG_LOWRES;
+static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, hc_uint8 flags, hc_bool mipmaps) {
+	hc_bool bit16  = flags & TEXTURE_FLAG_LOWRES;
 	// rows are actually 8 byte aligned in TMEM https://github.com/DragonMinded/libdragon/blob/f360fa1bb1fb3ff3d98f4ab58692d40c828636c9/src/rdpq/rdpq_tex.c#L132
 	// so even though width * height * pixel size may fit within 4096 bytes, after adjusting for 8 byte alignment, row pitch * height may exceed 4096 bytes
 	int pitch = bit16 ? ALIGNUP8(bmp->width * 2) : ALIGNUP8(bmp->width * 4);
 	if (pitch * bmp->height > 4096) return 0;
 	
-	CCTexture* tex = Mem_Alloc(1, sizeof(CCTexture), "texture");
+	HCTexture* tex = Mem_Alloc(1, sizeof(HCTexture), "texture");
 	
 	glGenTextures(1, &tex->textureID);
 	glBindTexture(GL_TEXTURE_2D, tex->textureID);
@@ -145,14 +145,14 @@ static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8
 	surface_t* fb = &tex->surface;
 		
 	if (bit16) {
-		cc_uint32* src = (cc_uint32*)bmp->scan0;
-		cc_uint8*  dst = (cc_uint8*)fb->buffer;
+		hc_uint32* src = (hc_uint32*)bmp->scan0;
+		hc_uint8*  dst = (hc_uint8*)fb->buffer;
 		
 		// 16 bpp requires reducing A8R8G8B8 to A1R5G5B5
 		for (int y = 0; y < bmp->height; y++) 
 		{	
-			cc_uint32* src_row = src + y * rowWidth;
-			cc_uint16* dst_row = (cc_uint16*)(dst + y * fb->stride);
+			hc_uint32* src_row = src + y * rowWidth;
+			hc_uint16* dst_row = (hc_uint16*)(dst + y * fb->stride);
 			
 			for (int x = 0; x < bmp->width; x++) 
 			{
@@ -178,7 +178,7 @@ static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8
 }
 
 void Gfx_BindTexture(GfxResourceID texId) {
-	CCTexture* tex = (CCTexture*)texId;
+	HCTexture* tex = (HCTexture*)texId;
 	GLuint glID = tex ? tex->textureID : 0;
 	//Platform_Log1("BIND: %i", &glID);
 	
@@ -187,14 +187,14 @@ void Gfx_BindTexture(GfxResourceID texId) {
    // rdpq_debug_log(false);
 }
 
-void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, cc_bool mipmaps) {
+void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, hc_bool mipmaps) {
 	// TODO: Just memcpying doesn't actually work. maybe due to glSurfaceTexImageN64 caching the RSQ upload block?
 	// TODO: Is there a more optimised approach than just calling glSurfaceTexImageN64
-	CCTexture* tex = (CCTexture*)texId;
+	HCTexture* tex = (HCTexture*)texId;
 	
 	surface_t* fb  = &tex->surface;
-	cc_uint32* src = (cc_uint32*)part->scan0 + x;
-	cc_uint8*  dst = (cc_uint8*)fb->buffer  + (x * 4) + (y * fb->stride);
+	hc_uint32* src = (hc_uint32*)part->scan0 + x;
+	hc_uint8*  dst = (hc_uint8*)fb->buffer  + (x * 4) + (y * fb->stride);
 
 	for (int srcY = 0; srcY < part->height; srcY++) 
 	{
@@ -214,7 +214,7 @@ void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, i
 }
 
 void Gfx_DeleteTexture(GfxResourceID* texId) {
-	CCTexture* tex = (CCTexture*)(*texId);
+	HCTexture* tex = (HCTexture*)(*texId);
 	if (!tex) return;
 	
 	glDeleteTextures(1, &tex->textureID);
@@ -229,16 +229,16 @@ void Gfx_DisableMipmaps(void) { }
 /*########################################################################################################################*
 *-----------------------------------------------------State management----------------------------------------------------*
 *#########################################################################################################################*/
-void Gfx_SetFaceCulling(cc_bool enabled)   { gl_Toggle(GL_CULL_FACE); }
-static void SetAlphaBlend(cc_bool enabled) { gl_Toggle(GL_BLEND); }
-void Gfx_SetAlphaArgBlend(cc_bool enabled) { }
+void Gfx_SetFaceCulling(hc_bool enabled)   { gl_Toggle(GL_CULL_FACE); }
+static void SetAlphaBlend(hc_bool enabled) { gl_Toggle(GL_BLEND); }
+void Gfx_SetAlphaArgBlend(hc_bool enabled) { }
 
-static void SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a) {
+static void SetColorWrite(hc_bool r, hc_bool g, hc_bool b, hc_bool a) {
 	//glColorMask(r, g, b, a); TODO
 }
 
-void Gfx_SetDepthWrite(cc_bool enabled) { glDepthMask(enabled); }
-void Gfx_SetDepthTest(cc_bool enabled) { gl_Toggle(GL_DEPTH_TEST); }
+void Gfx_SetDepthWrite(hc_bool enabled) { glDepthMask(enabled); }
+void Gfx_SetDepthTest(hc_bool enabled) { gl_Toggle(GL_DEPTH_TEST); }
 
 static void Gfx_FreeState(void) { FreeDefaultResources(); }
 static void Gfx_RestoreState(void) {
@@ -254,8 +254,8 @@ static void Gfx_RestoreState(void) {
 	//glEnable(GL_RDPQ_TEXTURING_N64);
 }
 
-cc_bool Gfx_WarnIfNecessary(void) { return false; }
-cc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
+hc_bool Gfx_WarnIfNecessary(void) { return false; }
+hc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
 
 
 /*########################################################################################################################*
@@ -411,9 +411,9 @@ void Gfx_DeleteDynamicVb(GfxResourceID* vb) { Gfx_DeleteVb(vb); }
 /*########################################################################################################################*
 *-----------------------------------------------------State management----------------------------------------------------*
 *#########################################################################################################################*/
-static cc_bool depthOnlyRendering;
+static hc_bool depthOnlyRendering;
 
-void Gfx_SetFog(cc_bool enabled) {
+void Gfx_SetFog(hc_bool enabled) {
 }
 
 void Gfx_SetFogCol(PackedCol color) {
@@ -428,13 +428,13 @@ void Gfx_SetFogEnd(float value) {
 void Gfx_SetFogMode(FogFunc func) {
 }
 
-static void SetAlphaTest(cc_bool enabled) {
+static void SetAlphaTest(hc_bool enabled) {
 	if (enabled) { glEnable(GL_ALPHA_TEST); } else { glDisable(GL_ALPHA_TEST); }
 }
 
-void Gfx_DepthOnlyRendering(cc_bool depthOnly) {
+void Gfx_DepthOnlyRendering(hc_bool depthOnly) {
 	depthOnlyRendering = depthOnly; // TODO: Better approach? maybe using glBlendFunc instead?
-	cc_bool enabled    = !depthOnly;
+	hc_bool enabled    = !depthOnly;
 	//SetColorWrite(enabled & gfx_colorMask[0], enabled & gfx_colorMask[1], 
 	//			  enabled & gfx_colorMask[2], enabled & gfx_colorMask[3]);
 	if (enabled) { glEnable(GL_TEXTURE_2D); } else { glDisable(GL_TEXTURE_2D); }

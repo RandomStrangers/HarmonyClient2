@@ -11,7 +11,7 @@
 #include "Options.h"
 
 static void RunGame(void) {
-	cc_string title; char titleBuffer[STRING_SIZE];
+	hc_string title; char titleBuffer[STRING_SIZE];
 	int width  = Options_GetInt(OPT_WINDOW_WIDTH,  0, DisplayInfo.Width,  0);
 	int height = Options_GetInt(OPT_WINDOW_HEIGHT, 0, DisplayInfo.Height, 0);
 
@@ -27,8 +27,8 @@ static void RunGame(void) {
 }
 
 /* Shows a warning dialog due to an invalid command line argument */
-CC_NOINLINE static void WarnInvalidArg(const char* name, const cc_string* arg) {
-	cc_string tmp; char tmpBuffer[256];
+HC_NOINLINE static void WarnInvalidArg(const char* name, const hc_string* arg) {
+	hc_string tmp; char tmpBuffer[256];
 	String_InitArray(tmp, tmpBuffer);
 	String_Format2(&tmp, "%c '%s'", name, arg);
 
@@ -37,8 +37,8 @@ CC_NOINLINE static void WarnInvalidArg(const char* name, const cc_string* arg) {
 }
 
 /* Shows a warning dialog due to insufficient command line arguments */
-CC_NOINLINE static void WarnMissingArgs(int argsCount, const cc_string* args) {
-	cc_string tmp; char tmpBuffer[256];
+HC_NOINLINE static void WarnMissingArgs(int argsCount, const hc_string* args) {
+	hc_string tmp; char tmpBuffer[256];
 	int i;
 	String_InitArray(tmp, tmpBuffer);
 
@@ -54,7 +54,7 @@ CC_NOINLINE static void WarnMissingArgs(int argsCount, const cc_string* args) {
 
 static void SetupProgram(int argc, char** argv) {
 	static char ipBuffer[STRING_SIZE];
-	cc_result res;
+	hc_result res;
 	Logger_Hook();
 	Window_PreInit();
 	Platform_Init();
@@ -70,8 +70,8 @@ static void SetupProgram(int argc, char** argv) {
 }
 
 #define SP_HasDir(path) (String_IndexOf(path, '/') >= 0 || String_IndexOf(path, '\\') >= 0)
-static cc_bool IsOpenableFile(const cc_string* path) {
-	cc_filepath str;
+static hc_bool IsOpenableFile(const hc_string* path) {
+	hc_filepath str;
 	if (!SP_HasDir(path)) return false;
 	
 	Platform_EncodePath(&str, path);
@@ -79,7 +79,7 @@ static cc_bool IsOpenableFile(const cc_string* path) {
 }
 
 static int RunProgram(int argc, char** argv) {
-	cc_string args[GAME_MAX_CMDARGS];
+	hc_string args[GAME_MAX_CMDARGS];
 	int argsCount = Platform_GetCommandLineArgs(argc, argv, args);
 
 #ifdef _MSC_VER
@@ -90,7 +90,7 @@ static int RunProgram(int argc, char** argv) {
 #endif
 
 	if (argsCount == 0) {
-#ifdef CC_BUILD_WEB
+#ifdef HC_BUILD_WEB
 		String_AppendConst(&Game_Username, DEFAULT_USERNAME);
 		RunGame();
 #else
@@ -135,7 +135,7 @@ static int RunProgram(int argc, char** argv) {
 	return 0;
 }
 
-#if defined CC_BUILD_IOS
+#if defined HC_BUILD_IOS
 /* ClassiCube is sort of and sort of not the executable */
 /*  on iOS - UIKit is responsible for kickstarting the game. */
 /* (this is handled in interop_ios.m as the code is Objective C) */
@@ -144,7 +144,7 @@ int ios_main(int argc, char** argv) {
 	for (;;) { RunProgram(argc, argv); }
 	return 0;
 }
-#elif defined CC_BUILD_ANDROID
+#elif defined HC_BUILD_ANDROID
 /* ClassiCube is just a native library on android, */
 /*  unlike other platforms where it is the executable. */
 /* (activity java class is responsible for kickstarting the game,
@@ -154,7 +154,7 @@ void android_main(void) {
 	SetupProgram(0, NULL);
 	for (;;) { RunProgram(0, NULL); }
 }
-#elif defined CC_BUILD_CONSOLE
+#elif defined HC_BUILD_CONSOLE
 int main(int argc, char** argv) {
 	SetupProgram(argc, argv);
 	while (Window_Main.Exists) { 
@@ -169,15 +169,15 @@ int main(int argc, char** argv) {
 /*  Normally, the final code produced for "main" is our "main" combined with crt's main */
 /*  (mingw-w64-crt/crt/gccmain.c) - alas this immediately crashes the game on startup. */
 /* Using main_real instead and setting main_real as the entrypoint fixes the crash. */
-#if defined CC_NOMAIN
+#if defined HC_NOMAIN
 int main_real(int argc, char** argv) {
-#elif defined CC_BUILD_WEB
+#elif defined HC_BUILD_WEB
 /* webclient does some asynchronous initialisation first, then kickstarts the game after that */
 int web_main(int argc, char** argv) {
 #else 
 int main(int argc, char** argv) {
 #endif
-	cc_result res;
+	hc_result res;
 	SetupProgram(argc, argv);
 
 	/* If single process mode, then the loop is launcher -> game -> launcher etc */
@@ -185,7 +185,7 @@ int main(int argc, char** argv) {
 		res = RunProgram(argc, argv);
 	} while (Platform_SingleProcess && Window_Main.Exists);
 
-#ifdef CC_BUILD_WEB
+#ifdef HC_BUILD_WEB
 	if (res) Window_Free();
 #else
 	Window_Free();

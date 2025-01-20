@@ -1,8 +1,8 @@
-#ifndef CC_MENUS_H
-#define CC_MENUS_H
+#ifndef HC_MENUS_H
+#define HC_MENUS_H
 #include "Gui.h"
 #include "PackedCol.h"
-CC_BEGIN_HEADER
+HC_BEGIN_HEADER
 
 
 /* Contains all 2D menu screen implementations.
@@ -60,23 +60,23 @@ void NostalgiaAppearanceScreen_Show(void);
 void NostalgiaFunctionalityScreen_Show(void);
 void NostalgiaMenuScreen_Show(void);
 
-void UrlWarningOverlay_Show(const cc_string* url);
+void UrlWarningOverlay_Show(const hc_string* url);
 void TexIdsOverlay_Show(void);
-void TexPackOverlay_Show(const cc_string* url);
-#ifdef CC_BUILD_TOUCH
+void TexPackOverlay_Show(const hc_string* url);
+#ifdef HC_BUILD_TOUCH
 void TouchCtrlsScreen_Show(void);
 void TouchMoreScreen_Show(void);
 void TouchOnscreenScreen_Show(void);
 #endif
 
 void MenuScreen_Render2(void* screen, float delta);
-typedef void (*MenuInputDone)(const cc_string* value, cc_bool valid);
-void MenuInputOverlay_Show(struct MenuInputDesc* desc, const cc_string* value, MenuInputDone onDone, cc_bool screenMode);
-void MenuInputOverlay_Close(cc_bool valid);
+typedef void (*MenuInputDone)(const hc_string* value, hc_bool valid);
+void MenuInputOverlay_Show(struct MenuInputDesc* desc, const hc_string* value, MenuInputDone onDone, hc_bool screenMode);
+void MenuInputOverlay_Close(hc_bool valid);
 
 
-typedef cc_bool (*Button_GetBool)(void);
-typedef void    (*Button_SetBool)(cc_bool value);
+typedef hc_bool (*Button_GetBool)(void);
+typedef void    (*Button_SetBool)(hc_bool value);
 void MenuOptionsScreen_AddBool(struct MenuOptionsScreen* s, const char* name, 
 								Button_GetBool getValue, Button_SetBool setValue, const char* desc);
 
@@ -97,11 +97,11 @@ void MenuOptionsScreen_AddInt(struct MenuOptionsScreen* s, const char* name,
 								int minValue, int maxValue, int defaultValue,
 								Button_GetInt getValue, Button_SetInt setValue, const char* desc);
 
-typedef void (*Button_GetNum)(cc_string* v);
-typedef void (*Button_SetNum)(const cc_string* v);
+typedef void (*Button_GetNum)(hc_string* v);
+typedef void (*Button_SetNum)(const hc_string* v);
 void MenuOptionsScreen_AddNum(struct MenuOptionsScreen* s, const char* name,
 								float minValue, float maxValue, float defaultValue,
 								Button_GetNum getValue, Button_SetNum setValue, const char* desc);
 
-CC_END_HEADER
+HC_END_HEADER
 #endif

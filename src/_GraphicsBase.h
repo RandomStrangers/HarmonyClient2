@@ -13,35 +13,35 @@
 
 struct _GfxData Gfx;
 static GfxResourceID Gfx_quadVb, Gfx_texVb;
-const cc_string Gfx_LowPerfMessage = String_FromConst("&eRunning in reduced performance mode (game minimised or hidden)");
+const hc_string Gfx_LowPerfMessage = String_FromConst("&eRunning in reduced performance mode (game minimised or hidden)");
 
 static const int strideSizes[] = { SIZEOF_VERTEX_COLOURED, SIZEOF_VERTEX_TEXTURED };
 /* Whether mipmaps must be created for all dimensions down to 1x1 or not */
-static cc_bool customMipmapsLevels;
+static hc_bool customMipmapsLevels;
 /* Current format and size of vertices */
 static int gfx_stride, gfx_format = -1;
 
-static cc_bool gfx_vsync, gfx_fogEnabled;
-static cc_bool gfx_rendering2D;
+static hc_bool gfx_vsync, gfx_fogEnabled;
+static hc_bool gfx_rendering2D;
 
 
 /*########################################################################################################################*
 *------------------------------------------------------State changes------------------------------------------------------*
 *#########################################################################################################################*/
-static cc_bool gfx_colorMask[4] = { true, true, true, true };
-cc_bool Gfx_GetFog(void) { return gfx_fogEnabled; }
-static cc_bool gfx_alphaTest, gfx_alphaBlend;
+static hc_bool gfx_colorMask[4] = { true, true, true, true };
+hc_bool Gfx_GetFog(void) { return gfx_fogEnabled; }
+static hc_bool gfx_alphaTest, gfx_alphaBlend;
 
-static void SetAlphaTest(cc_bool enabled);
-void Gfx_SetAlphaTest(cc_bool enabled) {
+static void SetAlphaTest(hc_bool enabled);
+void Gfx_SetAlphaTest(hc_bool enabled) {
 	if (gfx_alphaTest == enabled) return;
 	
 	gfx_alphaTest = enabled;
 	SetAlphaTest(enabled);
 }
 
-static void SetAlphaBlend(cc_bool enabled);
-void Gfx_SetAlphaBlending(cc_bool enabled) {
+static void SetAlphaBlend(hc_bool enabled);
+void Gfx_SetAlphaBlending(hc_bool enabled) {
 	if (gfx_alphaBlend == enabled) return;
 	
 	gfx_alphaBlend = enabled;
@@ -49,12 +49,12 @@ void Gfx_SetAlphaBlending(cc_bool enabled) {
 }
 
 /* Initialises/Restores render state */
-CC_NOINLINE static void Gfx_RestoreState(void);
+HC_NOINLINE static void Gfx_RestoreState(void);
 /* Destroys render state, but can be restored later */
-CC_NOINLINE static void Gfx_FreeState(void);
+HC_NOINLINE static void Gfx_FreeState(void);
 
-static void SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a);
-void Gfx_SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a) {
+static void SetColorWrite(hc_bool r, hc_bool g, hc_bool b, hc_bool a);
+void Gfx_SetColorWrite(hc_bool r, hc_bool g, hc_bool b, hc_bool a) {
 	gfx_colorMask[0] = r;
 	gfx_colorMask[1] = g;
 	gfx_colorMask[2] = b;
@@ -62,9 +62,9 @@ void Gfx_SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a) {
 	SetColorWrite(r, g, b, a);
 }
 
-void Gfx_SetTexturing(cc_bool enabled) { } /* useless */
+void Gfx_SetTexturing(hc_bool enabled) { } /* useless */
 
-#ifndef CC_BUILD_3DS
+#ifndef HC_BUILD_3DS
 void Gfx_Set3DLeft(struct Matrix* proj, struct Matrix* view) {
 	struct Matrix proj_left, view_left;
 
@@ -103,17 +103,17 @@ void Gfx_End3D(struct Matrix* proj, struct Matrix* view) {
 *------------------------------------------------------Generic/Common-----------------------------------------------------*
 *#########################################################################################################################*/
 /* Fills out indices array with {0,1,2} {2,3,0}, {4,5,6} {6,7,4} etc */
-static void MakeIndices(cc_uint16* indices, int count, void* obj) {
+static void MakeIndices(hc_uint16* indices, int count, void* obj) {
 	int element = 0, i;
 
 	for (i = 0; i < count; i += 6) {
-		indices[0] = (cc_uint16)(element + 0);
-		indices[1] = (cc_uint16)(element + 1);
-		indices[2] = (cc_uint16)(element + 2);
+		indices[0] = (hc_uint16)(element + 0);
+		indices[1] = (hc_uint16)(element + 1);
+		indices[2] = (hc_uint16)(element + 2);
 
-		indices[3] = (cc_uint16)(element + 2);
-		indices[4] = (cc_uint16)(element + 3);
-		indices[5] = (cc_uint16)(element + 0);
+		indices[3] = (hc_uint16)(element + 2);
+		indices[4] = (hc_uint16)(element + 3);
+		indices[5] = (hc_uint16)(element + 0);
 
 		indices += 6; element += 4;
 	}
@@ -154,7 +154,7 @@ void Gfx_RecreateContext(void) {
 	Event_RaiseVoid(&GfxEvents.ContextRecreated);
 }
 
-static CC_INLINE void TickReducedPerformance(void) {
+static HC_INLINE void TickReducedPerformance(void) {
 	Thread_Sleep(100); /* 10 FPS */
 
 	if (Gfx.ReducedPerfMode) return;
@@ -162,7 +162,7 @@ static CC_INLINE void TickReducedPerformance(void) {
 	Chat_AddOf(&Gfx_LowPerfMessage, MSG_TYPE_EXTRASTATUS_2);
 }
 
-static CC_INLINE void EndReducedPerformance(void) {
+static HC_INLINE void EndReducedPerformance(void) {
 	if (!Gfx.ReducedPerfMode) return;
 
 	Gfx.ReducedPerfModeCooldown = 2;
@@ -174,7 +174,7 @@ static CC_INLINE void EndReducedPerformance(void) {
 /*########################################################################################################################*
 *--------------------------------------------------------2D drawing-------------------------------------------------------*
 *#########################################################################################################################*/
-#ifndef CC_BUILD_3DS
+#ifndef HC_BUILD_3DS
 void Gfx_Draw2DFlat(int x, int y, int width, int height, PackedCol color) {
 	struct VertexColoured* v;
 
@@ -223,7 +223,7 @@ void Gfx_Make2DQuad(const struct Texture* tex, PackedCol color, struct VertexTex
 	float y1 = (float)tex->y, y2 = (float)(tex->y + tex->height);
 	struct VertexTextured* v = *vertices;
 
-#if CC_GFX_BACKEND == CC_GFX_BACKEND_D3D9
+#if HC_GFX_BACKEND == HC_GFX_BACKEND_D3D9
 	/* NOTE: see "https://msdn.microsoft.com/en-us/library/windows/desktop/bb219690(v=vs.85).aspx", */
 	/* i.e. the msdn article called "Directly Mapping Texels to Pixels (Direct3D 9)" for why we have to do this. */
 	x1 -= 0.5f; x2 -= 0.5f;
@@ -237,8 +237,8 @@ void Gfx_Make2DQuad(const struct Texture* tex, PackedCol color, struct VertexTex
 	*vertices = v;
 }
 
-#ifndef CC_BUILD_PS1
-static cc_bool gfx_hadFog;
+#ifndef HC_BUILD_PS1
+static hc_bool gfx_hadFog;
 void Gfx_Begin2D(int width, int height) {
 	struct Matrix ortho;
 	/* intentionally biased more towards positive Z to reduce 2D clipping issues on the DS */
@@ -269,21 +269,21 @@ void Gfx_End2D(void) {
 /*########################################################################################################################*
 *--------------------------------------------------------Misc/Utils-------------------------------------------------------*
 *#########################################################################################################################*/
-void Gfx_SetupAlphaState(cc_uint8 draw) {
+void Gfx_SetupAlphaState(hc_uint8 draw) {
 	if (draw == DRAW_TRANSLUCENT)       Gfx_SetAlphaBlending(true);
 	if (draw == DRAW_TRANSPARENT)       Gfx_SetAlphaTest(true);
 	if (draw == DRAW_TRANSPARENT_THICK) Gfx_SetAlphaTest(true);
 	if (draw == DRAW_SPRITE)            Gfx_SetAlphaTest(true);
 }
 
-void Gfx_RestoreAlphaState(cc_uint8 draw) {
+void Gfx_RestoreAlphaState(hc_uint8 draw) {
 	if (draw == DRAW_TRANSLUCENT)       Gfx_SetAlphaBlending(false);
 	if (draw == DRAW_TRANSPARENT)       Gfx_SetAlphaTest(false);
 	if (draw == DRAW_TRANSPARENT_THICK) Gfx_SetAlphaTest(false);
 	if (draw == DRAW_SPRITE)            Gfx_SetAlphaTest(false);
 }
 
-static CC_INLINE float Reversed_CalcZNear(float fov, int depthbufferBits) {
+static HC_INLINE float Reversed_CalcZNear(float fov, int depthbufferBits) {
 	/* With reversed z depth, near Z plane can be much closer (with sufficient depth buffer precision) */
 	/*   This reduces clipping with high FOV without sacrificing depth precision for faraway objects */
 	/*   However for low FOV, don't reduce near Z in order to gain a bit more depth precision */
@@ -293,7 +293,7 @@ static CC_INLINE float Reversed_CalcZNear(float fov, int depthbufferBits) {
 	return 0.00390625f;
 }
 
-static void PrintMaxTextureInfo(cc_string* info) {
+static void PrintMaxTextureInfo(hc_string* info) {
 	if (Gfx.MaxTexSize) {
 		float maxSize = Gfx.MaxTexSize / (1024.0f * 1024.0f);
 		String_Format3(info, "Max texture size: (%i, %i), up to %f3 MB\n", 
@@ -308,18 +308,18 @@ static void PrintMaxTextureInfo(cc_string* info) {
 /*########################################################################################################################*
 *---------------------------------------------------------Textures--------------------------------------------------------*
 *#########################################################################################################################*/
-void Gfx_RecreateTexture(GfxResourceID* tex, struct Bitmap* bmp, cc_uint8 flags, cc_bool mipmaps) {
+void Gfx_RecreateTexture(GfxResourceID* tex, struct Bitmap* bmp, hc_uint8 flags, hc_bool mipmaps) {
 	Gfx_DeleteTexture(tex);
 	*tex = Gfx_CreateTexture(bmp, flags, mipmaps);
 }
 
-void Gfx_UpdateTexturePart(GfxResourceID texId, int x, int y, struct Bitmap* part, cc_bool mipmaps) {
+void Gfx_UpdateTexturePart(GfxResourceID texId, int x, int y, struct Bitmap* part, hc_bool mipmaps) {
 	Gfx_UpdateTexture(texId, x, y, part, part->width, mipmaps);
 }
 
-static CC_INLINE void CopyTextureData(void* dst, int dstStride, const struct Bitmap* src, int srcStride) {
-	cc_uint8* src_ = (cc_uint8*)src->scan0;
-	cc_uint8* dst_ = (cc_uint8*)dst;
+static HC_INLINE void CopyTextureData(void* dst, int dstStride, const struct Bitmap* src, int srcStride) {
+	hc_uint8* src_ = (hc_uint8*)src->scan0;
+	hc_uint8* dst_ = (hc_uint8*)dst;
 	int y;
 
 	if (srcStride == dstStride) {
@@ -338,9 +338,9 @@ static CC_INLINE void CopyTextureData(void* dst, int dstStride, const struct Bit
 /* The short version: if you want your renderer to properly handle textures with alphas when using */
 /* bilinear interpolation or mipmapping, you need to premultiply your PNG color data by their (unassociated) alphas. */
 static BitmapCol AverageColor(BitmapCol p1, BitmapCol p2) {
-	cc_uint32 a1, a2, aSum;
-	cc_uint32 b1, g1, r1;
-	cc_uint32 b2, g2, r2;
+	hc_uint32 a1, a2, aSum;
+	hc_uint32 b1, g1, r1;
+	hc_uint32 b2, g2, r2;
 
 	a1 = BitmapCol_A(p1); a2 = BitmapCol_A(p2);
 	aSum = (a1 + a2);
@@ -394,7 +394,7 @@ static void GenMipmaps(int width, int height, BitmapCol* dst, BitmapCol* src, in
 }
 
 /* Returns the maximum number of mipmaps levels used for given size. */
-static CC_NOINLINE int CalcMipmapsLevels(int width, int height) {
+static HC_NOINLINE int CalcMipmapsLevels(int width, int height) {
 	int lvlsWidth = Math_ilog2(width), lvlsHeight = Math_ilog2(height);
 	if (customMipmapsLevels) {
 		int lvls = min(lvlsWidth, lvlsHeight);
@@ -404,7 +404,7 @@ static CC_NOINLINE int CalcMipmapsLevels(int width, int height) {
 	}
 }
 
-cc_bool Gfx_CheckTextureSize(int width, int height, cc_uint8 flags) {
+hc_bool Gfx_CheckTextureSize(int width, int height, hc_uint8 flags) {
 	int maxSize;
 	if (width  > Gfx.MaxTexWidth)  return false;
 	if (height > Gfx.MaxTexHeight) return false;
@@ -420,13 +420,13 @@ cc_bool Gfx_CheckTextureSize(int width, int height, cc_uint8 flags) {
 	return maxSize == 0 || (width * height <= maxSize);
 }
 
-static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8 flags, cc_bool mipmaps);
+static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, hc_uint8 flags, hc_bool mipmaps);
 
-GfxResourceID Gfx_CreateTexture(struct Bitmap* bmp, cc_uint8 flags, cc_bool mipmaps) {
+GfxResourceID Gfx_CreateTexture(struct Bitmap* bmp, hc_uint8 flags, hc_bool mipmaps) {
 	return Gfx_CreateTexture2(bmp, bmp->width, flags, mipmaps);
 }
 
-GfxResourceID Gfx_CreateTexture2(struct Bitmap* bmp, int rowWidth, cc_uint8 flags, cc_bool mipmaps) {
+GfxResourceID Gfx_CreateTexture2(struct Bitmap* bmp, int rowWidth, hc_uint8 flags, hc_bool mipmaps) {
 	if (Gfx.SupportsNonPowTwoTextures && (flags & TEXTURE_FLAG_NONPOW2)) {
 		/* Texture is being deliberately created and can be successfully created */
 		/* with non power of two dimensions. Typically used for UI textures */
@@ -487,7 +487,7 @@ GfxResourceID Gfx_CreateDynamicVb(VertexFormat fmt, int maxVertices) {
 	}
 }
 
-#if CC_GFX_BACKEND_IS_GL() || (CC_GFX_BACKEND == CC_GFX_BACKEND_D3D9)
+#if HC_GFX_BACKEND_IS_GL() || (HC_GFX_BACKEND == HC_GFX_BACKEND_D3D9)
 /* Slightly more efficient implementations are defined in the backends */
 #else
 void Gfx_SetDynamicVbData(GfxResourceID vb, void* vertices, int vCount) {

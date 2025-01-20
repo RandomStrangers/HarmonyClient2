@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_PS1
+#if defined HC_BUILD_PS1
 #include "_GraphicsBase.h"
 #include "Errors.h"
 #include "Window.h"
@@ -28,16 +28,16 @@ typedef struct {
 	DISPENV disp_env;
 	DRAWENV draw_env;
 
-	cc_uint32 ot[OT_LENGTH];
-	cc_uint8  buffer[BUFFER_LENGTH];
+	hc_uint32 ot[OT_LENGTH];
+	hc_uint8  buffer[BUFFER_LENGTH];
 } RenderBuffer;
 
 static RenderBuffer buffers[2];
-static cc_uint8*    next_packet;
+static hc_uint8*    next_packet;
 static int          active_buffer;
 static RenderBuffer* buffer;
 static void* lastPoly;
-static cc_bool cullingEnabled;
+static hc_bool cullingEnabled;
 
 static void OnBufferUpdated(void) {
 	buffer      = &buffers[active_buffer];
@@ -131,7 +131,7 @@ void Gfx_Free(void) {
 #define MAX_VER_TEX_PAGES 11
 #define MAX_VER_TEX_LINES (MAX_VER_TEX_PAGES * TPAGE_WIDTH)
 
-static cc_uint8 vram_used[(MAX_HOR_TEX_LINES + MAX_VER_TEX_LINES) / 8];
+static hc_uint8 vram_used[(MAX_HOR_TEX_LINES + MAX_VER_TEX_LINES) / 8];
 #define VRAM_SetUsed(line) (vram_used[(line) / 8] |=  (1 << ((line) % 8)))
 #define VRAM_UnUsed(line)  (vram_used[(line) / 8] &= ~(1 << ((line) % 8)))
 #define VRAM_IsUsed(line)  (vram_used[(line) / 8] &   (1 << ((line) % 8)))
@@ -151,7 +151,7 @@ static void VRAM_GetBlockRange(int width, int height, int* beg, int* end) {
 	}
 }
 
-static cc_bool VRAM_IsRangeFree(int beg, int end) {
+static hc_bool VRAM_IsRangeFree(int beg, int end) {
 	for (int i = beg; i < end; i++) 
 	{
 		if (VRAM_IsUsed(i)) return false;
@@ -201,23 +201,23 @@ static int VRAM_CalcPage(int line) {
 
 #define TEXTURES_MAX_COUNT 64
 typedef struct GPUTexture {
-	cc_uint16 width, height;
-	cc_uint8 width_shift, height_shift;
-	cc_uint16 line, tpage;
-	cc_uint8 xOffset, yOffset;
+	hc_uint16 width, height;
+	hc_uint8 width_shift, height_shift;
+	hc_uint16 line, tpage;
+	hc_uint8 xOffset, yOffset;
 } GPUTexture;
 static GPUTexture textures[TEXTURES_MAX_COUNT];
 static GPUTexture* curTex;
 
 static void* AllocTextureAt(int i, struct Bitmap* bmp, int rowWidth) {
-	cc_uint16* tmp = Mem_TryAlloc(bmp->width * bmp->height, 2);
+	hc_uint16* tmp = Mem_TryAlloc(bmp->width * bmp->height, 2);
 	if (!tmp) return NULL;
 
 	// TODO: Only copy when rowWidth != bmp->width
 	for (int y = 0; y < bmp->height; y++)
 	{
-		cc_uint16* src = bmp->scan0 + y * rowWidth;
-		cc_uint16* dst = tmp        + y * bmp->width;
+		hc_uint16* src = bmp->scan0 + y * rowWidth;
+		hc_uint16* dst = tmp        + y * bmp->width;
 		
 		for (int x = 0; x < bmp->width; x++) {
 			dst[x] = src[x];
@@ -263,7 +263,7 @@ static void* AllocTextureAt(int i, struct Bitmap* bmp, int rowWidth) {
 	return tex;
 }
 
-static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, cc_uint8 flags, cc_bool mipmaps) {
+static GfxResourceID Gfx_AllocTexture(struct Bitmap* bmp, int rowWidth, hc_uint8 flags, hc_bool mipmaps) {
 	for (int i = 0; i < TEXTURES_MAX_COUNT; i++)
 	{
 		if (textures[i].width) continue;
@@ -289,7 +289,7 @@ void Gfx_DeleteTexture(GfxResourceID* texId) {
 	*texId = NULL;
 }
 
-void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, cc_bool mipmaps) {
+void Gfx_UpdateTexture(GfxResourceID texId, int x, int y, struct Bitmap* part, int rowWidth, hc_bool mipmaps) {
 	// TODO
 }
 
@@ -300,23 +300,23 @@ void Gfx_DisableMipmaps(void) { }
 /*########################################################################################################################*
 *------------------------------------------------------State management---------------------------------------------------*
 *#########################################################################################################################*/
-void Gfx_SetFog(cc_bool enabled)    { }
+void Gfx_SetFog(hc_bool enabled)    { }
 void Gfx_SetFogCol(PackedCol col)   { }
 void Gfx_SetFogDensity(float value) { }
 void Gfx_SetFogEnd(float value)     { }
 void Gfx_SetFogMode(FogFunc func)   { }
 
-void Gfx_SetFaceCulling(cc_bool enabled) {
+void Gfx_SetFaceCulling(hc_bool enabled) {
 	cullingEnabled = enabled;
 }
 
-static void SetAlphaTest(cc_bool enabled) {
+static void SetAlphaTest(hc_bool enabled) {
 }
 
-static void SetAlphaBlend(cc_bool enabled) {
+static void SetAlphaBlend(hc_bool enabled) {
 }
 
-void Gfx_SetAlphaArgBlend(cc_bool enabled) { }
+void Gfx_SetAlphaArgBlend(hc_bool enabled) { }
 
 void Gfx_ClearBuffers(GfxBuffers buffers) {
 }
@@ -330,19 +330,19 @@ void Gfx_ClearColor(PackedCol color) {
 	setRGB0(&buffers[1].draw_env, r, g, b);
 }
 
-void Gfx_SetDepthTest(cc_bool enabled) {
+void Gfx_SetDepthTest(hc_bool enabled) {
 }
 
-void Gfx_SetDepthWrite(cc_bool enabled) {
+void Gfx_SetDepthWrite(hc_bool enabled) {
 	// TODO
 }
 
-static void SetColorWrite(cc_bool r, cc_bool g, cc_bool b, cc_bool a) {
+static void SetColorWrite(hc_bool r, hc_bool g, hc_bool b, hc_bool a) {
 	// TODO
 }
 
-void Gfx_DepthOnlyRendering(cc_bool depthOnly) {
-	cc_bool enabled = !depthOnly;
+void Gfx_DepthOnlyRendering(hc_bool depthOnly) {
+	hc_bool enabled = !depthOnly;
 	SetColorWrite(enabled & gfx_colorMask[0], enabled & gfx_colorMask[1], 
 				  enabled & gfx_colorMask[2], enabled & gfx_colorMask[3]);
 }
@@ -854,12 +854,12 @@ void Gfx_DrawIndexedTris_T2fC4b(int verticesCount, int startVertex) {
 /*########################################################################################################################*
 *---------------------------------------------------------Other/Misc------------------------------------------------------*
 *#########################################################################################################################*/
-cc_result Gfx_TakeScreenshot(struct Stream* output) {
+hc_result Gfx_TakeScreenshot(struct Stream* output) {
 	return ERR_NOT_SUPPORTED;
 }
 
-cc_bool Gfx_WarnIfNecessary(void) { return false; }
-cc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
+hc_bool Gfx_WarnIfNecessary(void) { return false; }
+hc_bool Gfx_GetUIOptions(struct MenuOptionsScreen* s) { return false; }
 
 void Gfx_BeginFrame(void) {
 	lastPoly = NULL;
@@ -879,7 +879,7 @@ void Gfx_EndFrame(void) {
 	OnBufferUpdated();
 }
 
-void Gfx_SetVSync(cc_bool vsync) {
+void Gfx_SetVSync(hc_bool vsync) {
 	gfx_vsync = vsync;
 }
 
@@ -890,12 +890,12 @@ void Gfx_OnWindowResize(void) {
 void Gfx_SetViewport(int x, int y, int w, int h) { }
 void Gfx_SetScissor (int x, int y, int w, int h) { }
 
-void Gfx_GetApiInfo(cc_string* info) {
+void Gfx_GetApiInfo(hc_string* info) {
 	String_AppendConst(info, "-- Using PS1 --\n");
 	PrintMaxTextureInfo(info);
 }
 
-cc_bool Gfx_TryRestoreContext(void) { return true; }
+hc_bool Gfx_TryRestoreContext(void) { return true; }
 
 void Gfx_Begin2D(int width, int height) {
 	gfx_rendering2D = true;

@@ -11,12 +11,12 @@
 #include "Graphics.h"
 #include "Game.h"
 
-static cc_bool kb_inited, kb_shift, kb_needsHook;
+static hc_bool kb_inited, kb_shift, kb_needsHook;
 static struct FontDesc kb_font;
 static int kb_curX, kb_curY;
 static float kb_padXAcc, kb_padYAcc;
 static char kb_buffer[512];
-static cc_string kb_str = String_FromArray(kb_buffer);
+static hc_string kb_str = String_FromArray(kb_buffer);
 static void (*KB_MarkDirty)(void);
 static int kb_yOffset;
 
@@ -40,7 +40,7 @@ struct KBLayout {
 	const char** lower;
 	const char** upper;
 	const char** table;
-	const cc_uint8* behaviour;
+	const hc_uint8* behaviour;
 };
 static struct KBLayout* kb;
 
@@ -61,7 +61,7 @@ static const char* kb_normal_upper[] =
 	"Z", "X", "C", "V", "B", "N", "M", "<", ">", "*", "%", "#", "/    ",
 	"Caps",0,0,0, "Shift",0,0,0, "Space",0,0,0, "Close"
 };
-static const cc_uint8 kb_normal_behaviour[] =
+static const hc_uint8 kb_normal_behaviour[] =
 {
 	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, KB_B_BACK | 4,
 	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4,
@@ -84,7 +84,7 @@ static const char* kb_numpad[] =
 	"7", "8", "9", "Space",
 	"-", "0", ".", "Close",
 };
-static const cc_uint8 kb_numpad_behaviour[] =
+static const hc_uint8 kb_numpad_behaviour[] =
 {
 	1, 1, 1, KB_B_BACK  | 4,
 	1, 1, 1, KB_B_ENTER | 4,
@@ -138,7 +138,7 @@ static void VirtualKeyboard_Hook(void);
 
 static void VirtualKeyboard_Draw(struct Context2D* ctx) {
 	struct DrawTextArgs args;
-	cc_string str;
+	hc_string str;
 	int row, cell;
 	int i = 0, x, y, w, h, dx, dy;
 	int selected = VirtualKeyboard_GetSelected();
@@ -182,7 +182,7 @@ static void VirtualKeyboard_CalcPosition(int* x, int* y, int width, int height) 
 }
 
 static int VirtualKeyboard_WindowWidth(void) {
-#ifdef CC_BUILD_DUALSCREEN
+#ifdef HC_BUILD_DUALSCREEN
 	return launcherMode ? Window_Main.Width : Window_Alt.Width;
 #else
 	return Window_Main.Width;
@@ -190,7 +190,7 @@ static int VirtualKeyboard_WindowWidth(void) {
 }
 
 static int VirtualKeyboard_WindowHeight(void) {
-#ifdef CC_BUILD_DUALSCREEN
+#ifdef HC_BUILD_DUALSCREEN
 	return launcherMode ? Window_Main.Height : Window_Alt.Height;
 #else
 	return Window_Main.Height;
@@ -418,7 +418,7 @@ static void VirtualKeyboard_Hook(void) {
 	Event_Register_(&PointerEvents.Down,          NULL, VirtualKeyboard_PointerDown);
 }
 
-static void VirtualKeyboard_Open(struct OpenKeyboardArgs* args, cc_bool launcher) {
+static void VirtualKeyboard_Open(struct OpenKeyboardArgs* args, hc_bool launcher) {
 	VirtualKeyboard_Close();
 	VirtualKeyboard_Init();
 	DisplayInfo.ShowingSoftKeyboard = true;
@@ -450,7 +450,7 @@ static void VirtualKeyboard_Open(struct OpenKeyboardArgs* args, cc_bool launcher
 	Game.Draw2DHooks[0] = VirtualKeyboard_Display3D;
 }
 
-static void VirtualKeyboard_SetText(const cc_string* text) {
+static void VirtualKeyboard_SetText(const hc_string* text) {
 	if (!DisplayInfo.ShowingSoftKeyboard) return;
 	String_Copy(&kb_str, text);
 }

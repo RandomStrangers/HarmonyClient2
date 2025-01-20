@@ -139,7 +139,7 @@ void Event_RaiseFloat(struct Event_Float* handlers, float arg) {
 	}
 }
 
-void Event_RaiseEntry(struct Event_Entry* handlers, struct Stream* stream, const cc_string* name) {
+void Event_RaiseEntry(struct Event_Entry* handlers, struct Stream* stream, const hc_string* name) {
 	int i;
 	for (i = 0; i < handlers->Count; i++) {
 		handlers->Handlers[i](handlers->Objs[i], stream, name);
@@ -153,21 +153,21 @@ void Event_RaiseBlock(struct Event_Block* handlers, IVec3 coords, BlockID oldBlo
 	}
 }
 
-void Event_RaiseChat(struct Event_Chat* handlers, const cc_string* msg, int msgType) {
+void Event_RaiseChat(struct Event_Chat* handlers, const hc_string* msg, int msgType) {
 	int i;
 	for (i = 0; i < handlers->Count; i++) {
 		handlers->Handlers[i](handlers->Objs[i], msg, msgType);
 	}
 }
 
-void Event_RaiseInput(struct Event_Input* handlers, int key, cc_bool repeating, struct InputDevice* device) {
+void Event_RaiseInput(struct Event_Input* handlers, int key, hc_bool repeating, struct InputDevice* device) {
 	int i;
 	for (i = 0; i < handlers->Count; i++) {
 		handlers->Handlers[i](handlers->Objs[i], key, repeating, device);
 	}
 }
 
-void Event_RaiseString(struct Event_String* handlers, const cc_string* str) {
+void Event_RaiseString(struct Event_String* handlers, const hc_string* str) {
 	int i;
 	for (i = 0; i < handlers->Count; i++) {
 		handlers->Handlers[i](handlers->Objs[i], str);
@@ -188,14 +188,14 @@ void Event_RaisePadAxis(struct Event_PadAxis* handlers, int port, int axis, floa
 	}
 }
 
-void Event_RaisePluginMessage(struct Event_PluginMessage* handlers, cc_uint8 channel, cc_uint8* data) {
+void Event_RaisePluginMessage(struct Event_PluginMessage* handlers, hc_uint8 channel, hc_uint8* data) {
 	int i;
 	for (i = 0; i < handlers->Count; i++) {
 		handlers->Handlers[i](handlers->Objs[i], channel, data);
 	}
 }
 
-void Event_RaiseLightingMode(struct Event_LightingMode* handlers, cc_uint8 oldMode, cc_bool fromServer) {
+void Event_RaiseLightingMode(struct Event_LightingMode* handlers, hc_uint8 oldMode, hc_bool fromServer) {
 	int i;
 	for (i = 0; i < handlers->Count; i++) {
 		handlers->Handlers[i](handlers->Objs[i], oldMode, fromServer);

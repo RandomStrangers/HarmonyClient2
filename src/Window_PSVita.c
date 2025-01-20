@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_PSVITA
+#if defined HC_BUILD_PSVITA
 #include "Window.h"
 #include "Platform.h"
 #include "Input.h"
@@ -14,11 +14,11 @@
 #include "VirtualKeyboard.h"
 #include <vitasdk.h>
 
-static cc_bool launcherMode;
+static hc_bool launcherMode;
 static SceTouchPanelInfo frontPanel, backPanel;
 
 struct _DisplayData DisplayInfo;
-struct cc_window WindowInfo;
+struct hc_window WindowInfo;
 
 #define DISPLAY_WIDTH   960
 #define DISPLAY_HEIGHT  544
@@ -72,13 +72,13 @@ void Window_Create3D(int width, int height) {
 
 void Window_Destroy(void) { }
 
-void Window_SetTitle(const cc_string* title) { }
-void Clipboard_GetText(cc_string* value) { } // TODO sceClipboardGetText
-void Clipboard_SetText(const cc_string* value) { } // TODO sceClipboardSetText
+void Window_SetTitle(const hc_string* title) { }
+void Clipboard_GetText(hc_string* value) { } // TODO sceClipboardGetText
+void Clipboard_SetText(const hc_string* value) { } // TODO sceClipboardSetText
 
 int Window_GetWindowState(void) { return WINDOW_STATE_FULLSCREEN; }
-cc_result Window_EnterFullscreen(void) { return 0; }
-cc_result Window_ExitFullscreen(void)  { return 0; }
+hc_result Window_EnterFullscreen(void) { return 0; }
+hc_result Window_ExitFullscreen(void)  { return 0; }
 int Window_IsObscured(void)            { return 0; }
 
 void Window_Show(void) { }
@@ -111,7 +111,7 @@ static void ProcessTouchInput(int port, int id, const SceTouchPanelInfo* panel) 
 	if (res < 0)  return; // error occurred
 	int idx = 1 << id;
 	
-	cc_bool isPressed = touch.reportNum > 0;
+	hc_bool isPressed = touch.reportNum > 0;
 	if (isPressed) {
 		int x = touch.report[0].x;
 		int y = touch.report[0].y;
@@ -220,8 +220,8 @@ void Window_FreeFramebuffer(struct Bitmap* bmp) {
 }
 
 static void DQ_OnNextFrame2D(void* fb) {
-	cc_uint32* src = (cc_uint32*)fb_bmp.scan0;
-	cc_uint32* dst = (cc_uint32*)fb;
+	hc_uint32* src = (hc_uint32*)fb_bmp.scan0;
+	hc_uint32* dst = (hc_uint32*)fb;
 	
 	for (int y = 0; y < DISPLAY_HEIGHT; y++) 
 	{
@@ -273,11 +273,11 @@ void Window_ShowDialog(const char* title, const char* msg) {
 	DisplayDialog(msg);
 }
 
-cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
+hc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
-cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
+hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
@@ -292,7 +292,7 @@ void OnscreenKeyboard_Open(struct OpenKeyboardArgs* args) {
 	VirtualKeyboard_Open(args, launcherMode);
 }
 
-void OnscreenKeyboard_SetText(const cc_string* text) {
+void OnscreenKeyboard_SetText(const hc_string* text) {
 	VirtualKeyboard_SetText(text);
 }
 

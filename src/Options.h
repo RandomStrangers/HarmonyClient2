@@ -1,7 +1,7 @@
-#ifndef CC_OPTIONS_H
-#define CC_OPTIONS_H
+#ifndef HC_OPTIONS_H
+#define HC_OPTIONS_H
 #include "Core.h"
-CC_BEGIN_HEADER
+HC_BEGIN_HEADER
 
 /* 
 Manages loading and saving options
@@ -107,16 +107,16 @@ Copyright 2014-2023 ClassiCube | Licensed under BSD-3
 
 struct StringsBuffer;
 extern struct StringsBuffer Options;
-extern cc_result Options_LoadResult;
+extern hc_result Options_LoadResult;
 /* Frees any memory allocated in storing options. */
 void Options_Free(void);
 
 /* Loads options from disc. */
 void Options_Load(void);
 /* Reloads options from disc, leaving options changed in this session alone. */
-CC_API void Options_Reload(void);
+HC_API void Options_Reload(void);
 /* Saves options to disc, if any were changed via Options_SetXYZ since last save. */
-CC_API void Options_SaveIfChanged(void);
+HC_API void Options_SaveIfChanged(void);
 /* Temporarily prevents saving options */
 /*  NOTE: Only makes a difference on some platforms */
 void Options_PauseSaving(void);
@@ -126,37 +126,37 @@ void Options_ResumeSaving(void);
 
 /* Sets value to value of option directly in Options.Buffer if found, String_Empty if not. */
 /* Returns whether the option was actually found. */
-STRING_REF cc_bool Options_UNSAFE_Get(const char* keyRaw, cc_string* value);
+STRING_REF hc_bool Options_UNSAFE_Get(const char* keyRaw, hc_string* value);
 /* Returns value of given option, or default value if not found. */
-CC_API void Options_Get(const char*        key, cc_string* value, const char* defValue);
+HC_API void Options_Get(const char*        key, hc_string* value, const char* defValue);
 /* Returns value of given option as an integer, or default value if could not be converted. */
-CC_API int  Options_GetInt(const char*     key, int min, int max, int defValue);
+HC_API int  Options_GetInt(const char*     key, int min, int max, int defValue);
 /* Returns value of given option as a bool, or default value if could not be converted. */
-CC_API cc_bool Options_GetBool(const char* key, cc_bool defValue);
+HC_API hc_bool Options_GetBool(const char* key, hc_bool defValue);
 /* Returns value of given option as a float, or default value if could not be converted. */
-CC_API float Options_GetFloat(const char*  key, float min, float max, float defValue);
+HC_API float Options_GetFloat(const char*  key, float min, float max, float defValue);
 /* Returns value of given option as an integer, or default value if could not be converted. */
 /* NOTE: Conversion is done by going through all elements of names, returning index of a match. */
-CC_API int   Options_GetEnum(const char*   key, int defValue, const char* const* names, int namesCount);
+HC_API int   Options_GetEnum(const char*   key, int defValue, const char* const* names, int namesCount);
 /* Attempts to parse the value of the given option into an RGB (3 byte) colour. */
 /* Returns whether the option was actually found and could be parsed into a colour. */
-cc_bool Options_GetColor(const char* key, cc_uint8* rgb);
+hc_bool Options_GetColor(const char* key, hc_uint8* rgb);
 
 /* Sets value of given option to either "true" or "false". */
-CC_API void Options_SetBool(const char* keyRaw, cc_bool value);
+HC_API void Options_SetBool(const char* keyRaw, hc_bool value);
 /* Sets value of given option to given integer converted to a string. */
-CC_API void Options_SetInt(const char*  keyRaw,  int value);
+HC_API void Options_SetInt(const char*  keyRaw,  int value);
 /* Sets value of given option to given string. */
-CC_API void Options_Set(const char*     keyRaw,  const cc_string* value);
+HC_API void Options_Set(const char*     keyRaw,  const hc_string* value);
 /* Sets value of given option to given string. */
-CC_API void Options_SetString(const cc_string* key, const cc_string* value);
+HC_API void Options_SetString(const hc_string* key, const hc_string* value);
 
 /* Attempts to securely encode an option. */
 /* NOTE: Not all platforms support secure saving. */
-void Options_SetSecure(const char* opt, const cc_string* data);
+void Options_SetSecure(const char* opt, const hc_string* data);
 /* Attempts to securely decode an option. */
 /* NOTE: Not all platforms support secure saving. */
-void Options_GetSecure(const char* opt, cc_string* data);
+void Options_GetSecure(const char* opt, hc_string* data);
 
-CC_END_HEADER
+HC_END_HEADER
 #endif

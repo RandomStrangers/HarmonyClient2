@@ -16,7 +16,7 @@
 struct _CameraData Camera;
 static struct RayTracer cameraClipPos;
 static Vec2 cam_rotOffset;
-static cc_bool cam_isForwardThird;
+static hc_bool cam_isForwardThird;
 
 static struct CameraState {
 	float deltaX, deltaY;
@@ -188,7 +188,7 @@ static Vec3 FirstPersonCamera_GetPosition(float t) {
 	return camPos;
 }
 
-static cc_bool FirstPersonCamera_Zoom(float amount) { return false; }
+static hc_bool FirstPersonCamera_Zoom(float amount) { return false; }
 static struct Camera cam_FirstPerson = {
 	false,
 	PerspectiveCamera_GetProjection,  PerspectiveCamera_GetView,
@@ -246,7 +246,7 @@ static Vec3 ThirdPersonCamera_GetPosition(float t) {
 	return cameraClipPos.intersect;
 }
 
-static cc_bool ThirdPersonCamera_Zoom(float amount) {
+static hc_bool ThirdPersonCamera_Zoom(float amount) {
 	float* dist   = cam_isForwardThird ? &dist_forward : &dist_third;
 	float newDist = *dist - amount;
 
@@ -292,7 +292,7 @@ static void OnHacksChanged(void* obj) {
 	if (!h->CanUseThirdPerson || !h->Enabled) Camera_CycleActive();
 }
 #include "Chat.h"
-static cc_bool hackPermMsgs;
+static hc_bool hackPermMsgs;
 void Camera_CycleActive(void) {
 	hackPermMsgs = Options_GetBool(OPT_HACK_PERM_MSGS, true);
 	struct LocalPlayer* p = &LocalPlayer_Instances[0];
@@ -321,9 +321,9 @@ void Camera_Register(struct Camera* cam) {
 	cam->next = cams_head;
 }
 
-static cc_bool cam_focussed;
+static hc_bool cam_focussed;
 void Camera_CheckFocus(void) {
-	cc_bool focus = Gui.InputGrab == NULL;
+	hc_bool focus = Gui.InputGrab == NULL;
 	if (focus == cam_focussed) return;
 	cam_focussed = focus;
 
@@ -361,7 +361,7 @@ static void OnInit(void) {
 	Event_Register_(&ControllerEvents.AxisUpdate, NULL, OnAxisUpdate);
 	Event_Register_(&UserEvents.HackPermsChanged, NULL, OnHacksChanged);
 
-#ifdef CC_BUILD_WIN
+#ifdef HC_BUILD_WIN
 	Camera.Sensitivity = Options_GetInt(OPT_SENSITIVITY, 1, 200, 40);
 #else
 	Camera.Sensitivity = Options_GetInt(OPT_SENSITIVITY, 1, 200, 30);

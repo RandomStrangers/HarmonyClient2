@@ -33,15 +33,15 @@
 #include <sys/process.h>
 #include "_PlatformConsole.h"
 
-const cc_result ReturnCode_FileShareViolation = 1000000000; // not used
-const cc_result ReturnCode_FileNotFound     = 0x80010006; // ENOENT;
-const cc_result ReturnCode_DirectoryExists  = 0x80010014; // EEXIST
-const cc_result ReturnCode_SocketInProgess  = NET_EINPROGRESS;
-const cc_result ReturnCode_SocketWouldBlock = NET_EWOULDBLOCK;
-const cc_result ReturnCode_SocketDropped    = NET_EPIPE;
+const hc_result ReturnCode_FileShareViolation = 1000000000; // not used
+const hc_result ReturnCode_FileNotFound     = 0x80010006; // ENOENT;
+const hc_result ReturnCode_DirectoryExists  = 0x80010014; // EEXIST
+const hc_result ReturnCode_SocketInProgess  = NET_EINPROGRESS;
+const hc_result ReturnCode_SocketWouldBlock = NET_EWOULDBLOCK;
+const hc_result ReturnCode_SocketDropped    = NET_EPIPE;
 
-const char* Platform_AppNameSuffix = " PS3";
-cc_bool Platform_ReadonlyFilesystem;
+const char* Platform_AppNameSuffix = " (PS3)";
+hc_bool Platform_ReadonlyFilesystem;
 
 SYS_PROCESS_PARAM(1001, 256 * 1024); // 256kb stack size
 
@@ -80,13 +80,13 @@ void DateTime_CurrentLocal(struct DateTime* t) {
 *#########################################################################################################################*/
 #define NS_PER_SEC 1000000000ULL
 
-cc_uint64 Stopwatch_Measure(void) { 
+hc_uint64 Stopwatch_Measure(void) { 
 	u64 sec, nsec;
 	sysGetCurrentTime(&sec, &nsec);
 	return sec * NS_PER_SEC + nsec;
 }
 
-cc_uint64 Stopwatch_ElapsedMicroseconds(cc_uint64 beg, cc_uint64 end) {
+hc_uint64 Stopwatch_ElapsedMicroseconds(hc_uint64 beg, hc_uint64 end) {
 	if (end < beg) return 0;
 	return (end - beg) / 1000;
 }
@@ -95,29 +95,29 @@ cc_uint64 Stopwatch_ElapsedMicroseconds(cc_uint64 beg, cc_uint64 end) {
 /*########################################################################################################################*
 *-----------------------------------------------------Directory/File------------------------------------------------------*
 *#########################################################################################################################*/
-static const cc_string root_path = String_FromConst("/dev_hdd0/ClassiCube/");
+static const hc_string root_path = String_FromConst("/dev_hdd0/HarmonyClient/");
 
-void Platform_EncodePath(cc_filepath* dst, const cc_string* path) {
+void Platform_EncodePath(hc_filepath* dst, const hc_string* path) {
 	char* str = dst->buffer;
 	Mem_Copy(str, root_path.buffer, root_path.length);
 	str += root_path.length;
 	String_EncodeUtf8(str, path);
 }
 
-cc_result Directory_Create(const cc_filepath* path) {
+hc_result Directory_Create(const hc_filepath* path) {
 	/* read/write/search permissions for owner and group, and with read/search permissions for others. */
 	/* TODO: Is the default mode in all cases */
 	return sysLv2FsMkdir(path->buffer, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 }
 
-int File_Exists(const cc_filepath* path) {
+int File_Exists(const hc_filepath* path) {
 	sysFSStat sb;
 	return sysLv2FsStat(path->buffer, &sb) == 0 && S_ISREG(sb.st_mode);
 }
 
-cc_result Directory_Enum(const cc_string* dirPath, void* obj, Directory_EnumCallback callback) {
-	cc_string path; char pathBuffer[FILENAME_SIZE];
-	cc_filepath str;
+hc_result Directory_Enum(const hc_string* dirPath, void* obj, Directory_EnumCallback callback) {
+	hc_string path; char pathBuffer[FILENAME_SIZE];
+	hc_filepath str;
 	sysFSDirent entry;
 	char* src;
 	int dir_fd, res;
@@ -150,7 +150,7 @@ cc_result Directory_Enum(const cc_string* dirPath, void* obj, Directory_EnumCall
 	return res;
 }
 
-static cc_result File_Do(cc_file* file, const char* path, int mode) {
+static hc_result File_Do(hc_file* file, const char* path, int mode) {
 	int fd = -1;
 	
 	int access = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
@@ -165,17 +165,17 @@ static cc_result File_Do(cc_file* file, const char* path, int mode) {
 	}
 }
 
-cc_result File_Open(cc_file* file, const cc_filepath* path) {
+hc_result File_Open(hc_file* file, const hc_filepath* path) {
 	return File_Do(file, path->buffer, SYS_O_RDONLY);
 }
-cc_result File_Create(cc_file* file, const cc_filepath* path) {
+hc_result File_Create(hc_file* file, const hc_filepath* path) {
 	return File_Do(file, path->buffer, SYS_O_RDWR | SYS_O_CREAT | SYS_O_TRUNC);
 }
-cc_result File_OpenOrCreate(cc_file* file, const cc_filepath* path) {
+hc_result File_OpenOrCreate(hc_file* file, const hc_filepath* path) {
 	return File_Do(file, path->buffer, SYS_O_RDWR | SYS_O_CREAT);
 }
 
-cc_result File_Read(cc_file file, void* data, cc_uint32 count, cc_uint32* bytesRead) {
+hc_result File_Read(hc_file file, void* data, hc_uint32 count, hc_uint32* bytesRead) {
 	u64 read = 0;
 	int res  = sysLv2FsRead(file, data, count, &read);
 	
@@ -183,7 +183,7 @@ cc_result File_Read(cc_file file, void* data, cc_uint32 count, cc_uint32* bytesR
 	return res;
 }
 
-cc_result File_Write(cc_file file, const void* data, cc_uint32 count, cc_uint32* bytesWrote) {
+hc_result File_Write(hc_file file, const void* data, hc_uint32 count, hc_uint32* bytesWrote) {
 	u64 wrote = 0;
 	int res   = sysLv2FsWrite(file, data, count, &wrote);
 	
@@ -191,17 +191,17 @@ cc_result File_Write(cc_file file, const void* data, cc_uint32 count, cc_uint32*
 	return res;
 }
 
-cc_result File_Close(cc_file file) {
+hc_result File_Close(hc_file file) {
 	return sysLv2FsClose(file);
 }
 
-cc_result File_Seek(cc_file file, int offset, int seekType) {
-	static cc_uint8 modes[] = { SEEK_SET, SEEK_CUR, SEEK_END };
+hc_result File_Seek(hc_file file, int offset, int seekType) {
+	static hc_uint8 modes[] = { SEEK_SET, SEEK_CUR, SEEK_END };
 	u64 position = 0;
 	return sysLv2FsLSeek64(file, offset, modes[seekType], &position);
 }
 
-cc_result File_Position(cc_file file, cc_uint32* pos) {
+hc_result File_Position(hc_file file, hc_uint32* pos) {
 	u64 position = 0;
 	int res = sysLv2FsLSeek64(file, 0, SEEK_CUR, &position);
 	
@@ -209,7 +209,7 @@ cc_result File_Position(cc_file file, cc_uint32* pos) {
 	return res;
 }
 
-cc_result File_Length(cc_file file, cc_uint32* len) {
+hc_result File_Length(hc_file file, hc_uint32* len) {
 	sysFSStat st;
 	int res = sysLv2FsFStat(file, &st);
 	
@@ -221,7 +221,7 @@ cc_result File_Length(cc_file file, cc_uint32* len) {
 /*########################################################################################################################*
 *--------------------------------------------------------Threading--------------------------------------------------------*
 *#########################################################################################################################*/
-void Thread_Sleep(cc_uint32 milliseconds) { 
+void Thread_Sleep(hc_uint32 milliseconds) { 
 	sysUsleep(milliseconds * 1000); 
 }
 
@@ -314,7 +314,7 @@ void Waitable_Wait(void* handle) {
 	if (res) Logger_Abort2(res, "Waitable wait");
 }
 
-void Waitable_WaitFor(void* handle, cc_uint32 milliseconds) {
+void Waitable_WaitFor(void* handle, hc_uint32 milliseconds) {
 	sys_sem_t* sem = (sys_sem_t*)handle;
 	int res = sysSemWait(*sem, milliseconds * 1000);
 	if (res) Logger_Abort2(res, "Waitable wait for");
@@ -328,7 +328,7 @@ union SocketAddress {
 	struct sockaddr raw;
 	struct sockaddr_in v4;
 };
-static cc_result ParseHost(char* host, int port, cc_sockaddr* addrs, int* numValidAddrs) {
+static hc_result ParseHost(char* host, int port, hc_sockaddr* addrs, int* numValidAddrs) {
 	struct net_hostent* res = netGetHostByName(host);
 	struct sockaddr_in* addr4;
 	if (!res) return net_h_errno;
@@ -356,7 +356,7 @@ static cc_result ParseHost(char* host, int port, cc_sockaddr* addrs, int* numVal
 	return i == 0 ? ERR_INVALID_ARGUMENT : 0;
 }
 
-cc_result Socket_ParseAddress(const cc_string* address, int port, cc_sockaddr* addrs, int* numValidAddrs) {
+hc_result Socket_ParseAddress(const hc_string* address, int port, hc_sockaddr* addrs, int* numValidAddrs) {
 	struct sockaddr_in* addr4 = (struct sockaddr_in*)addrs[0].data;
 	char str[NATIVE_STR_LEN];
 	String_EncodeUtf8(str, address);
@@ -374,7 +374,7 @@ cc_result Socket_ParseAddress(const cc_string* address, int port, cc_sockaddr* a
 	return ParseHost(str, port, addrs, numValidAddrs);
 }
 
-cc_result Socket_Create(cc_socket* s, cc_sockaddr* addr, cc_bool nonblocking) {
+hc_result Socket_Create(hc_socket* s, hc_sockaddr* addr, hc_bool nonblocking) {
 	struct sockaddr* raw = (struct sockaddr*)addr->data;
 
 	*s = netSocket(raw->sa_family, SOCK_STREAM, IPPROTO_TCP);
@@ -387,33 +387,33 @@ cc_result Socket_Create(cc_socket* s, cc_sockaddr* addr, cc_bool nonblocking) {
 	return 0;
 }
 
-cc_result Socket_Connect(cc_socket s, cc_sockaddr* addr) {
+hc_result Socket_Connect(hc_socket s, hc_sockaddr* addr) {
 	struct sockaddr* raw = (struct sockaddr*)addr->data;
 	
 	int res = netConnect(s, raw, addr->size);
 	return res < 0 ? net_errno : 0;
 }
 
-cc_result Socket_Read(cc_socket s, cc_uint8* data, cc_uint32 count, cc_uint32* modified) {
+hc_result Socket_Read(hc_socket s, hc_uint8* data, hc_uint32 count, hc_uint32* modified) {
 	int res = netRecv(s, data, count, 0);
 	if (res < 0) return net_errno;
 	
 	*modified = res; return 0;
 }
 
-cc_result Socket_Write(cc_socket s, const cc_uint8* data, cc_uint32 count, cc_uint32* modified) {
+hc_result Socket_Write(hc_socket s, const hc_uint8* data, hc_uint32 count, hc_uint32* modified) {
 	int res = netSend(s, data, count, 0);
 	if (res < 0) return net_errno;
 	
 	*modified = res; return 0;
 }
 
-void Socket_Close(cc_socket s) {
+void Socket_Close(hc_socket s) {
 	netShutdown(s, SHUT_RDWR);
 	netClose(s);
 }
 
-static cc_result Socket_Poll(cc_socket s, int mode, cc_bool* success) {
+static hc_result Socket_Poll(hc_socket s, int mode, hc_bool* success) {
 	struct pollfd pfd;
 	int flags;
 
@@ -428,13 +428,13 @@ static cc_result Socket_Poll(cc_socket s, int mode, cc_bool* success) {
 	return 0;
 }
 
-cc_result Socket_CheckReadable(cc_socket s, cc_bool* readable) {
+hc_result Socket_CheckReadable(hc_socket s, hc_bool* readable) {
 	return Socket_Poll(s, SOCKET_POLL_READ, readable);
 }
 
-cc_result Socket_CheckWritable(cc_socket s, cc_bool* writable) {
+hc_result Socket_CheckWritable(hc_socket s, hc_bool* writable) {
 	socklen_t resultSize = sizeof(socklen_t);
-	cc_result res = Socket_Poll(s, SOCKET_POLL_WRITE, writable);
+	hc_result res = Socket_Poll(s, SOCKET_POLL_WRITE, writable);
 	if (res || *writable) return res;
 
 	// https://stackoverflow.com/questions/29479953/so-error-value-after-successful-socket-operation
@@ -449,13 +449,13 @@ cc_result Socket_CheckWritable(cc_socket s, cc_bool* writable) {
 void Platform_Init(void) {
 	netInitialize();
 	
-	cc_filepath* root = FILEPATH_RAW(root_path.buffer);
+	hc_filepath* root = FILEPATH_RAW(root_path.buffer);
 	Directory_Create(root);
 }
 
 void Platform_Free(void) { }
 
-cc_bool Platform_DescribeError(cc_result res, cc_string* dst) {
+hc_bool Platform_DescribeError(hc_result res, hc_string* dst) {
 	char chars[NATIVE_STR_LEN];
 	int len;
 
@@ -472,8 +472,8 @@ cc_bool Platform_DescribeError(cc_result res, cc_string* dst) {
 	return true;
 }
 
-cc_bool Process_OpenSupported = false;
-cc_result Process_StartOpen(const cc_string* args) {
+hc_bool Process_OpenSupported = false;
+hc_result Process_StartOpen(const hc_string* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
@@ -483,7 +483,7 @@ cc_result Process_StartOpen(const cc_string* args) {
 *#########################################################################################################################*/
 #define MACHINE_KEY "PS3_PS3_PS3_PS3_"
 
-static cc_result GetMachineID(cc_uint32* key) {
+static hc_result GetMachineID(hc_uint32* key) {
 	Mem_Copy(key, MACHINE_KEY, sizeof(MACHINE_KEY) - 1);
 	return 0;
 }

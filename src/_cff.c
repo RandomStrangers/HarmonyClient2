@@ -16,7 +16,7 @@
 /***************************************************************************/
 
 #include "Core.h"
-#ifdef CC_BUILD_FREETYPE
+#ifdef HC_BUILD_FREETYPE
 
 #define FT_MAKE_OPTION_SINGLE_OBJECT
 

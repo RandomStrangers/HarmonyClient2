@@ -10,7 +10,7 @@
 /*########################################################################################################################*
 *----------------------------------------------------------Misc-----------------------------------------------------------*
 *#########################################################################################################################*/
-int Utils_ParseEnum(const cc_string* text, int defValue, const char* const* names, int namesCount) {
+int Utils_ParseEnum(const hc_string* text, int defValue, const char* const* names, int namesCount) {
 	int i;
 	for (i = 0; i < namesCount; i++) {
 		if (String_CaselessEqualsConst(text, names[i])) return i;
@@ -18,15 +18,15 @@ int Utils_ParseEnum(const cc_string* text, int defValue, const char* const* name
 	return defValue;
 }
 
-cc_bool Utils_IsUrlPrefix(const cc_string* value) {
+hc_bool Utils_IsUrlPrefix(const hc_string* value) {
 	return String_IndexOfConst(value, "http://")  == 0
 		|| String_IndexOfConst(value, "https://") == 0;
 }
 
-cc_bool Utils_EnsureDirectory(const char* dirName) {
-	cc_filepath path;
-	cc_string dir;
-	cc_result res;
+hc_bool Utils_EnsureDirectory(const char* dirName) {
+	hc_filepath path;
+	hc_string dir;
+	hc_result res;
 	
 	dir = String_FromReadonly(dirName);
 	Platform_EncodePath(&path, &dir);
@@ -37,7 +37,7 @@ cc_bool Utils_EnsureDirectory(const char* dirName) {
 	return false;
 }
 
-void Utils_UNSAFE_GetFilename(STRING_REF cc_string* path) {
+void Utils_UNSAFE_GetFilename(STRING_REF hc_string* path) {
 	char c;
 	int i;
 
@@ -49,7 +49,7 @@ void Utils_UNSAFE_GetFilename(STRING_REF cc_string* path) {
 	}
 }
 
-void Utils_UNSAFE_TrimFirstDirectory(STRING_REF cc_string* path) {
+void Utils_UNSAFE_TrimFirstDirectory(STRING_REF hc_string* path) {
 	char c;
 	int i;
 
@@ -73,7 +73,7 @@ int Utils_AccumulateWheelDelta(float* accumulator, float delta) {
 }
 
 /* Checks if an area is completely black, so Alex skins edited with Microsoft Paint are still treated as Alex */
-static cc_bool IsAllBlack(const struct Bitmap* bmp, int x1, int y1, int width, int height) {
+static hc_bool IsAllBlack(const struct Bitmap* bmp, int x1, int y1, int width, int height) {
 	int x, y;
 	for (y = y1; y < y1 + height; y++) {
 		BitmapCol* row = Bitmap_GetRow(bmp, y);
@@ -85,7 +85,7 @@ static cc_bool IsAllBlack(const struct Bitmap* bmp, int x1, int y1, int width, i
 	return true;
 }
 
-cc_uint8 Utils_CalcSkinType(const struct Bitmap* bmp) {
+hc_uint8 Utils_CalcSkinType(const struct Bitmap* bmp) {
 	BitmapCol col;
 	int scale;
 	if (bmp->width == bmp->height * 2) return SKIN_64x32;
@@ -100,8 +100,8 @@ cc_uint8 Utils_CalcSkinType(const struct Bitmap* bmp) {
 		&& IsAllBlack(bmp, 50 * scale, 16 * scale, 2 * scale,  4 * scale) ? SKIN_64x64_SLIM : SKIN_64x64;
 }
 
-cc_uint32 Utils_CRC32(const cc_uint8* data, cc_uint32 length) {
-	cc_uint32 crc = 0xffffffffUL;
+hc_uint32 Utils_CRC32(const hc_uint8* data, hc_uint32 length) {
+	hc_uint32 crc = 0xffffffffUL;
 	int i;
 
 	for (i = 0; i < length; i++) {
@@ -110,7 +110,7 @@ cc_uint32 Utils_CRC32(const cc_uint8* data, cc_uint32 length) {
 	return crc ^ 0xffffffffUL;
 }
 
-const cc_uint32 Utils_Crc32Table[256] = {
+const hc_uint32 Utils_Crc32Table[256] = {
 	0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA, 0x076DC419, 0x706AF48F, 0xE963A535, 0x9E6495A3, 0x0EDB8832, 0x79DCB8A4, 0xE0D5E91E, 0x97D2D988, 0x09B64C2B, 0x7EB17CBD, 0xE7B82D07, 0x90BF1D91,
 	0x1DB71064, 0x6AB020F2, 0xF3B97148, 0x84BE41DE, 0x1ADAD47D, 0x6DDDE4EB, 0xF4D4B551, 0x83D385C7, 0x136C9856, 0x646BA8C0, 0xFD62F97A, 0x8A65C9EC, 0x14015C4F, 0x63066CD9, 0xFA0F3D63, 0x8D080DF5,
 	0x3B6E20C8, 0x4C69105E, 0xD56041E4, 0xA2677172, 0x3C03E4D1, 0x4B04D447, 0xD20D85FD, 0xA50AB56B, 0x35B5A8FA, 0x42B2986C, 0xDBBBC9D6, 0xACBCF940, 0x32D86CE3, 0x45DF5C75, 0xDCD60DCF, 0xABD13D59,
@@ -129,27 +129,27 @@ const cc_uint32 Utils_Crc32Table[256] = {
 	0xBDBDF21C, 0xCABAC28A, 0x53B39330, 0x24B4A3A6, 0xBAD03605, 0xCDD70693, 0x54DE5729, 0x23D967BF, 0xB3667A2E, 0xC4614AB8, 0x5D681B02, 0x2A6F2B94, 0xB40BBE37, 0xC30C8EA1, 0x5A05DF1B, 0x2D02EF8D,
 };
 
-void Utils_Resize(void** buffer, int* capacity, cc_uint32 elemSize, int defCapacity, int expandElems) {
+void Utils_Resize(void** buffer, int* capacity, hc_uint32 elemSize, int defCapacity, int expandElems) {
 	/* We use a statically allocated buffer initially, so can't realloc first time */
 	int curCapacity = *capacity, newCapacity = curCapacity + expandElems;
 	*capacity = newCapacity;
 
 	if (curCapacity <= defCapacity) {
 		void* resized = Mem_Alloc(newCapacity, elemSize, "initing array");
-		Mem_Copy(resized, *buffer, (cc_uint32)curCapacity * elemSize);
+		Mem_Copy(resized, *buffer, (hc_uint32)curCapacity * elemSize);
 		*buffer = resized;
 	} else {
 		*buffer = Mem_Realloc(*buffer, newCapacity, elemSize, "resizing array");
 	}
 }
 
-void Utils_SwapEndian16(cc_int16* values, int numValues) {
-	cc_uint8* data = (cc_uint8*)values;
+void Utils_SwapEndian16(hc_int16* values, int numValues) {
+	hc_uint8* data = (hc_uint8*)values;
 	int i;
 
 	for (i = 0; i < numValues * 2; i += 2)
 	{
-		cc_uint8 tmp = data[i + 0];
+		hc_uint8 tmp = data[i + 0];
 		data[i + 0]  = data[i + 1];
 		data[i + 1]  = tmp;
 	}
@@ -163,7 +163,7 @@ static const char base64_table[64] = {
 	'w','x','y','z','0','1','2','3','4','5','6','7','8','9','+','/'
 };
 int Convert_ToBase64(const void* data, int len, char* dst) {
-	const cc_uint8* src = (const cc_uint8*)data;
+	const hc_uint8* src = (const hc_uint8*)data;
 	char* beg = dst;
 
 	/* 3 bytes to 4 chars */
@@ -192,7 +192,7 @@ int Convert_ToBase64(const void* data, int len, char* dst) {
 }
 
 /* Maps a base 64 character back into a 6 bit integer */
-CC_NOINLINE static int DecodeBase64(char c) {
+HC_NOINLINE static int DecodeBase64(char c) {
 	if (c >= 'A' && c <= 'Z') return (c - 'A');
 	if (c >= 'a' && c <= 'z') return (c - 'a') + 26;
 	if (c >= '0' && c <= '9') return (c - '0') + 52;
@@ -202,8 +202,8 @@ CC_NOINLINE static int DecodeBase64(char c) {
 	return -1;
 }
 
-int Convert_FromBase64(const char* src, int len, cc_uint8* dst) {
-	cc_uint8* beg = dst;
+int Convert_FromBase64(const char* src, int len, hc_uint8* dst) {
+	hc_uint8* beg = dst;
 	int a, b, c, d;
 	/* base 64 must be padded with = to 4 characters */
 	if (len & 0x3) return 0;
@@ -231,15 +231,15 @@ int Convert_FromBase64(const char* src, int len, cc_uint8* dst) {
 /*########################################################################################################################*
 *--------------------------------------------------------EntryList--------------------------------------------------------*
 *#########################################################################################################################*/
-cc_result EntryList_Load(struct StringsBuffer* list, const char* file, char separator, EntryList_Filter filter) {
-	cc_string entry; char entryBuffer[1024];
-	cc_string path;
-	cc_string key, value;
+hc_result EntryList_Load(struct StringsBuffer* list, const char* file, char separator, EntryList_Filter filter) {
+	hc_string entry; char entryBuffer[1024];
+	hc_string path;
+	hc_string key, value;
 	int lineLen, maxLen;
 
-	cc_uint8 buffer[2048];
+	hc_uint8 buffer[2048];
 	struct Stream stream, buffered;
-	cc_result res;
+	hc_result res;
 
 	path   = String_FromReadonly(file);
 	maxLen = list->_lenMask ? list->_lenMask : STRINGSBUFFER_DEF_LEN_MASK;
@@ -287,15 +287,15 @@ cc_result EntryList_Load(struct StringsBuffer* list, const char* file, char sepa
 	return res;
 }
 
-cc_result EntryList_UNSAFE_Load(struct StringsBuffer* list, const char* file) { 
+hc_result EntryList_UNSAFE_Load(struct StringsBuffer* list, const char* file) { 
 	return EntryList_Load(list, file, '\0', NULL); 
 }
 
 void EntryList_Save(struct StringsBuffer* list, const char* file) {
-	cc_string path, entry; char pathBuffer[FILENAME_SIZE];
+	hc_string path, entry; char pathBuffer[FILENAME_SIZE];
 	struct Stream stream;
 	int i;
-	cc_result res;
+	hc_result res;
 
 	String_InitArray(path, pathBuffer);
 	String_AppendConst(&path, file);
@@ -313,8 +313,8 @@ void EntryList_Save(struct StringsBuffer* list, const char* file) {
 	if (res) { Logger_SysWarn2(res, "closing", &path); }
 }
 
-cc_bool EntryList_Remove(struct StringsBuffer* list, const cc_string* key, char separator) {
-	cc_bool found = false;
+hc_bool EntryList_Remove(struct StringsBuffer* list, const hc_string* key, char separator) {
+	hc_bool found = false;
 	/* Have to use a for loop, because may be multiple entries with same key */
 	for (;;) {
 		int i = EntryList_Find(list, key, separator);
@@ -326,8 +326,8 @@ cc_bool EntryList_Remove(struct StringsBuffer* list, const cc_string* key, char 
 	return found;
 }
 
-void EntryList_Set(struct StringsBuffer* list, const cc_string* key, const cc_string* value, char separator) {
-	cc_string entry; char entryBuffer[3072];
+void EntryList_Set(struct StringsBuffer* list, const hc_string* key, const hc_string* value, char separator) {
+	hc_string entry; char entryBuffer[3072];
 	String_InitArray(entry, entryBuffer);
 
 	if (value->length) {
@@ -340,8 +340,8 @@ void EntryList_Set(struct StringsBuffer* list, const cc_string* key, const cc_st
 	StringsBuffer_Add(list, &entry);
 }
 
-cc_string EntryList_UNSAFE_Get(struct StringsBuffer* list, const cc_string* key, char separator) {
-	cc_string curEntry, curKey, curValue;
+hc_string EntryList_UNSAFE_Get(struct StringsBuffer* list, const hc_string* key, char separator) {
+	hc_string curEntry, curKey, curValue;
 	int i;
 
 	for (i = 0; i < list->count; i++) {
@@ -353,8 +353,8 @@ cc_string EntryList_UNSAFE_Get(struct StringsBuffer* list, const cc_string* key,
 	return String_Empty;
 }
 
-int EntryList_Find(struct StringsBuffer* list, const cc_string* key, char separator) {
-	cc_string curEntry, curKey, curValue;
+int EntryList_Find(struct StringsBuffer* list, const hc_string* key, char separator) {
+	hc_string curEntry, curKey, curValue;
 	int i;
 
 	for (i = 0; i < list->count; i++) {
@@ -370,9 +370,9 @@ int EntryList_Find(struct StringsBuffer* list, const cc_string* key, char separa
 /*########################################################################################################################*
 *--------------------------------------------------------Direct URL-------------------------------------------------------*
 *#########################################################################################################################*/
-cc_bool DirectUrl_Claims(const cc_string* input, cc_string* addr, cc_string* user, cc_string* mppass) {
-	static const cc_string prefix = String_FromConst("mc://");
-	cc_string parts[6];
+hc_bool DirectUrl_Claims(const hc_string* input, hc_string* addr, hc_string* user, hc_string* mppass) {
+	static const hc_string prefix = String_FromConst("mc://");
+	hc_string parts[6];
 	if (!String_CaselessStarts(input, &prefix)) return false;
 
 	/* mc://[ip:port]/[username]/[mppass] */
@@ -384,8 +384,8 @@ cc_bool DirectUrl_Claims(const cc_string* input, cc_string* addr, cc_string* use
 	return true;
 }
 
-cc_bool DirectUrl_ExtractAddress(const cc_string* addr, cc_string* ip, cc_string* port, int* portNum) {
-	static const cc_string defPort   = String_FromConst("25565");
+hc_bool DirectUrl_ExtractAddress(const hc_string* addr, hc_string* ip, hc_string* port, int* portNum) {
+	static const hc_string defPort   = String_FromConst("25565");
 	int index = String_LastIndexOf(addr, ':');
 
 	/* support either "[IP]" or "[IP]:[PORT]" */

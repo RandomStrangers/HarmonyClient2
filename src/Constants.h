@@ -1,5 +1,5 @@
-#ifndef CC_CONSTANTS_H
-#define CC_CONSTANTS_H
+#ifndef HC_CONSTANTS_H
+#define HC_CONSTANTS_H
 /* 
 Defines useful constants
 Copyright 2014-2023 ClassiCube | Licensed under BSD-3
@@ -9,15 +9,15 @@ Copyright 2014-2023 ClassiCube | Licensed under BSD-3
 #define GAME_MAX_CMDARGS 5
 //This is actually 1.3.6, but show 1.3.7 to not prompt users to update to CC.
 #define CC_APP_VER "1.3.7"
-#define APP_VER "1.0.8"
+#define APP_VER "1.0.9"
 #define GAME_API_VER 1
 #if defined CC_BUILD_OG
 #define GAME_APP_NAME  "ClassiCube 1.3.6"
 #define GAME_APP_TITLE "ClassiCube 1.3.6"
 #else
 #define CC_APP_NAME  "ClassiCube 1.3.6"
-#define GAME_APP_NAME  "&6Harmony &av&d1.0.8&a"
-#define GAME_APP_TITLE "Harmony v1.0.8"
+#define GAME_APP_NAME  "&6Harmony &av&d1.0.9&a (Dev)"
+#define GAME_APP_TITLE "Harmony v1.0.9 (Dev)"
 #endif
 /* Max number of characters strings can have. */
 #define STRING_SIZE 64
@@ -62,11 +62,11 @@ enum FACE_CONSTS {
 enum SKIN_TYPE { SKIN_64x32, SKIN_64x64, SKIN_64x64_SLIM, SKIN_INVALID = 0xF0 };
 #define DRAWER2D_MAX_COLORS 256
 
-#define UInt8_MaxValue  ((cc_uint8)255)
-#define Int16_MaxValue  ((cc_int16)32767)
-#define UInt16_MaxValue ((cc_uint16)65535)
-#define Int32_MinValue  ((cc_int32)-2147483647L - (cc_int32)1L)
-#define Int32_MaxValue  ((cc_int32)2147483647L)
+#define UInt8_MaxValue  ((hc_uint8)255)
+#define Int16_MaxValue  ((hc_int16)32767)
+#define UInt16_MaxValue ((hc_uint16)65535)
+#define Int32_MinValue  ((hc_int32)-2147483647L - (hc_int32)1L)
+#define Int32_MaxValue  ((hc_int32)2147483647L)
 
 #define SKINS_SERVER    "http://cdn.classicube.net/skin"
 #define UPDATES_SERVER  "http://cdn.classicube.net/client"
@@ -74,7 +74,7 @@ enum SKIN_TYPE { SKIN_64x32, SKIN_64x64, SKIN_64x64_SLIM, SKIN_INVALID = 0xF0 };
 #define RESOURCE_SERVER "http://static.classicube.net"
 /* Webpage where users can register for a new account */
 #define REGISTERNEW_URL "https://www.classicube.net/acc/register/"
-#define CLIENT_URL "https://github.com/RandomStrangers/HarmonyClient"
+#define CLIENT_URL "https://github.com/RandomStrangers/HarmonyClient2"
 
 #define DEFAULT_USERNAME "Singleplayer"
 #endif

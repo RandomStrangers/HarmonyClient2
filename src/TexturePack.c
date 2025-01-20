@@ -98,7 +98,7 @@ static void Atlas1D_Load(int index, struct Bitmap* atlas1D) {
 }
 
 /* TODO: always do this? */
-#ifdef CC_BUILD_LOWMEM
+#ifdef HC_BUILD_LOWMEM
 static void Atlas1D_LoadBlock(int index) {
 	int tileSize      = Atlas2D.TileSize;
 	int tilesPerAtlas = Atlas1D.TilesPerAtlas;
@@ -207,8 +207,8 @@ static void Atlas1D_Free(void) {
 	}
 }
 
-cc_bool Atlas_TryChange(struct Bitmap* atlas) {
-	static const cc_string terrain = String_FromConst("terrain.png");
+hc_bool Atlas_TryChange(struct Bitmap* atlas) {
+	static const hc_string terrain = String_FromConst("terrain.png");
 	int tileSize;
 
 	if (!Game_ValidateBitmapPow2(&terrain, atlas)) return false;
@@ -271,14 +271,14 @@ static void TextureCache_Init(void) {
 	EntryList_UNSAFE_Load(&lastModCache, LASTMOD_TXT);
 }
 
-cc_bool TextureCache_HasAccepted(const cc_string* url) { return EntryList_Find(&acceptedList, url, ' ') >= 0; }
-cc_bool TextureCache_HasDenied(const cc_string* url)   { return EntryList_Find(&deniedList,   url, ' ') >= 0; }
+hc_bool TextureCache_HasAccepted(const hc_string* url) { return EntryList_Find(&acceptedList, url, ' ') >= 0; }
+hc_bool TextureCache_HasDenied(const hc_string* url)   { return EntryList_Find(&deniedList,   url, ' ') >= 0; }
 
-void TextureCache_Accept(const cc_string* url) {
+void TextureCache_Accept(const hc_string* url) {
 	EntryList_Set(&acceptedList, url, &String_Empty, ' '); 
 	EntryList_Save(&acceptedList, ACCEPTED_TXT);
 }
-void TextureCache_Deny(const cc_string* url) {
+void TextureCache_Deny(const hc_string* url) {
 	EntryList_Set(&deniedList,  url, &String_Empty, ' '); 
 	EntryList_Save(&deniedList, DENIED_TXT);
 }
@@ -290,14 +290,14 @@ int TextureCache_ClearDenied(void) {
 	return count;
 }
 
-CC_INLINE static void HashUrl(cc_string* key, const cc_string* url) {
-	String_AppendUInt32(key, Utils_CRC32((const cc_uint8*)url->buffer, url->length));
+HC_INLINE static void HashUrl(hc_string* key, const hc_string* url) {
+	String_AppendUInt32(key, Utils_CRC32((const hc_uint8*)url->buffer, url->length));
 }
 
-static cc_bool createdCache, cacheInvalid;
-static cc_bool UseDedicatedCache(cc_string* path, const cc_string* key) {
-	cc_result res;
-	cc_filepath str;
+static hc_bool createdCache, cacheInvalid;
+static hc_bool UseDedicatedCache(hc_string* path, const hc_string* key) {
+	hc_result res;
+	hc_filepath str;
 	Directory_GetCachePath(path);
 	if (!path->length || cacheInvalid) return false;
 
@@ -318,8 +318,8 @@ static cc_bool UseDedicatedCache(cc_string* path, const cc_string* key) {
 	return !cacheInvalid;
 }
 
-CC_NOINLINE static void MakeCachePath(cc_string* mainPath, cc_string* altPath, const cc_string* url) {
-	cc_string key; char keyBuffer[STRING_INT_CHARS];
+HC_NOINLINE static void MakeCachePath(hc_string* mainPath, hc_string* altPath, const hc_string* url) {
+	hc_string key; char keyBuffer[STRING_INT_CHARS];
 	String_InitArray(key, keyBuffer);
 	HashUrl(&key, url);
 	
@@ -333,10 +333,10 @@ CC_NOINLINE static void MakeCachePath(cc_string* mainPath, cc_string* altPath, c
 }
 
 /* Returns non-zero if given URL has been cached */
-static int IsCached(const cc_string* url) {
-	cc_string mainPath; char mainBuffer[FILENAME_SIZE];
-	cc_string altPath;  char  altBuffer[FILENAME_SIZE];
-	cc_filepath mainStr, altStr;
+static int IsCached(const hc_string* url) {
+	hc_string mainPath; char mainBuffer[FILENAME_SIZE];
+	hc_string altPath;  char  altBuffer[FILENAME_SIZE];
+	hc_filepath mainStr, altStr;
 	
 	String_InitArray(mainPath, mainBuffer);
 	String_InitArray(altPath,   altBuffer);
@@ -349,10 +349,10 @@ static int IsCached(const cc_string* url) {
 }
 
 /* Attempts to open the cached data stream for the given url */
-static cc_bool OpenCachedData(const cc_string* url, struct Stream* stream) {
-	cc_string mainPath; char mainBuffer[FILENAME_SIZE];
-	cc_string altPath;  char  altBuffer[FILENAME_SIZE];
-	cc_result res;
+static hc_bool OpenCachedData(const hc_string* url, struct Stream* stream) {
+	hc_string mainPath; char mainBuffer[FILENAME_SIZE];
+	hc_string altPath;  char  altBuffer[FILENAME_SIZE];
+	hc_result res;
 	String_InitArray(mainPath, mainBuffer);
 	String_InitArray(altPath,   altBuffer);
 	
@@ -369,17 +369,17 @@ static cc_bool OpenCachedData(const cc_string* url, struct Stream* stream) {
 	return true;
 }
 
-CC_NOINLINE static cc_string GetCachedTag(const cc_string* url, struct StringsBuffer* list) {
-	cc_string key; char keyBuffer[STRING_INT_CHARS];
+HC_NOINLINE static hc_string GetCachedTag(const hc_string* url, struct StringsBuffer* list) {
+	hc_string key; char keyBuffer[STRING_INT_CHARS];
 	String_InitArray(key, keyBuffer);
 
 	HashUrl(&key, url);
 	return EntryList_UNSAFE_Get(list, &key, ' ');
 }
 
-static cc_string GetCachedLastModified(const cc_string* url) {
+static hc_string GetCachedLastModified(const hc_string* url) {
 	int i;
-	cc_string entry = GetCachedTag(url, &lastModCache);
+	hc_string entry = GetCachedTag(url, &lastModCache);
 	/* Entry used to be a timestamp of C# DateTime ticks since 01/01/0001 */
 	/* Check whether timestamp entry is old or new format */
 	for (i = 0; i < entry.length; i++) {
@@ -390,13 +390,13 @@ static cc_string GetCachedLastModified(const cc_string* url) {
 	entry.length = 0; return entry;
 }
 
-static cc_string GetCachedETag(const cc_string* url) {
+static hc_string GetCachedETag(const hc_string* url) {
 	return GetCachedTag(url, &etagCache);
 }
 
-CC_NOINLINE static void SetCachedTag(const cc_string* url, struct StringsBuffer* list,
-									 const cc_string* data, const char* file) {
-	cc_string key; char keyBuffer[STRING_INT_CHARS];
+HC_NOINLINE static void SetCachedTag(const hc_string* url, struct StringsBuffer* list,
+									 const hc_string* data, const char* file) {
+	hc_string key; char keyBuffer[STRING_INT_CHARS];
 	if (!data->length) return;
 
 	String_InitArray(key, keyBuffer);
@@ -407,9 +407,9 @@ CC_NOINLINE static void SetCachedTag(const cc_string* url, struct StringsBuffer*
 
 /* Updates cached data, ETag, and Last-Modified for the given URL */
 static void UpdateCache(struct HttpRequest* req) {
-	cc_string url, altPath, value;
-	cc_string path; char pathBuffer[FILENAME_SIZE];
-	cc_result res;
+	hc_string url, altPath, value;
+	hc_string path; char pathBuffer[FILENAME_SIZE];
+	hc_result res;
 	url = String_FromRawArray(req->url);
 
 	value = String_FromRawArray(req->etag);
@@ -432,20 +432,20 @@ static void UpdateCache(struct HttpRequest* req) {
 static char textureUrlBuffer[URL_MAX_SIZE];
 static char texpackPathBuffer[FILENAME_SIZE];
 
-cc_string TexturePack_Url  = String_FromArray(textureUrlBuffer);
-cc_string TexturePack_Path = String_FromArray(texpackPathBuffer);
-cc_bool TexturePack_DefaultMissing;
+hc_string TexturePack_Url  = String_FromArray(textureUrlBuffer);
+hc_string TexturePack_Path = String_FromArray(texpackPathBuffer);
+hc_bool TexturePack_DefaultMissing;
 
-void TexturePack_SetDefault(const cc_string* texPack) {
+void TexturePack_SetDefault(const hc_string* texPack) {
 	TexturePack_Path.length = 0;
 	String_Format1(&TexturePack_Path, "texpacks/%s", texPack);
 	Options_Set(OPT_DEFAULT_TEX_PACK, texPack);
 }
 
-cc_result TexturePack_ExtractDefault(DefaultZipCallback callback) {
-	cc_result res = ReturnCode_FileNotFound;
+hc_result TexturePack_ExtractDefault(DefaultZipCallback callback) {
+	hc_result res = ReturnCode_FileNotFound;
 	const char* defaults[3];
-	cc_string path;
+	hc_string path;
 	int i;
 
 	defaults[0] = Game_Version.DefaultTexpack;
@@ -462,27 +462,27 @@ cc_result TexturePack_ExtractDefault(DefaultZipCallback callback) {
 }
 
 
-static cc_bool SelectZipEntry(const cc_string* path) { return true; }
-static cc_result ProcessZipEntry(const cc_string* path, struct Stream* stream, struct ZipEntry* source) {
-	cc_string name = *path;
+static hc_bool SelectZipEntry(const hc_string* path) { return true; }
+static hc_result ProcessZipEntry(const hc_string* path, struct Stream* stream, struct ZipEntry* source) {
+	hc_string name = *path;
 	Utils_UNSAFE_GetFilename(&name);
 	Event_RaiseEntry(&TextureEvents.FileChanged, stream, &name);
 	return 0;
 }
 
-static cc_result ExtractPng(struct Stream* stream) {
+static hc_result ExtractPng(struct Stream* stream) {
 	struct Bitmap bmp;
-	cc_result res = Png_Decode(&bmp, stream);
+	hc_result res = Png_Decode(&bmp, stream);
 	if (!res && Atlas_TryChange(&bmp)) return 0;
 
 	Mem_Free(bmp.scan0);
 	return res;
 }
 
-static cc_bool needReload;
-static cc_result ExtractFrom(struct Stream* stream, const cc_string* path) {
+static hc_bool needReload;
+static hc_result ExtractFrom(struct Stream* stream, const hc_string* path) {
 	struct ZipEntry entries[512];
-	cc_result res;
+	hc_result res;
 
 	Event_RaiseVoid(&TextureEvents.PackChanged);
 	/* If context is lost, then trying to load textures will just fail */
@@ -503,19 +503,19 @@ static cc_result ExtractFrom(struct Stream* stream, const cc_string* path) {
 	return res;
 }
 
-#if defined CC_BUILD_PS1 || defined CC_BUILD_SATURN
+#if defined HC_BUILD_PS1 || defined HC_BUILD_SATURN
 #include "../misc/ps1/classicubezip.h"
 
-static cc_result ExtractFromFile(const cc_string* path) {
+static hc_result ExtractFromFile(const hc_string* path) {
 	struct Stream stream;
 	Stream_ReadonlyMemory(&stream, ccTextures, ccTextures_length);
 
 	return ExtractFrom(&stream, path);
 }
 #else
-static cc_result ExtractFromFile(const cc_string* path) {
+static hc_result ExtractFromFile(const hc_string* path) {
 	struct Stream stream;
-	cc_result res;
+	hc_result res;
 
 	res = Stream_OpenFile(&stream, path);
 	if (res) { Logger_SysWarn2(res, "opening", path); return res; }
@@ -527,9 +527,9 @@ static cc_result ExtractFromFile(const cc_string* path) {
 }
 #endif
 
-static cc_result ExtractUserTextures(void) {
-	cc_string path;
-	cc_result res;
+static hc_result ExtractUserTextures(void) {
+	hc_string path;
+	hc_result res;
 
 	/* TODO: Log error for multiple default texture pack extract failure */
 	res = TexturePack_ExtractDefault(ExtractFromFile);
@@ -544,11 +544,11 @@ static cc_result ExtractUserTextures(void) {
 	return ExtractFromFile(&path);
 }
 
-static cc_bool usingDefault;
-cc_result TexturePack_ExtractCurrent(cc_bool forceReload) {
-	cc_string url = TexturePack_Url;
+static hc_bool usingDefault;
+hc_result TexturePack_ExtractCurrent(hc_bool forceReload) {
+	hc_string url = TexturePack_Url;
 	struct Stream stream;
-	cc_result res = 0;
+	hc_result res = 0;
 
 	/* don't pointlessly load default texture pack */
 	if (!usingDefault || forceReload) {
@@ -572,7 +572,7 @@ cc_result TexturePack_ExtractCurrent(cc_bool forceReload) {
 /* Extracts and updates cache for the downloaded texture pack */
 static void ApplyDownloaded(struct HttpRequest* item) {
 	struct Stream mem;
-	cc_string url;
+	hc_string url;
 
 	url = String_FromRawArray(item->url);
 	if (!Platform_ReadonlyFilesystem) UpdateCache(item);
@@ -607,9 +607,9 @@ void TexturePack_CheckPending(void) {
 }
 
 /* Asynchronously downloads the given texture pack */
-static void DownloadAsync(const cc_string* url) {
-	cc_string etag = String_Empty;
-	cc_string time = String_Empty;
+static void DownloadAsync(const hc_string* url) {
+	hc_string etag = String_Empty;
+	hc_string time = String_Empty;
 
 	/* Only retrieve etag/last-modified headers if the file exists */
 	/* This inconsistency can occur if user deleted some cached files */
@@ -622,7 +622,7 @@ static void DownloadAsync(const cc_string* url) {
 	TexturePack_ReqID = Http_AsyncGetDataEx(url, HTTP_FLAG_PRIORITY, &time, &etag, NULL);
 }
 
-void TexturePack_Extract(const cc_string* url) {
+void TexturePack_Extract(const hc_string* url) {
 	if (url->length) DownloadAsync(url);
 
 	if (String_Equals(url, &TexturePack_Url)) return;
@@ -641,9 +641,9 @@ void TextureEntry_Register(struct TextureEntry* entry) {
 /*########################################################################################################################*
 *---------------------------------------------------Textures component----------------------------------------------------*
 *#########################################################################################################################*/
-static void TerrainPngProcess(struct Stream* stream, const cc_string* name) {
+static void TerrainPngProcess(struct Stream* stream, const hc_string* name) {
 	struct Bitmap bmp;
-	cc_result res = Png_Decode(&bmp, stream);
+	hc_result res = Png_Decode(&bmp, stream);
 
 	if (res) {
 		Logger_SysWarn2(res, "decoding", name);
@@ -655,7 +655,7 @@ static void TerrainPngProcess(struct Stream* stream, const cc_string* name) {
 static struct TextureEntry terrain_entry = { "terrain.png", TerrainPngProcess };
 
 
-static void OnFileChanged(void* obj, struct Stream* stream, const cc_string* name) {
+static void OnFileChanged(void* obj, struct Stream* stream, const hc_string* name) {
 	struct TextureEntry* e;
 
 	for (e = entries_head; e; e = e->next) {
@@ -677,7 +677,7 @@ static void OnContextRecreated(void* obj) {
 }
 
 static void OnInit(void) {
-	cc_string file;
+	hc_string file;
 	Event_Register_(&TextureEvents.FileChanged,  NULL, OnFileChanged);
 	Event_Register_(&GfxEvents.ContextLost,      NULL, OnContextLost);
 	Event_Register_(&GfxEvents.ContextRecreated, NULL, OnContextRecreated);

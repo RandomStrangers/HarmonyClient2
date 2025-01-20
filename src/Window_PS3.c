@@ -1,5 +1,5 @@
 #include "Core.h"
-#if defined CC_BUILD_PS3
+#if defined HC_BUILD_PS3
 #include "Window.h"
 #include "Platform.h"
 #include "Input.h"
@@ -17,13 +17,13 @@
 #include <sysutil/sysutil.h>
 #include <sysutil/video.h>
 
-static cc_bool launcherMode;
+static hc_bool launcherMode;
 static KbInfo   kb_info;
 static KbData   kb_data;
 static KbConfig kb_config;
 
 struct _DisplayData DisplayInfo;
-struct cc_window WindowInfo;
+struct hc_window WindowInfo;
 
 static void sysutil_callback(u64 status, u64 param, void* usrdata) {
 	switch (status) {
@@ -80,13 +80,13 @@ void Window_Create3D(int width, int height) {
 
 void Window_Destroy(void) { }
 
-void Window_SetTitle(const cc_string* title) { }
-void Clipboard_GetText(cc_string* value) { } // TODO sceClipboardGetText
-void Clipboard_SetText(const cc_string* value) { } // TODO sceClipboardSetText
+void Window_SetTitle(const hc_string* title) { }
+void Clipboard_GetText(hc_string* value) { } // TODO sceClipboardGetText
+void Clipboard_SetText(const hc_string* value) { } // TODO sceClipboardSetText
 
 int Window_GetWindowState(void) { return WINDOW_STATE_FULLSCREEN; }
-cc_result Window_EnterFullscreen(void) { return 0; }
-cc_result Window_ExitFullscreen(void)  { return 0; }
+hc_result Window_EnterFullscreen(void) { return 0; }
+hc_result Window_ExitFullscreen(void)  { return 0; }
 int Window_IsObscured(void)            { return 0; }
 
 void Window_Show(void) { }
@@ -159,7 +159,7 @@ static int MapKey(int k) {
 	}
 	return 0;
 }
-static cc_bool kb_deferredClear;
+static hc_bool kb_deferredClear;
 static void ProcessKBButtons(void) {
 	// PS3 keyboard APIs only seem to return current keys pressed,
 	//  which is a massive pain to work with
@@ -375,7 +375,7 @@ void OnscreenKeyboard_Open(struct OpenKeyboardArgs* args) {
 	VirtualKeyboard_Open(args, launcherMode);
 }
 
-void OnscreenKeyboard_SetText(const cc_string* text) {
+void OnscreenKeyboard_SetText(const hc_string* text) {
 	VirtualKeyboard_SetText(text);
 }
 
@@ -393,11 +393,11 @@ void Window_ShowDialog(const char* title, const char* msg) {
 	Platform_LogConst(msg);
 }
 
-cc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
+hc_result Window_OpenFileDialog(const struct OpenFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 
-cc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
+hc_result Window_SaveFileDialog(const struct SaveFileDialogArgs* args) {
 	return ERR_NOT_SUPPORTED;
 }
 #endif

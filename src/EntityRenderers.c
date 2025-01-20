@@ -15,11 +15,11 @@
 /*########################################################################################################################*
 *------------------------------------------------------Entity Shadow------------------------------------------------------*
 *#########################################################################################################################*/
-static cc_bool shadows_boundTex;
+static hc_bool shadows_boundTex;
 static GfxResourceID shadows_VB;
 static GfxResourceID shadows_tex;
 static float shadow_radius, shadow_uvScale;
-struct ShadowData { float y; BlockID block; cc_uint8 alpha; };
+struct ShadowData { float y; BlockID block; hc_uint8 alpha; };
 
 /* Circle shadows extend at most 4 blocks vertically */
 #define SHADOW_MAX_RANGE 4 
@@ -32,7 +32,7 @@ struct ShadowData { float y; BlockID block; cc_uint8 alpha; };
 /* Circle shadows may be split across (x,z), (x,z+1), (x+1,z), (x+1,z+1) */
 #define SHADOW_MAX_VERTS 4 * SHADOW_MAX_PER_COLUMN
 
-static cc_bool lequal(float a, float b) { return a < b || Math_AbsF(a - b) < 0.001f; }
+static hc_bool lequal(float a, float b) { return a < b || Math_AbsF(a - b) < 0.001f; }
 static void EntityShadow_DrawCoords(struct VertexTextured** vertices, struct Entity* e, struct ShadowData* data, float x1, float z1, float x2, float z2) {
 	PackedCol col;
 	struct VertexTextured* v;
@@ -103,7 +103,7 @@ static void EntityShadow_DrawCircle(struct VertexTextured** vertices, struct Ent
 static void EntityShadow_CalcAlpha(float playerY, struct ShadowData* data) {
 	float height = playerY - data->y;
 	if (height <= 6.0f) {
-		data->alpha = (cc_uint8)(160 - 160 * height / 6.0f);
+		data->alpha = (hc_uint8)(160 - 160 * height / 6.0f);
 		data->y     += 1.0f / 64.0f; 
 		return;
 	}
@@ -115,12 +115,12 @@ static void EntityShadow_CalcAlpha(float playerY, struct ShadowData* data) {
 	else data->y += 1.0f / 4.0f;
 }
 
-static cc_bool EntityShadow_GetBlocks(struct Entity* e, int x, int y, int z, struct ShadowData* data) {
+static hc_bool EntityShadow_GetBlocks(struct Entity* e, int x, int y, int z, struct ShadowData* data) {
 	struct ShadowData zeroData = { 0 };
 	struct ShadowData* cur;
 	float posY, topY;
-	cc_bool outside;
-	BlockID block; cc_uint8 draw;
+	hc_bool outside;
+	BlockID block; hc_uint8 draw;
 	int i;
 
 	for (i = 0; i < 4; i++) { data[i] = zeroData; }
@@ -226,7 +226,7 @@ static void EntityShadows_MakeTexture(void) {
 	BitmapCol pixels[sh_size * sh_size];
 	BitmapCol color = BitmapCol_Make(0, 0, 0, 200);
 	struct Bitmap bmp;
-	cc_uint32 x, y;
+	hc_uint32 x, y;
 
 	Bitmap_Init(bmp, sh_size, sh_size, pixels);
 	for (y = 0; y < sh_size; y++) {
@@ -283,7 +283,7 @@ static GfxResourceID names_VB;
 #define NAME_OFFSET 3 /* offset of back layer of name above an entity */
 
 static void MakeNameTexture(struct Entity* e) {
-	cc_string colorlessName; char colorlessBuffer[STRING_SIZE];
+	hc_string colorlessName; char colorlessBuffer[STRING_SIZE];
 	BitmapCol shadowColor = BitmapCol_Make(80, 80, 80, 255);
 	BitmapCol origWhiteColor;
 
@@ -291,7 +291,7 @@ static void MakeNameTexture(struct Entity* e) {
 	struct FontDesc font;
 	struct Context2D ctx;
 	int width, height;
-	cc_string name;
+	hc_string name;
 
 	/* Names are always drawn using default.png font */
 	Font_MakeBitmapped(&font, 24, FONT_FLAGS_NONE);
@@ -381,7 +381,7 @@ static int closestEntityId;
 
 void EntityNames_Render(void) {
 	struct LocalPlayer* p = Entities.CurPlayer;
-	cc_bool hadFog;
+	hc_bool hadFog;
 	int i;
 
 	if (Entities.NamesMode == NAME_MODE_NONE) return;
@@ -405,8 +405,8 @@ void EntityNames_Render(void) {
 void EntityNames_RenderHovered(void) {
 	struct LocalPlayer* p = Entities.CurPlayer;
 	struct Entity* e;
-	cc_bool allNames, hadFog;
-	cc_bool setupState = false;
+	hc_bool allNames, hadFog;
+	hc_bool setupState = false;
 	int i;
 
 	if (Entities.NamesMode == NAME_MODE_NONE) return;

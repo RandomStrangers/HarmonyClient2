@@ -1,10 +1,10 @@
 #include "LBackend.h"
-#if defined CC_BUILD_WEB
+#if defined HC_BUILD_WEB
 /* Web backend doesn't use the launcher */
-#elif defined CC_BUILD_WIN_TEST
+#elif defined HC_BUILD_WIN_TEST
 /* Testing windows UI backend */
 #include "LBackend_Win.c"
-#elif defined CC_BUILD_IOS
+#elif defined HC_BUILD_IOS
 /* iOS uses custom UI backend */
 #else
 #include "Launcher.h"
@@ -13,10 +13,7 @@
 #include "LWidgets.h"
 #include "String.h"
 #include "Gui.h"
-#include "Drawer2D.h"
-#include "Launcher.h"
 #include "ExtMath.h"
-#include "Window.h"
 #include "Funcs.h"
 #include "LWeb.h"
 #include "Platform.h"
@@ -37,7 +34,7 @@ static Rect2D dirty_rect;
 static int pendingFullDraws;
 
 LBackend_DrawHook LBackend_Hooks[4];
-static cc_uint8 pendingRedraw;
+static hc_uint8 pendingRedraw;
 #define REDRAW_ALL  0x02
 #define REDRAW_SOME 0x01
 
@@ -125,9 +122,9 @@ static void LBackend_ScaleFlag(struct Bitmap* bmp) {
 	*bmp = scaled;
 }
 
-void LBackend_DecodeFlag(struct Flag* flag, cc_uint8* data, cc_uint32 len) {
+void LBackend_DecodeFlag(struct Flag* flag, hc_uint8* data, hc_uint32 len) {
 	struct Stream s;
-	cc_result res;
+	hc_result res;
 
 	Stream_ReadonlyMemory(&s, data, len);
 	res = Png_Decode(&flag->bmp, &s);
@@ -247,7 +244,7 @@ static void DrawBoxBounds(BitmapCol color, int x, int y, int width, int height) 
 		xBorder,             height);
 }
 
-static CC_NOINLINE void DrawWidget(struct LWidget* w) {
+static HC_NOINLINE void DrawWidget(struct LWidget* w) {
 	w->last.x = w->x; w->last.width  = w->width;
 	w->last.y = w->y; w->last.height = w->height;
 
@@ -256,7 +253,7 @@ static CC_NOINLINE void DrawWidget(struct LWidget* w) {
 	LBackend_MarkAreaDirty(w->x, w->y, w->width, w->height);
 }
 
-static CC_NOINLINE void RedrawAll(void) {
+static HC_NOINLINE void RedrawAll(void) {
 	struct LScreen* s = Launcher_Active;
 	int i;
 	s->DrawBackground(s, &framebuffer);
@@ -267,7 +264,7 @@ static CC_NOINLINE void RedrawAll(void) {
 	LBackend_MarkAllDirty();
 }
 
-static CC_NOINLINE void RedrawDirty(void) {
+static HC_NOINLINE void RedrawDirty(void) {
 	struct LScreen* s = Launcher_Active;
 	struct LWidget* w;
 	int i;
@@ -286,7 +283,7 @@ static CC_NOINLINE void RedrawDirty(void) {
 	}
 }
 
-static CC_NOINLINE void DoRedraw(void) {
+static HC_NOINLINE void DoRedraw(void) {
 	if (pendingRedraw & REDRAW_ALL) {
 		RedrawAll();
 		pendingRedraw = 0;
@@ -333,7 +330,7 @@ void LBackend_AddDirtyFrames(int frames) {
 static void ReqeustRedraw(void* obj)  { LBackend_Redraw(); }
 static void RedrawContents(void* obj) { DoRedraw(); }
 
-CC_NOINLINE static struct LWidget* GetWidgetAt(struct LScreen* s, int idx) {
+HC_NOINLINE static struct LWidget* GetWidgetAt(struct LScreen* s, int idx) {
 	struct LWidget* w;
 	int i, x = Pointers[idx].x, y = Pointers[idx].y;
 
@@ -382,7 +379,7 @@ static void OnPointerMove(void* obj, int idx) {
 	struct LScreen* s = Launcher_Active;
 	struct LWidget* over;
 	struct LWidget* prev;
-	cc_bool overSame;
+	hc_bool overSame;
 	if (Window_Main.SoftKeyboardFocus) return;
 
 	if (!s) return;
@@ -420,7 +417,7 @@ static void OnKeyPress(void* obj, int cp) {
 	selected->VTABLE->KeyPress(selected, c);
 }
 
-static void OnTextChanged(void* obj, const cc_string* str) {
+static void OnTextChanged(void* obj, const hc_string* str) {
 	struct LWidget* selected = Launcher_Active->selectedWidget;
 	if (!selected) return;
 
@@ -461,7 +458,7 @@ void LBackend_ButtonUpdate(struct LButton* w) {
 void LBackend_ButtonDraw(struct LButton* w) {
 	struct DrawTextArgs args;
 	int xOffset, yOffset;
-	cc_bool active = w->hovered || w->selected;
+	hc_bool active = w->hovered || w->selected;
 
 	LButton_DrawBackground(&framebuffer, w->x, w->y, w->width, w->height, active);
 	xOffset = w->width  - w->_textWidth;
@@ -504,7 +501,7 @@ void LBackend_CheckboxUpdate(struct LCheckbox* w) {
 }
 
 /* Based off checkbox from original ClassiCube Launcher */
-static const cc_uint8 checkbox_indices[] = {
+static const hc_uint8 checkbox_indices[] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x06, 0x07, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x06, 0x09, 0x00, 0x00,
@@ -588,7 +585,7 @@ void LBackend_CheckboxDraw(struct LCheckbox* w) {
 /*########################################################################################################################*
 *------------------------------------------------------InputWidget--------------------------------------------------------*
 *#########################################################################################################################*/
-static cc_uint64 caretStart;
+static hc_uint64 caretStart;
 static Rect2D caretRect, lastCaretRect;
 #define Rect2D_Equals(a, b) a.x == b.x && a.y == b.y && a.width == b.width && a.height == b.height
 
@@ -618,7 +615,7 @@ void LBackend_InputInit(struct LInput* w, int width) {
 }
 
 void LBackend_InputUpdate(struct LInput* w) {
-	cc_string text; char textBuffer[STRING_SIZE];
+	hc_string text; char textBuffer[STRING_SIZE];
 	struct DrawTextArgs args;
 	int textWidth;
 
@@ -632,7 +629,7 @@ void LBackend_InputUpdate(struct LInput* w) {
 	w->_textHeight = Drawer2D_TextHeight(&args);
 }
 
-static Rect2D LInput_MeasureCaret(struct LInput* w, cc_string* text) {
+static Rect2D LInput_MeasureCaret(struct LInput* w, hc_string* text) {
 	struct DrawTextArgs args;
 	Rect2D r;
 	DrawTextArgs_Make(&args, text, &textFont, true);
@@ -654,7 +651,7 @@ static Rect2D LInput_MeasureCaret(struct LInput* w, cc_string* text) {
 }
 
 static void LInput_MoveCaretToCursor(struct LInput* w, int idx) {
-	cc_string text; char textBuffer[STRING_SIZE];
+	hc_string text; char textBuffer[STRING_SIZE];
 	int x = Pointers[idx].x, y = Pointers[idx].y;
 	struct DrawTextArgs args;
 	int i, charX, charWidth;
@@ -686,7 +683,7 @@ static void LInput_MoveCaretToCursor(struct LInput* w, int idx) {
 
 void LBackend_InputTick(struct LInput* w) {
 	int elapsed;
-	cc_bool caretShow;
+	hc_bool caretShow;
 	Rect2D r;
 
 	if (!caretStart) return;
@@ -709,7 +706,7 @@ void LBackend_InputTick(struct LInput* w) {
 	lastCaretRect = r;
 }
 
-void LBackend_InputSelect(struct LInput* w, int idx, cc_bool wasSelected) {
+void LBackend_InputSelect(struct LInput* w, int idx, hc_bool wasSelected) {
 	caretStart   = Stopwatch_Measure();
 	w->caretShow = true;
 	LInput_MoveCaretToCursor(w, idx);
@@ -800,7 +797,7 @@ static void LInput_DrawText(struct LInput* w, struct DrawTextArgs* args) {
 }
 
 void LBackend_InputDraw(struct LInput* w) {
-	cc_string text; char textBuffer[STRING_SIZE];
+	hc_string text; char textBuffer[STRING_SIZE];
 	struct DrawTextArgs args;
 
 	String_InitArray(text, textBuffer);
@@ -964,8 +961,8 @@ static void LTable_DrawHeaderBackground(struct LTable* w) {
 
 static BitmapCol LBackend_TableRowColor(struct LTable* w, int row) {
 	struct ServerInfo* entry = row < w->rowsCount ? LTable_Get(row) : NULL;
-	cc_bool selected         = entry && String_Equals(&entry->hash, w->selectedHash);
-	cc_bool featured         = entry && entry->featured;
+	hc_bool selected         = entry && String_Equals(&entry->hash, w->selectedHash);
+	hc_bool featured         = entry && entry->featured;
 
 	return LTable_RowColor(row, selected, featured);
 }
@@ -1041,7 +1038,7 @@ static void LTable_DrawHeaders(struct LTable* w) {
 
 /* Draws contents of the currently visible rows in the table */
 static void LTable_DrawRows(struct LTable* w) {
-	cc_string str; char strBuffer[STRING_SIZE];
+	hc_string str; char strBuffer[STRING_SIZE];
 	struct ServerInfo* entry;
 	struct DrawTextArgs args;
 	struct LTableCell cell;
