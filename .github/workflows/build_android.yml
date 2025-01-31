@@ -1,15 +1,17 @@
-name: Build latest (Android)
+name: Build dev (Android)
 on:
   push:
+    branches:
+      - master
+      - Testing
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.ref }}-android
+  group: ${{ github.ref }}-android_dev
   cancel-in-progress: true
 
 jobs:
   build:
-    if: github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-20.04
     container:
       image: ghcr.io/saschpe/android-ndk:34-jdk17.0.8_7-ndk25.2.9519653-cmake3.22.1
