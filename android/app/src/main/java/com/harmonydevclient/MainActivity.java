@@ -1,4 +1,4 @@
-package com.harmonyclient;
+package com.harmonydevclient;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -170,9 +170,9 @@ public class MainActivity extends Activity
 	static boolean gameRunning;
 
 	void startGameAsync() {
-		Log.i("CC_WIN", "handing off to native..");
+		Log.i("HC_WIN", "handing off to native..");
 		try {
-			System.loadLibrary("harmonyclient");
+			System.loadLibrary("harmonydevclient");
 		} catch (UnsatisfiedLinkError ex) {
 			ex.printStackTrace();
 			showAlertAsync("Failed to start", ex.getMessage());
@@ -188,9 +188,9 @@ public class MainActivity extends Activity
 		// requestWindowFeature - API level 1
 		// setSoftInputMode, SOFT_INPUT_STATE_UNSPECIFIED, SOFT_INPUT_ADJUST_RESIZE - API level 3
 		input = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
-		Log.i("CC_WIN", "CREATE EVENT");
+		Log.i("HC_WIN", "CREATE EVENT");
 		Window window = getWindow();
-		Log.i("CC_WIN", "GAME RUNNING?" + gameRunning);
+		Log.i("HC_WIN", "GAME RUNNING?" + gameRunning);
 		//window.takeSurface(this);
 		//window.takeInputQueue(this);
 		// TODO: Should this be RGBA_8888??
@@ -326,7 +326,7 @@ public class MainActivity extends Activity
 	
 	@Override
 	public void onDestroy() {
-		Log.i("CC_WIN", "APP DESTROYED");
+		Log.i("HC_WIN", "APP DESTROYED");
 		super.onDestroy();
 		pushCmd(CMD_APP_DESTROY);
 	}
@@ -441,7 +441,7 @@ public class MainActivity extends Activity
 	class HCSurfaceCallback implements SurfaceHolder.Callback {
 		public void surfaceCreated(SurfaceHolder holder) {
 			// getSurface - API level 1
-			Log.i("CC_WIN", "win created " + holder.getSurface());
+			Log.i("HC_WIN", "win created " + holder.getSurface());
 			MainActivity.this.pushCmd(CMD_WIN_CREATED, holder.getSurface());
 		}
 		
@@ -453,8 +453,8 @@ public class MainActivity extends Activity
 		
 		public void surfaceDestroyed(SurfaceHolder holder) {
 			// getSurface, removeCallback - API level 1
-			Log.i("CC_WIN", "win destroyed " + holder.getSurface());
-			Log.i("CC_WIN", "cur view " + curView);
+			Log.i("HC_WIN", "win destroyed " + holder.getSurface());
+			Log.i("HC_WIN", "cur view " + curView);
 			holder.removeCallback(this);
 			
 			//08-02 21:03:02.967: E/BufferQueueProducer(1350): [SurfaceView - com.harmonyclient.HarmonyClient/com.harmonyclient.MainActivity#0] disconnect: not connected (req=2)
@@ -477,7 +477,7 @@ public class MainActivity extends Activity
 	class HCSurfaceCallback2 extends HCSurfaceCallback implements SurfaceHolder.Callback2 {
 		public void surfaceRedrawNeeded(SurfaceHolder holder) {
 			// getSurface - API level 1
-			Log.i("CC_WIN", "win dirty " + holder.getSurface());
+			Log.i("HC_WIN", "win dirty " + holder.getSurface());
 			MainActivity.this.pushCmd(CMD_WIN_REDRAW);
 		}
 	}
