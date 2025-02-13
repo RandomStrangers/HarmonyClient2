@@ -1,4 +1,4 @@
-package com.harmonyclient;
+package com.harmonydevclient;
 import android.text.Editable;
 import android.text.Selection;
 import android.text.SpannableStringBuilder;
