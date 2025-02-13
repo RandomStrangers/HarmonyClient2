@@ -4,7 +4,7 @@ android {
     compileSdkVersion 28
 
     defaultConfig {
-        applicationId = 'com.harmonyclientdev.android.client'
+        applicationId = 'com.harmonydevclient.android.client'
         minSdkVersion 13
         targetSdkVersion 26
         externalNativeBuild {
