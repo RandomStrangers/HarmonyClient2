@@ -1,4 +1,4 @@
-package com.harmonyclient;
+package com.harmonydevclient;
 import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.View;
