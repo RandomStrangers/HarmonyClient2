@@ -106,7 +106,7 @@ add_library(classicube SHARED
         )
 
 # add lib dependencies
-target_link_libraries(classicube
+target_link_libraries(harmonydevclient
     android
     EGL
     GLESv2
