@@ -1,4 +1,4 @@
-package com.harmonyclient;
+package com.harmonydevclient;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -96,7 +96,7 @@ public class HCFileProvider extends ContentProvider
         // See AndroidManifest.xml for authority
         return new Uri.Builder()
                 .scheme("content")
-                .authority("com.harmonyclient.android.client.provider")
+                .authority("com.harmonydevclient.android.client.provider")
                 .encodedPath(Uri.encode(path, "/"))
                 .build();
     }
