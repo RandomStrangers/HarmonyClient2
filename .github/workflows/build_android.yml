@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Compile android build
+      - name: Compile android dev build
         shell: bash
         id: compile
         env: 
@@ -53,11 +53,11 @@ jobs:
           cd $ROOT_DIR/android/app/src/main
           # copy required native libraries
           mkdir lib lib/armeabi lib/armeabi-v7a lib/arm64-v8a lib/x86 lib/x86_64
-          cp $ROOT_DIR/src/hc-droid-arm_16 lib/armeabi/libharmonyclient.so
-          cp $ROOT_DIR/src/hc-droid-arm_32 lib/armeabi-v7a/libharmonyclient.so
-          cp $ROOT_DIR/src/hc-droid-arm_64 lib/arm64-v8a/libharmonyclient.so
-          cp $ROOT_DIR/src/hc-droid-x86_32 lib/x86/libharmonyclient.so
-          cp $ROOT_DIR/src/hc-droid-x86_64 lib/x86_64/libharmonyclient.so
+          cp $ROOT_DIR/src/hc-droid-arm_16 lib/armeabi/libharmonydevclient.so
+          cp $ROOT_DIR/src/hc-droid-arm_32 lib/armeabi-v7a/libdevharmonyclient.so
+          cp $ROOT_DIR/src/hc-droid-arm_64 lib/arm64-v8a/libdevharmonyclient.so
+          cp $ROOT_DIR/src/hc-droid-x86_32 lib/x86/libdevharmonyclient.so
+          cp $ROOT_DIR/src/hc-droid-x86_64 lib/x86_64/libdevharmonyclient.so
           
           # The following commands are for manually building an .apk, see
           #  https://spin.atomicobject.com/2011/08/22/building-android-application-bundles-apks-by-hand/
@@ -67,7 +67,7 @@ jobs:
           #  https://github.com/skanti/Android-Manual-Build-Command-Line/blob/master/hello-jni/CMakeLists.txt
           
           # compile java files into multiple .class files
-          cd $ROOT_DIR/android/app/src/main/java/com/harmonyclient
+          cd $ROOT_DIR/android/app/src/main/java/com/harmonydevclient
           javac *.java -d $ROOT_DIR/android/app/src/main/obj -classpath $SDK_ROOT/android.jar --release 8
           
           cd $ROOT_DIR/android/app/src/main
@@ -80,7 +80,7 @@ jobs:
           $TOOLS_ROOT/aapt package -f -M AndroidManifest.xml -S res -F obj/hc-unsigned.apk -I $SDK_ROOT/android.jar
           # and add all the required files
           cp obj/classes.dex classes.dex
-          $TOOLS_ROOT/aapt add -f obj/hc-unsigned.apk classes.dex lib/armeabi/libharmonyclient.so lib/armeabi-v7a/libharmonyclient.so lib/arm64-v8a/libharmonyclient.so lib/x86/libharmonyclient.so lib/x86_64/libharmonyclient.so
+          $TOOLS_ROOT/aapt add -f obj/hc-unsigned.apk classes.dex lib/armeabi/libharmonydevclient.so lib/armeabi-v7a/libharmonydevclient.so lib/arm64-v8a/libharmonydevclient.so lib/x86/libharmonydevclient.so lib/x86_64/libharmonydevclient.so
           # sign the apk with debug key (https://stackoverflow.com/questions/16711233/)
           cp obj/hc-unsigned.apk obj/hc-signed.apk
           jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore debug.keystore -storepass android -keypass android obj/hc-signed.apk androiddebugkey
@@ -92,7 +92,7 @@ jobs:
       - uses: ./.github/actions/notify_failure
         if: ${{ always() && steps.compile.outcome == 'failure' }}
         with:
-          NOTIFY_MESSAGE: 'Failed to compile HarmonyClient android build <@999409543001931788>'
+          NOTIFY_MESSAGE: 'Failed to compile HarmonyDevClient Android build <@999409543001931788>'
           WEBHOOK_URL: '${{ secrets.WEBHOOK_URL }}'
           
           
@@ -100,10 +100,10 @@ jobs:
         if: ${{ always() && steps.compile.outcome == 'success' }}
         with:
           SOURCE_FILE: 'src/hc.apk'
-          DEST_NAME: 'HarmonyClient.apk'
+          DEST_NAME: 'HarmonyDevClient.apk'
 
       - uses: ./.github/actions/notify_success
         if: ${{ always() && steps.compile.outcome == 'success' }}
         with:
-          NOTIFY_MESSAGE: 'Successfully compiled HarmonyClient Android build.'
+          NOTIFY_MESSAGE: 'Successfully compiled HarmonyDevClient Android build.'
           WEBHOOK_URL: '${{ secrets.WEBHOOK_URL }}'
