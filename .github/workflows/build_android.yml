@@ -26,7 +26,7 @@ jobs:
           DROID_FLAGS: "-fPIC -shared -s -O1 -fvisibility=hidden -rdynamic -funwind-tables"
           DROID_LIBS: "-lGLESv2 -lEGL -lm -landroid -llog"
         run: |
-          LATEST_FLAG=-DCC_COMMIT_SHA=\"${GITHUB_SHA::9}\"
+          LATEST_FLAG=-DHDC_COMMIT_SHA=\"${GITHUB_SHA::9}\"
           
           DROID_FLAGS="-fPIC -shared -s -O1 -fvisibility=hidden -rdynamic -funwind-tables"
           DROID_LIBS="-lGLESv2 -lEGL -lm -landroid -llog"
@@ -44,20 +44,20 @@ jobs:
           chmod +x build-tools/zipalign
 
           cd $ROOT_DIR/src
-          $NDK_ROOT/armv7a-linux-androideabi19-clang *.c $DROID_FLAGS -march=armv5 $DROID_LIBS $LATEST_FLAG -o hc-droid-arm_16
-          $NDK_ROOT/armv7a-linux-androideabi19-clang *.c $DROID_FLAGS $DROID_LIBS $LATEST_FLAG -o hc-droid-arm_32
-          $NDK_ROOT/aarch64-linux-android21-clang *.c $DROID_FLAGS $DROID_LIBS $LATEST_FLAG -o hc-droid-arm_64
-          $NDK_ROOT/i686-linux-android21-clang *.c $DROID_FLAGS $DROID_LIBS $LATEST_FLAG -o hc-droid-x86_32
-          $NDK_ROOT/x86_64-linux-android21-clang *.c $DROID_FLAGS $DROID_LIBS $LATEST_FLAG -o hc-droid-x86_64
+          $NDK_ROOT/armv7a-linux-androideabi19-clang *.c $DROID_FLAGS -march=armv5 $DROID_LIBS $LATEST_FLAG -o hdc-droid-arm_16
+          $NDK_ROOT/armv7a-linux-androideabi19-clang *.c $DROID_FLAGS $DROID_LIBS $LATEST_FLAG -o hdc-droid-arm_32
+          $NDK_ROOT/aarch64-linux-android21-clang *.c $DROID_FLAGS $DROID_LIBS $LATEST_FLAG -o hdc-droid-arm_64
+          $NDK_ROOT/i686-linux-android21-clang *.c $DROID_FLAGS $DROID_LIBS $LATEST_FLAG -o hdc-droid-x86_32
+          $NDK_ROOT/x86_64-linux-android21-clang *.c $DROID_FLAGS $DROID_LIBS $LATEST_FLAG -o hdc-droid-x86_64
           
           cd $ROOT_DIR/android/app/src/main
           # copy required native libraries
           mkdir lib lib/armeabi lib/armeabi-v7a lib/arm64-v8a lib/x86 lib/x86_64
-          cp $ROOT_DIR/src/hc-droid-arm_16 lib/armeabi/libharmonydevclient.so
-          cp $ROOT_DIR/src/hc-droid-arm_32 lib/armeabi-v7a/libdevharmonyclient.so
-          cp $ROOT_DIR/src/hc-droid-arm_64 lib/arm64-v8a/libdevharmonyclient.so
-          cp $ROOT_DIR/src/hc-droid-x86_32 lib/x86/libdevharmonyclient.so
-          cp $ROOT_DIR/src/hc-droid-x86_64 lib/x86_64/libdevharmonyclient.so
+          cp $ROOT_DIR/src/hdc-droid-arm_16 lib/armeabi/libharmonydevclient.so
+          cp $ROOT_DIR/src/hdc-droid-arm_32 lib/armeabi-v7a/libharmonydevclient.so
+          cp $ROOT_DIR/src/hdc-droid-arm_64 lib/arm64-v8a/libharmonydevclient.so
+          cp $ROOT_DIR/src/hdc-droid-x86_32 lib/x86/libharmonydevclient.so
+          cp $ROOT_DIR/src/hdc-droid-x86_64 lib/x86_64/libharmonydevclient.so
           
           # The following commands are for manually building an .apk, see
           #  https://spin.atomicobject.com/2011/08/22/building-android-application-bundles-apks-by-hand/
@@ -77,16 +77,16 @@ jobs:
           # compile the multiple .class files into one .dex file
           $TOOLS_ROOT/dx --dex --output=obj/classes.dex ./obj
           # create initial .apk with packaged version of resources
-          $TOOLS_ROOT/aapt package -f -M AndroidManifest.xml -S res -F obj/hc-unsigned.apk -I $SDK_ROOT/android.jar
+          $TOOLS_ROOT/aapt package -f -M AndroidManifest.xml -S res -F obj/hdc-unsigned.apk -I $SDK_ROOT/android.jar
           # and add all the required files
           cp obj/classes.dex classes.dex
-          $TOOLS_ROOT/aapt add -f obj/hc-unsigned.apk classes.dex lib/armeabi/libharmonydevclient.so lib/armeabi-v7a/libharmonydevclient.so lib/arm64-v8a/libharmonydevclient.so lib/x86/libharmonydevclient.so lib/x86_64/libharmonydevclient.so
+          $TOOLS_ROOT/aapt add -f obj/hdc-unsigned.apk classes.dex lib/armeabi/libharmonydevclient.so lib/armeabi-v7a/libharmonydevclient.so lib/arm64-v8a/libharmonydevclient.so lib/x86/libharmonydevclient.so lib/x86_64/libharmonydevclient.so
           # sign the apk with debug key (https://stackoverflow.com/questions/16711233/)
-          cp obj/hc-unsigned.apk obj/hc-signed.apk
-          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore debug.keystore -storepass android -keypass android obj/hc-signed.apk androiddebugkey
+          cp obj/hdc-unsigned.apk obj/hdc-signed.apk
+          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore debug.keystore -storepass android -keypass android obj/hdc-signed.apk androiddebugkey
           # jarsigner -verbose
           # create aligned .apk file
-          $TOOLS_ROOT/zipalign -f 4 obj/hc-signed.apk $ROOT_DIR/src/hc.apk
+          $TOOLS_ROOT/zipalign -f 4 obj/hdc-signed.apk $ROOT_DIR/src/hdc.apk
 
 
       - uses: ./.github/actions/notify_failure
@@ -99,7 +99,7 @@ jobs:
       - uses: ./.github/actions/upload_build
         if: ${{ always() && steps.compile.outcome == 'success' }}
         with:
-          SOURCE_FILE: 'src/hc.apk'
+          SOURCE_FILE: 'src/hdc.apk'
           DEST_NAME: 'HarmonyDevClient.apk'
 
       - uses: ./.github/actions/notify_success
